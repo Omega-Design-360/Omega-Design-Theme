@@ -1,0 +1,262 @@
+/**
+ * Page-level content width override.
+ *
+ * Set via the "Page Width" control in the editor sidebar (Page > Summary).
+ * Overrides the content-size custom property that the constrained layout
+ * support reads to center each direct child of the post content area, so
+ * changing it widens every child at once instead of requiring a per-block
+ * alignment change.
+ */
+.wp-block-post-content.has-omega-content-width-wide {
+	--wp--style--global--content-size: var(--wp--style--global--wide-size);
+}
+
+.wp-block-post-content.has-omega-content-width-full {
+	--wp--style--global--content-size: 100%;
+}
+
+/**
+ * Shop archive product cards (templates/archive-product.html).
+ *
+ * The grid itself (columns, responsiveness) is handled entirely by
+ * WooCommerce's own wc-block-product-template CSS via the "columns"
+ * attribute on the woocommerce/product-collection block - no custom
+ * grid/flex rules needed here. This only styles the visual card wrapped
+ * around each product's image/title/price/button.
+ *
+ * That block combination (product-collection + product-template) is also
+ * required, not optional: WooCommerce's Add to Cart button only receives
+ * its product ID via the data-wp-context that woocommerce/product-template
+ * puts on each item's <li>. An earlier version of this template used the
+ * generic core/query + core/post-template instead, which looked identical
+ * but never set that context - so the button rendered and looked clickable,
+ * but silently did nothing on click, since it had no product ID to act on.
+ */
+.omega-product-card {
+	height: 100%;
+	transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.omega-product-card:hover,
+.omega-product-card:focus-within {
+	transform: translateY(-4px);
+	box-shadow: var(--wp--preset--shadow--medium);
+}
+
+.omega-product-card .wc-block-components-product-image img {
+	transition: transform 0.3s ease;
+}
+
+.omega-product-card:hover .wc-block-components-product-image img {
+	transform: scale(1.04);
+}
+
+.omega-product-card .wc-block-components-product-image {
+	overflow: hidden;
+}
+
+/**
+ * Site header (parts/header.html).
+ */
+.site-header .site-navigation a {
+	transition: color 0.15s ease, opacity 0.15s ease;
+}
+
+.site-header .site-navigation a:hover {
+	opacity: 0.8;
+}
+
+/* Bigger, easier to tap hamburger toggle, with a hover/focus affordance. */
+.site-header .wp-block-navigation__responsive-container-open,
+.site-header .wp-block-navigation__responsive-container-close {
+	padding: 10px;
+	border-radius: 6px;
+	transition: background-color 0.15s ease;
+}
+
+.site-header .wp-block-navigation__responsive-container-open:hover,
+.site-header .wp-block-navigation__responsive-container-open:focus,
+.site-header .wp-block-navigation__responsive-container-close:hover,
+.site-header .wp-block-navigation__responsive-container-close:focus {
+	background-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Mobile menu overlay: roomier, centered links that are easy to scan/tap. */
+.site-header .wp-block-navigation__responsive-container.is-menu-open .wp-block-navigation__responsive-container-content {
+	display: flex;
+	align-items: center;
+}
+
+.site-header .wp-block-navigation__responsive-container.is-menu-open .wp-block-navigation-item {
+	width: 100%;
+	text-align: center;
+}
+
+.site-header .wp-block-navigation__responsive-container.is-menu-open .wp-block-navigation-item__content {
+	font-size: 1.25rem;
+	padding: 0.75em 0;
+}
+
+.site-header .wp-block-navigation__responsive-container.is-menu-open .wp-block-navigation-item__content:hover {
+	color: var(--wp--preset--color--primary);
+}
+
+/**
+ * Site footer (parts/footer.html).
+ */
+.footer-link-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.footer-link-list li {
+	margin: 0 0 0.6em;
+}
+
+.footer-link-list a,
+.footer-link-list a:visited {
+	color: var(--wp--preset--color--button-text);
+	text-decoration: none;
+	opacity: 0.85;
+	transition: color 0.15s ease, opacity 0.15s ease;
+}
+
+.footer-link-list a:hover,
+.footer-link-list a:focus {
+	color: var(--wp--preset--color--primary);
+	opacity: 1;
+	text-decoration: underline;
+}
+
+.footer-social a {
+	transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.footer-social a:hover {
+	opacity: 0.8;
+	transform: translateY(-2px);
+}
+
+.site-footer__bottom-bar {
+	border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.site-footer__bottom-bar p {
+	margin: 0;
+	opacity: 0.75;
+}
+
+/**
+ * Checkout "please log in" notice (woocommerce/checkout/form-checkout.php).
+ * Shown instead of WooCommerce's plain-text message when guest checkout and
+ * new-account registration are both disabled, so a guest has no other way
+ * to complete their order.
+ */
+.omega-checkout-auth-notice {
+	box-sizing: border-box;
+	max-width: 30rem;
+	margin: 3rem auto;
+	padding: 2.75rem 2.25rem;
+	text-align: center;
+	background: var(--wp--preset--color--surface);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 14px;
+	box-shadow: 0 24px 48px -24px rgba(0, 0, 0, 0.4);
+	animation: omega-checkout-auth-notice-in 0.35s ease both;
+}
+
+@keyframes omega-checkout-auth-notice-in {
+	from {
+		opacity: 0;
+		transform: translateY(8px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.omega-checkout-auth-notice__icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 60px;
+	height: 60px;
+	margin: 0 auto 1.25rem;
+	border-radius: 50%;
+	background: var(--wp--preset--color--background);
+	color: var(--wp--preset--color--primary);
+	box-shadow: 0 0 0 6px color-mix(in srgb, var(--wp--preset--color--primary) 14%, transparent);
+}
+
+/**
+ * --surface is a dark green in this theme even in light mode (it's used as a
+ * dark accent card, matching the site header/footer), so its text needs the
+ * light "-dark" token pair rather than the default heading/body-text colors,
+ * which assume a light background.
+ */
+.omega-checkout-auth-notice__title {
+	margin: 0 0 0.625rem;
+	font-size: var(--wp--preset--font-size--large);
+	font-weight: 600;
+	line-height: 1.3;
+	color: var(--wp--preset--color--heading-dark);
+}
+
+.omega-checkout-auth-notice__message {
+	max-width: 25rem;
+	margin: 0 auto 2rem;
+	color: var(--wp--preset--color--body-text-dark);
+	opacity: 0.85;
+	line-height: 1.6;
+}
+
+.omega-checkout-auth-notice__actions {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: 0.75rem;
+}
+
+.omega-checkout-auth-notice__button {
+	box-sizing: border-box;
+	display: inline-block;
+	text-decoration: none;
+	font-weight: 500;
+	cursor: pointer;
+	transition: transform 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+
+.omega-checkout-auth-notice__button:hover,
+.omega-checkout-auth-notice__button:focus-visible {
+	transform: translateY(-1px);
+}
+
+.omega-checkout-auth-notice__button--secondary {
+	padding: 0.75rem 1.5rem;
+	border-radius: 6px;
+	border: 1px solid var(--wp--preset--color--primary);
+	color: var(--wp--preset--color--primary);
+	background: transparent;
+}
+
+.omega-checkout-auth-notice__button--secondary:hover,
+.omega-checkout-auth-notice__button--secondary:focus-visible {
+	background: var(--wp--preset--color--primary);
+	color: var(--wp--preset--color--button-text);
+}
+
+@media (max-width: 400px) {
+	.omega-checkout-auth-notice {
+		padding: 2.25rem 1.5rem;
+	}
+
+	.omega-checkout-auth-notice__actions {
+		flex-direction: column;
+	}
+
+	.omega-checkout-auth-notice__button {
+		width: 100%;
+	}
+}

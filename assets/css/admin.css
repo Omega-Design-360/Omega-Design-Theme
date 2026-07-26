@@ -1,0 +1,15 @@
+/**
+ * Omega Design — global wp-admin polish.
+ * Loaded on every admin screen, so keep this scoped to our own elements only.
+ */
+
+#toplevel_page_omega-dashboard .wp-menu-image img {
+	width: 20px;
+	height: 20px;
+	padding: 6px 0 0;
+}
+
+#wpadminbar #wp-admin-bar-omega-design > .ab-item:before {
+	content: "\f100";
+	top: 2px;
+}

@@ -1,0 +1,425 @@
+/**
+ * Omega Design — Dashboard & Settings admin pages.
+ * Scoped entirely under .omega-admin-page so it never leaks into the
+ * rest of wp-admin (this file is only enqueued on those two screens).
+ */
+
+/**
+ * Colors here all come from the site's one light/dark palette
+ * (--wp--preset--color--*, defined in theme.json and switched by
+ * color-mode.css) rather than a separate admin-only set, so this page
+ * always matches the front end and the site-wide Color Mode toggle
+ * instead of carrying its own fixed values to keep in sync by hand.
+ */
+.omega-admin-page {
+	--omega-border: color-mix(in srgb, var(--wp--preset--color--heading) 15%, var(--wp--preset--color--background));
+	max-width: 1180px;
+	margin-top: 20px;
+	background: var(--wp--preset--color--background);
+	color: var(--wp--preset--color--body-text);
+}
+
+.omega-admin-page * {
+	box-sizing: border-box;
+}
+
+/* Header */
+.omega-admin-header {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	background: var(--wp--preset--color--background);
+	border: 1px solid var(--omega-border);
+	border-radius: 10px;
+	padding: 20px 24px;
+	margin-bottom: 24px;
+	box-shadow: 0 1px 2px rgba(4, 18, 0, 0.04);
+}
+
+.omega-admin-header__brand {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+}
+
+.omega-admin-header__logo {
+	width: 64px;
+	height: 64px;
+	object-fit: contain;
+}
+
+.omega-admin-header__title {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin: 0 0 4px;
+	font-size: 21px;
+	color: var(--wp--preset--color--heading);
+}
+
+.omega-admin-header__subtitle {
+	margin: 0;
+	color: #6B7568;
+}
+
+.omega-admin-header__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+/* Buttons */
+.omega-admin-page .omega-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	border-radius: 999px;
+	padding: 6px 16px;
+	height: auto;
+	line-height: 1.6;
+	font-weight: 500;
+	border: 1px solid transparent;
+	text-decoration: none;
+	box-shadow: none;
+}
+
+.omega-admin-page .omega-btn .dashicons {
+	width: 16px;
+	height: 16px;
+	font-size: 16px;
+}
+
+.omega-admin-page .omega-btn--primary {
+	background: var(--wp--preset--color--primary);
+	border-color: var(--wp--preset--color--primary-dark);
+	color: #fff;
+}
+
+.omega-admin-page .omega-btn--primary:hover,
+.omega-admin-page .omega-btn--primary:focus {
+	background: var(--wp--preset--color--primary-dark);
+	color: #fff;
+}
+
+.omega-admin-page .omega-btn--ghost {
+	background: #fff;
+	border-color: var(--omega-border);
+	color: var(--wp--preset--color--heading);
+}
+
+.omega-admin-page .omega-btn--ghost:hover,
+.omega-admin-page .omega-btn--ghost:focus {
+	border-color: var(--wp--preset--color--primary);
+	color: var(--wp--preset--color--primary-dark);
+}
+
+/* Layout grid */
+.omega-grid {
+	display: grid;
+	gap: 20px;
+	margin-bottom: 24px;
+}
+
+.omega-grid--2 {
+	grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+.omega-grid--3 {
+	grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.omega-grid--4 {
+	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+/* Site Logo */
+.omega-logo-preview {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 90px;
+	background: #F7F9F6;
+	border: 1px dashed var(--omega-border);
+	border-radius: 8px;
+	margin-bottom: 14px;
+	padding: 10px;
+}
+
+.omega-logo-preview img {
+	max-width: 100%;
+	max-height: 90px;
+	height: auto;
+	display: block;
+}
+
+.omega-logo-placeholder {
+	font-size: 36px;
+	width: 36px;
+	height: 36px;
+	color: #B7C0B2;
+}
+
+.omega-logo-actions {
+	display: flex;
+	gap: 8px;
+	margin-bottom: 16px;
+}
+
+.omega-logo-picker + .omega-logo-picker {
+	margin-top: 8px;
+	padding-top: 16px;
+	border-top: 1px solid var(--omega-border);
+}
+
+.omega-logo-picker__label {
+	font-weight: 600;
+	margin: 0 0 8px;
+}
+
+.omega-section-title {
+	font-size: 15px;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: #6B7568;
+	margin: 4px 0 12px;
+}
+
+/* Cards */
+.omega-card {
+	background: var(--wp--preset--color--background);
+	border: 1px solid var(--omega-border);
+	border-radius: 10px;
+	padding: 22px;
+	box-shadow: 0 1px 2px rgba(4, 18, 0, 0.04);
+}
+
+.omega-card__head {
+	display: flex;
+	gap: 12px;
+	margin-bottom: 18px;
+}
+
+.omega-card__head .dashicons {
+	color: var(--wp--preset--color--primary);
+	font-size: 24px;
+	width: 24px;
+	height: 24px;
+	flex-shrink: 0;
+}
+
+.omega-card__head h2 {
+	margin: 0 0 4px;
+	font-size: 15px;
+	color: var(--wp--preset--color--heading);
+}
+
+.omega-card__head p {
+	margin: 0;
+	color: #6B7568;
+	font-size: 13px;
+}
+
+/* Status cards */
+.omega-status-card {
+	background: var(--wp--preset--color--background);
+	border: 1px solid var(--omega-border);
+	border-radius: 10px;
+	padding: 18px;
+	text-align: center;
+}
+
+.omega-status-card .dashicons {
+	color: var(--wp--preset--color--primary);
+	font-size: 26px;
+	width: 26px;
+	height: 26px;
+}
+
+.omega-status-card h3 {
+	margin: 8px 0 10px;
+	font-size: 13px;
+	color: var(--wp--preset--color--heading);
+}
+
+.omega-status-card__link {
+	display: block;
+	margin-top: 10px;
+	font-size: 12px;
+	text-decoration: none;
+}
+
+.omega-status-card__meta {
+	margin: 8px 0 0;
+	font-size: 12px;
+	color: #6B7568;
+}
+
+/* Badges */
+.omega-badge {
+	display: inline-block;
+	border-radius: 999px;
+	padding: 3px 12px;
+	font-size: 12px;
+	font-weight: 600;
+}
+
+.omega-badge--success {
+	background: #E7F7E1;
+	color: var(--wp--preset--color--primary-dark);
+}
+
+.omega-badge--warning {
+	background: #FBEEDF;
+	color: var(--wp--preset--color--warning);
+}
+
+.omega-badge--danger {
+	background: #F7E3E1;
+	color: var(--wp--preset--color--danger);
+}
+
+.omega-badge--neutral {
+	background: #EEF1EC;
+	color: #5A6455;
+}
+
+/* Segmented control (Color Mode) */
+.omega-segmented {
+	display: inline-flex;
+	background: #F3F5F1;
+	border-radius: 999px;
+	padding: 4px;
+	gap: 2px;
+	margin-bottom: 18px;
+}
+
+.omega-segmented input {
+	position: absolute;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.omega-segmented label {
+	padding: 7px 18px;
+	border-radius: 999px;
+	font-size: 13px;
+	font-weight: 500;
+	cursor: pointer;
+	color: #5A6455;
+	transition: background 0.15s ease, color 0.15s ease;
+}
+
+.omega-segmented input:checked + label {
+	background: var(--wp--preset--color--primary);
+	color: #fff;
+}
+
+.omega-segmented input:focus-visible + label {
+	outline: 2px solid var(--wp--preset--color--primary-dark);
+	outline-offset: 1px;
+}
+
+/* Toggle switch (Enable Sidebar) */
+.omega-toggle {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	cursor: pointer;
+	margin-bottom: 18px;
+	width: fit-content;
+}
+
+.omega-toggle input {
+	position: absolute;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.omega-toggle__track {
+	width: 40px;
+	height: 22px;
+	background: #D7DCD3;
+	border-radius: 999px;
+	position: relative;
+	flex-shrink: 0;
+	transition: background 0.15s ease;
+}
+
+.omega-toggle__thumb {
+	position: absolute;
+	top: 2px;
+	left: 2px;
+	width: 18px;
+	height: 18px;
+	border-radius: 50%;
+	background: #fff;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+	transition: transform 0.15s ease;
+}
+
+.omega-toggle input:checked + .omega-toggle__track {
+	background: var(--wp--preset--color--primary);
+}
+
+.omega-toggle input:checked + .omega-toggle__track .omega-toggle__thumb {
+	transform: translateX(18px);
+}
+
+.omega-toggle__label {
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--wp--preset--color--heading);
+}
+
+/* Fields */
+.omega-field {
+	margin-bottom: 18px;
+}
+
+.omega-field label {
+	display: block;
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--wp--preset--color--heading);
+	margin-bottom: 6px;
+}
+
+.omega-field select {
+	min-width: 200px;
+}
+
+.omega-field input[type="range"] {
+	width: 100%;
+	accent-color: var(--wp--preset--color--primary);
+}
+
+/* Quick links */
+.omega-quicklinks {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 10px;
+}
+
+.omega-quicklinks a {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 12px;
+	border: 1px solid var(--omega-border);
+	border-radius: 8px;
+	text-decoration: none;
+	color: var(--wp--preset--color--heading);
+	font-size: 13px;
+	font-weight: 500;
+}
+
+.omega-quicklinks a:hover {
+	border-color: var(--wp--preset--color--primary);
+	color: var(--wp--preset--color--primary-dark);
+}
+
+.omega-quicklinks .dashicons {
+	color: var(--wp--preset--color--primary);
+}

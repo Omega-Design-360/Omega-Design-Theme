@@ -1,0 +1,39 @@
+<!-- wp:group {"tagName":"header","className":"site-header","align":"full","backgroundColor":"secondary","textColor":"button-text","style":{"position":{"type":"sticky","top":"0px"},"shadow":"var:preset|shadow|soft"},"layout":{"type":"constrained"}} -->
+<header class="wp-block-group alignfull site-header has-secondary-background-color has-button-text-color has-text-color has-background" style="box-shadow:var(--wp--preset--shadow--soft);position:sticky;top:0px;z-index:100">
+
+	<!-- wp:group {"align":"wide","layout":{"type":"flex","flexWrap":"wrap","justifyContent":"space-between","verticalAlignment":"center"},"style":{"spacing":{"padding":{"top":"var:preset|spacing|m","bottom":"var:preset|spacing|m"}}}} -->
+	<div class="wp-block-group alignwide" style="padding-top:var(--wp--preset--spacing--m);padding-bottom:var(--wp--preset--spacing--m)">
+
+		<!-- Site branding -->
+		<!-- wp:group {"layout":{"type":"flex","flexWrap":"nowrap","verticalAlignment":"center"},"style":{"spacing":{"blockGap":"var:preset|spacing|s"}}} -->
+		<div class="wp-block-group">
+			<!-- wp:site-logo {"width":40} /-->
+			<!-- wp:site-title {"style":{"typography":{"fontWeight":"700","fontSize":"1.25rem"}},"textColor":"button-text"} /-->
+		</div>
+		<!-- /wp:group -->
+
+		<!-- Navigation + cart -->
+		<!-- wp:group {"layout":{"type":"flex","flexWrap":"nowrap","verticalAlignment":"center"},"style":{"spacing":{"blockGap":"var:preset|spacing|m"}}} -->
+		<div class="wp-block-group">
+
+			<!-- wp:navigation {"textColor":"button-text","overlayBackgroundColor":"secondary","overlayTextColor":"button-text","overlayMenu":"mobile","className":"site-navigation","layout":{"type":"flex","justifyContent":"right","flexWrap":"nowrap"},"style":{"spacing":{"blockGap":"var:preset|spacing|l"}}} -->
+				<!-- wp:navigation-link {"label":"Home","url":"/"} /-->
+				<!-- wp:navigation-link {"label":"Shop","url":"/shop","className":"omega-megamenu-trigger omega-panel--shop"} /-->
+				<!-- wp:navigation-link {"label":"Resources","url":"/blog","className":"omega-megamenu-trigger omega-panel--resources"} /-->
+				<!-- wp:navigation-link {"label":"About","url":"/about"} /-->
+				<!-- wp:navigation-link {"label":"Contact","url":"/contact"} /-->
+			<!-- /wp:navigation -->
+
+			<!-- wp:woocommerce/mini-cart {"hasHiddenPrice":false} /-->
+
+		</div>
+		<!-- /wp:group -->
+
+	</div>
+	<!-- /wp:group -->
+
+	<!-- Mega menu panels (hidden until a trigger nav item is hovered/clicked) -->
+	<!-- wp:template-part {"slug":"megamenu"} /-->
+
+</header>
+<!-- /wp:group -->

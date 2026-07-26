@@ -1,0 +1,119 @@
+/**
+ * Omega Design - Mega Menu Pattern Styles
+ */
+
+/* ── Header ──────────────────────────────────────────────── */
+.site-header {
+    position: relative;
+    z-index: 200;
+}
+
+/* ── Panels container: sits flush below the header bar ───── */
+.omega-megamenu-panels {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 199;
+    pointer-events: none; /* passthrough when nothing is open */
+}
+
+/* ── Individual panel: hidden by default ─────────────────── */
+.omega-megamenu-panel {
+    display: none;
+    pointer-events: none;
+}
+
+.omega-megamenu-panel.is-active {
+    display: block;
+    pointer-events: auto;
+    animation: omega-panel-in 0.18s ease;
+}
+
+@keyframes omega-panel-in {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0);    }
+}
+
+/* Activate pointer events on the container when a panel is open */
+.omega-megamenu-panels:has(.omega-megamenu-panel.is-active) {
+    pointer-events: auto;
+}
+
+/* ── Nav trigger item indicator ──────────────────────────── */
+.site-navigation .omega-megamenu-trigger > .wp-block-navigation-item__content::after {
+    content: ' ▾';
+    font-size: 0.7em;
+    opacity: 0.7;
+}
+
+/* ── Pattern styles ──────────────────────────────────────── */
+.omega-megamenu {
+    width: 100%;
+}
+
+.omega-megamenu a {
+    text-decoration: none;
+    transition: color .18s ease, opacity .18s ease;
+}
+
+.omega-megamenu .wp-block-list.is-style-none {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.omega-megamenu .wp-block-list.is-style-none li {
+    margin: .35rem 0;
+}
+
+.omega-megamenu .wp-block-list a:hover,
+.omega-megamenu .wp-block-group a:hover,
+.omega-megamenu .wp-block-heading a:hover {
+    color: var(--wp--preset--color--primary);
+    opacity: 1;
+}
+
+/* Icon grid tiles */
+.omega-megamenu--icon-grid .wp-block-column > .wp-block-group {
+    height: 100%;
+    transition: background-color .2s ease, transform .2s ease;
+}
+
+.omega-megamenu--icon-grid .wp-block-column > .wp-block-group:hover {
+    background-color: rgba(31, 187, 0, .08);
+    transform: translateY(-2px);
+}
+
+/* Featured promo card */
+.omega-megamenu--featured .wp-block-cover {
+    overflow: hidden;
+}
+
+.omega-megamenu--featured .wp-block-cover .wp-block-button__link {
+    transition: filter .18s ease;
+}
+
+.omega-megamenu--featured .wp-block-cover .wp-block-button__link:hover {
+    filter: brightness(1.08);
+}
+
+/* Simple inline bar */
+.omega-megamenu--simple .wp-block-group p {
+    margin: 0;
+}
+
+/* Latest posts query thumbnails */
+.omega-megamenu--posts .wp-block-post-featured-image img {
+    border-radius: 8px;
+}
+
+@media (max-width: 781px) {
+    .omega-megamenu .wp-block-columns {
+        gap: var(--wp--preset--spacing--m, 1rem);
+    }
+    .omega-megamenu--simple .wp-block-group {
+        justify-content: center !important;
+        text-align: center;
+    }
+}

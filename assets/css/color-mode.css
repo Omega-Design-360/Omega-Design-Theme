@@ -1,0 +1,102 @@
+/**
+ * Color mode overrides (light / dark / auto).
+ *
+ * Every preset color in theme.json has a matching "-dark" counterpart
+ * (e.g. --wp--preset--color--primary and --wp--preset--color--primary-dark).
+ * These rules simply point each live variable at its "-dark" twin when dark
+ * mode is active, so editing either color in Global Styles just works —
+ * there is no hardcoded hex here to fall out of sync, and no separate
+ * palette/style-variation to maintain in parallel.
+ *
+ * - .omega-color-mode-auto  : applied only inside prefers-color-scheme:dark,
+ *                              so it follows the visitor's OS/browser setting
+ *                              automatically on both desktop and mobile.
+ * - .omega-color-mode-dark  : forced dark regardless of system preference
+ *                              (set from Customize > Omega Design > Color Mode).
+ * - .omega-color-mode-light : forced light; every variable already points at
+ *                              its own light value, so nothing to override.
+ *
+ * "Secondary" is used both as the header's background fill AND (via
+ * theme.json's elements.link:hover) as hover-state link text. Its dark
+ * counterpart is intentionally kept dark too, matching the header, so the
+ * link-hover rule gets its own override below rather than reusing it —
+ * otherwise hover text would go near-invisible against a dark page.
+ */
+
+@media (prefers-color-scheme: dark) {
+	body.omega-color-mode-auto {
+		--wp--preset--color--primary: var(--wp--preset--color--primary-dark);
+		--wp--preset--color--secondary: var(--wp--preset--color--secondary-dark);
+		--wp--preset--color--accent: var(--wp--preset--color--accent-dark);
+		--wp--preset--color--background: var(--wp--preset--color--background-dark);
+		--wp--preset--color--page-background: var(--wp--preset--color--page-background-dark);
+		--wp--preset--color--surface: var(--wp--preset--color--surface-dark);
+		--wp--preset--color--heading: var(--wp--preset--color--heading-dark);
+		--wp--preset--color--body-text: var(--wp--preset--color--body-text-dark);
+		--wp--preset--color--success: var(--wp--preset--color--success-dark);
+		--wp--preset--color--warning: var(--wp--preset--color--warning-dark);
+		--wp--preset--color--danger: var(--wp--preset--color--danger-dark);
+		--wp--preset--color--button-text: var(--wp--preset--color--button-text-dark);
+		--wp--preset--color--button-background: var(--wp--preset--color--button-background-dark);
+		color-scheme: dark;
+	}
+
+	body.omega-color-mode-auto a:not(.wp-element-button):hover {
+		color: var(--wp--preset--color--primary-dark);
+	}
+}
+
+body.omega-color-mode-dark {
+	--wp--preset--color--primary: var(--wp--preset--color--primary-dark);
+	--wp--preset--color--secondary: var(--wp--preset--color--secondary-dark);
+	--wp--preset--color--accent: var(--wp--preset--color--accent-dark);
+	--wp--preset--color--background: var(--wp--preset--color--background-dark);
+	--wp--preset--color--page-background: var(--wp--preset--color--page-background-dark);
+	--wp--preset--color--surface: var(--wp--preset--color--surface-dark);
+	--wp--preset--color--heading: var(--wp--preset--color--heading-dark);
+	--wp--preset--color--body-text: var(--wp--preset--color--body-text-dark);
+	--wp--preset--color--success: var(--wp--preset--color--success-dark);
+	--wp--preset--color--warning: var(--wp--preset--color--warning-dark);
+	--wp--preset--color--danger: var(--wp--preset--color--danger-dark);
+	--wp--preset--color--button-text: var(--wp--preset--color--button-text-dark);
+	--wp--preset--color--button-background: var(--wp--preset--color--button-background-dark);
+	color-scheme: dark;
+}
+
+body.omega-color-mode-dark a:not(.wp-element-button):hover {
+	color: var(--wp--preset--color--primary-dark);
+}
+
+body.omega-color-mode-light {
+	color-scheme: light;
+}
+
+/**
+ * Dark-mode logo swap.
+ *
+ * hooks.php's inject_dark_mode_logo() duplicates the core/site-logo block's
+ * <img> into an .omega-logo-light/.omega-logo-dark pair whenever a dark
+ * mode logo is set from the Omega Design dashboard. Only one is ever
+ * visible, following the same mode rules as the color overrides above.
+ */
+.omega-logo-dark {
+	display: none;
+}
+
+body.omega-color-mode-dark .omega-logo-light {
+	display: none;
+}
+
+body.omega-color-mode-dark .omega-logo-dark {
+	display: inline-block;
+}
+
+@media (prefers-color-scheme: dark) {
+	body.omega-color-mode-auto .omega-logo-light {
+		display: none;
+	}
+
+	body.omega-color-mode-auto .omega-logo-dark {
+		display: inline-block;
+	}
+}
