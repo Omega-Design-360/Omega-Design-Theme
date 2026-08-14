@@ -47,9 +47,30 @@
     opacity: 0.7;
 }
 
+/* A Navigation Submenu with a mega-menu panel attached shows the mega
+   panel instead of its own native child-link dropdown. */
+.wp-block-navigation-item.omega-megamenu-trigger > .wp-block-navigation__submenu-container {
+    display: none !important;
+}
+
 /* ── Pattern styles ──────────────────────────────────────── */
 .omega-megamenu {
     width: 100%;
+}
+
+/* Mega Menu content's own top padding (--wp--preset--spacing--xl, 3rem -
+   see theme.json) is sized for it as a full standalone page section, not
+   for appearing right below a nav item it's already visually anchored
+   to - inside a dropdown panel that reads as noticeably too far below
+   the header. Only the top edge needs tightening; left/right/bottom stay
+   whatever each Mega Menu's own content sets. !important is required to
+   win over that inline style (the block editor always writes spacing as
+   inline styles, not a class). Lives here rather than only in
+   classic-header.css since block-based Navigation panels
+   (.omega-megamenu-panels) show the exact same content the exact same
+   way, not just the classic header. */
+.omega-megamenu-panel .omega-megamenu {
+    padding-top: 1.25rem !important;
 }
 
 .omega-megamenu a {
@@ -115,5 +136,17 @@
     .omega-megamenu--simple .wp-block-group {
         justify-content: center !important;
         text-align: center;
+    }
+
+    /* Force equal left/right edges on mobile regardless of whatever
+       horizontal padding each Mega Menu's own content sets for desktop -
+       an admin's desktop-only spacing choice (e.g. aligning under a wide
+       nav bar) reads as a lopsided, broken layout once the panel goes
+       full-width and edge-to-edge on a phone screen. !important for the
+       same reason as the padding-top override above - this is always
+       fighting an inline style. */
+    .omega-megamenu-panel .omega-megamenu {
+        padding-left: 1.25rem !important;
+        padding-right: 1.25rem !important;
     }
 }

@@ -34,6 +34,18 @@
 	}
 
 	triggers.forEach(function (trigger) {
+		// Classic headers (assets/css/classic-header.css) reveal Mega Menu
+		// panels with hover/focus-within CSS instead, the same way their
+		// plain sub-menus already work with no JS at all - so the trigger's
+		// own link stays a normal, navigable link. Wiring this same
+		// click-intercepting JS to them would permanently block that link
+		// (e.preventDefault() below runs on every click, unconditionally),
+		// since a classic top-level item generally has a real destination
+		// page as well as a Mega Menu, unlike a block Navigation trigger.
+		if (trigger.closest('.omega-classic-header')) {
+			return;
+		}
+
 		var panelClass = getPanelClass(trigger);
 
 		trigger.addEventListener('mouseenter', function () {

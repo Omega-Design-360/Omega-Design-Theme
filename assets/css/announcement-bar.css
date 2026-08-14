@@ -1,0 +1,71 @@
+/**
+ * Omega Design - Announcement / Utility Bar
+ * Small and self-contained: sits above whatever header is active.
+ */
+
+.omega-announcement-bar {
+    position: relative;
+    z-index: 101;
+    background-color: var(--wp--preset--color--primary, #1fbb00);
+    color: var(--wp--preset--color--button-text, #fff);
+    font-size: 0.875rem;
+}
+
+.omega-announcement-bar.is-dismissed {
+    display: none;
+}
+
+.omega-announcement-bar__inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0.55rem 2.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    text-align: center;
+}
+
+.omega-announcement-bar__inner a {
+    color: inherit;
+    text-underline-offset: 2px;
+}
+
+.omega-announcement-bar__inner p {
+    margin: 0;
+}
+
+.omega-announcement-bar__dismiss {
+    position: absolute;
+    top: 50%;
+    right: 0.75rem;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: inherit;
+    font-size: 1.15rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.omega-announcement-bar__dismiss:hover,
+.omega-announcement-bar__dismiss:focus-visible {
+    background-color: rgba(255, 255, 255, 0.22);
+}
+
+@media (max-width: 600px) {
+    .omega-announcement-bar__inner {
+        font-size: 0.8125rem;
+        gap: 0.65rem 1rem;
+        padding-left: 1.25rem;
+        padding-right: 2.5rem;
+    }
+}

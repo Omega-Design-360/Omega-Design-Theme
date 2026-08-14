@@ -38,6 +38,7 @@
 		--wp--preset--color--danger: var(--wp--preset--color--danger-dark);
 		--wp--preset--color--button-text: var(--wp--preset--color--button-text-dark);
 		--wp--preset--color--button-background: var(--wp--preset--color--button-background-dark);
+		--wp--preset--color--border: var(--wp--preset--color--border-dark);
 		color-scheme: dark;
 	}
 
@@ -60,6 +61,7 @@ body.omega-color-mode-dark {
 	--wp--preset--color--danger: var(--wp--preset--color--danger-dark);
 	--wp--preset--color--button-text: var(--wp--preset--color--button-text-dark);
 	--wp--preset--color--button-background: var(--wp--preset--color--button-background-dark);
+	--wp--preset--color--border: var(--wp--preset--color--border-dark);
 	color-scheme: dark;
 }
 

@@ -8,139 +8,149 @@
     "color": {
       "palette": [
         {
-          "color":"#1FBB00",
-          "name":"Primary",
-          "slug":"primary"
+          "color": "#1FBB00",
+          "name": "Primary",
+          "slug": "primary"
         },
         {
-          "color":"#051A00",
-          "name":"Secondary",
-          "slug":"secondary"
+          "color": "#051A00",
+          "name": "Secondary",
+          "slug": "secondary"
         },
         {
-          "color":"#B35B00",
-          "name":"Accent",
-          "slug":"accent"
+          "color": "#B35B00",
+          "name": "Accent",
+          "slug": "accent"
         },
         {
-          "color":"#FFFFFF",
-          "name":"Background",
-          "slug":"background"
+          "color": "#FFFFFF",
+          "name": "Background",
+          "slug": "background"
         },
         {
-          "color":"#F5F7F2",
-          "name":"Page Background",
-          "slug":"page-background"
+          "color": "#F5F7F2",
+          "name": "Page Background",
+          "slug": "page-background"
         },
         {
-          "color":"#F5F7F2",
-          "name":"Surface",
-          "slug":"surface"
+          "color": "#F5F7F2",
+          "name": "Surface",
+          "slug": "surface"
         },
         {
-          "color":"#041200",
-          "name":"Heading",
-          "slug":"heading"
+          "color": "#041200",
+          "name": "Heading",
+          "slug": "heading"
         },
         {
-          "color":"#2A2A2A",
-          "name":"Text",
-          "slug":"body-text"
+          "color": "#2A2A2A",
+          "name": "Text",
+          "slug": "body-text"
         },
         {
-          "color":"#0F5900",
-          "name":"Success",
-          "slug":"success"
+          "color": "#0F5900",
+          "name": "Success",
+          "slug": "success"
         },
         {
-          "color":"#DEDC00",
-          "name":"Warning",
-          "slug":"warning"
+          "color": "#DEDC00",
+          "name": "Warning",
+          "slug": "warning"
         },
         {
-          "color":"#8A0000",
-          "name":"Danger",
-          "slug":"danger"
+          "color": "#8A0000",
+          "name": "Danger",
+          "slug": "danger"
         },
         {
-          "color":"#FFFFFF",
-          "name":"Button Text",
-          "slug":"button-text"
+          "color": "#FFFFFF",
+          "name": "Button Text",
+          "slug": "button-text"
         },
         {
-          "color":"#0F5900",
-          "name":"Button Background",
-          "slug":"button-background"
+          "color": "#0F5900",
+          "name": "Button Background",
+          "slug": "button-background"
         },
         {
-          "color":"#39E75F",
-          "name":"Primary Dark",
-          "slug":"primary-dark"
+          "color": "#818181",
+          "name": "Border",
+          "slug": "border"
         },
         {
-          "color":"#1E3A12",
-          "name":"Secondary Dark",
-          "slug":"secondary-dark"
+          "color": "#39E75F",
+          "name": "Primary Dark",
+          "slug": "primary-dark"
         },
         {
-          "color":"#E2933D",
-          "name":"Accent Dark",
-          "slug":"accent-dark"
+          "color": "#1E3A12",
+          "name": "Secondary Dark",
+          "slug": "secondary-dark"
         },
         {
-          "color":"#0E1A08",
-          "name":"Background Dark",
-          "slug":"background-dark"
+          "color": "#E2933D",
+          "name": "Accent Dark",
+          "slug": "accent-dark"
         },
         {
-          "color":"#0E1A08",
-          "name":"Page Background Dark",
-          "slug":"page-background-dark"
+          "color": "#0E1A08",
+          "name": "Background Dark",
+          "slug": "background-dark"
         },
         {
-          "color":"#39E75F",
-          "name":"Surface Dark",
-          "slug":"surface-dark"
+          "color": "#0E1A08",
+          "name": "Page Background Dark",
+          "slug": "page-background-dark"
         },
         {
-          "color":"#FFFFFF",
-          "name":"Heading Dark",
-          "slug":"heading-dark"
+          "color": "#152B0C",
+          "name": "Surface Dark",
+          "slug": "surface-dark"
         },
         {
-          "color":"#E4E4E4",
-          "name":"Text Dark",
-          "slug":"body-text-dark"
+          "color": "#FFFFFF",
+          "name": "Heading Dark",
+          "slug": "heading-dark"
         },
         {
-          "color":"#4CAF50",
-          "name":"Success Dark",
-          "slug":"success-dark"
+          "color": "#E4E4E4",
+          "name": "Text Dark",
+          "slug": "body-text-dark"
         },
         {
-          "color":"#FFD23F",
-          "name":"Warning Dark",
-          "slug":"warning-dark"
+          "color": "#4CAF50",
+          "name": "Success Dark",
+          "slug": "success-dark"
         },
         {
-          "color":"#FF6B6B",
-          "name":"Danger Dark",
-          "slug":"danger-dark"
+          "color": "#FFD23F",
+          "name": "Warning Dark",
+          "slug": "warning-dark"
         },
         {
-          "color":"#F5F5F0",
-          "name":"Button Text Dark",
-          "slug":"button-text-dark"
+          "color": "#FF6B6B",
+          "name": "Danger Dark",
+          "slug": "danger-dark"
         },
         {
-          "color":"#1B7A32",
-          "name":"Button Background Dark",
-          "slug":"button-background-dark"
+          "color": "#F5F5F0",
+          "name": "Button Text Dark",
+          "slug": "button-text-dark"
+        },
+        {
+          "color": "#1B7A32",
+          "name": "Button Background Dark",
+          "slug": "button-background-dark"
+        },
+        {
+          "color": "#818181",
+          "name": "Border Dark",
+          "slug": "border-dark"
         }
       ],
       "gradients": [
         {
-          "gradient": "linear-gradient(135deg,  #1FBB00 0%,  #0F5900 100%)",
+          "gradient": "linear-gradient(135deg, #1FBB00 0%, #0F5900 100%)",
           "name": "Primary Gradient",
           "slug": "primary-gradient"
         },
@@ -164,7 +174,6 @@
           "name": "Accent Gradient",
           "slug": "accent-gradient"
         }
-
       ],
       "duotone": [
         {
@@ -186,6 +195,7 @@
       "custom": true,
       "customDuotone": true,
       "customGradient": true,
+      "defaultDuotone": false,
       "defaultGradients": false,
       "defaultPalette": false,
       "link": true,
@@ -407,7 +417,7 @@
           "shadow": "0px 8px 24px rgba(0, 0, 0, 0.18)"
         }
       ],
-      "defaultPresets": true
+      "defaultPresets": false
     },
     "layout": {
       "contentSize": "1140px",
@@ -425,7 +435,13 @@
       "aspectRatio": true
     },
     "custom": {
-      "pageBackground": "var(--wp--preset--color--page-background)"
+      "pageBackground": "var(--wp--preset--color--page-background)",
+      "hover": {
+        "textColor": "var(--wp--preset--color--primary)",
+        "backgroundColor": "var(--wp--preset--color--surface)",
+        "borderColor": "var(--wp--preset--color--border)",
+        "shadow": "var(--wp--preset--shadow--medium)"
+      }
     },
     "lightbox": {
       "enabled": true,

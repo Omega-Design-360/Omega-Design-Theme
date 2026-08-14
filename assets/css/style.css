@@ -56,6 +56,25 @@
 }
 
 /**
+ * Hover Colors (Row/Stack/Grid, Columns, Column blocks).
+ *
+ * Set via the "Hover Colors" panel in the block Inspector (Styles tab, see
+ * assets/js/editor.js). Each color is written inline as a CSS custom
+ * property on the block that set it; whichever of the three is left unset
+ * falls back to the theme-wide default in theme.json (settings.custom.hover).
+ */
+.has-omega-hover-color {
+	transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.has-omega-hover-color:hover {
+	color: var(--omega-hover-text-color, var(--wp--custom--hover--text-color));
+	background-color: var(--omega-hover-bg-color, var(--wp--custom--hover--background-color));
+	border-color: var(--omega-hover-border-color, var(--wp--custom--hover--border-color));
+	box-shadow: var(--omega-hover-shadow, var(--wp--custom--hover--shadow));
+}
+
+/**
  * Site header (parts/header.html).
  */
 .site-header .site-navigation a {

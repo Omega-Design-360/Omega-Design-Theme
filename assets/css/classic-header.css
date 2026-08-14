@@ -1,0 +1,927 @@
+/**
+ * Omega Design - Classic Header (5 layouts + mobile toggle)
+ * One CSS file, no icon fonts/images, mobile-first. Custom properties below
+ * keep spacing/radius/timing consistent across all 5 style variants and the
+ * shared mobile behavior.
+ */
+
+.omega-classic-header {
+    --omega-ch-radius: 10px;
+    --omega-ch-ease: cubic-bezier(0.4, 0, 0.2, 1);
+    --omega-ch-shadow: 0 14px 28px rgba(15, 23, 42, 0.1), 0 2px 8px rgba(15, 23, 42, 0.06);
+    /* Softer, more layered "just lifted off the page" elevation for the
+       header shell itself once it's scrolled (sticky headers only - see
+       .is-scrolled below) - deliberately gentler than --omega-ch-shadow
+       above, which is tuned for small floating panels (dropdowns, the
+       mobile menu), not a full-width bar. */
+    --omega-ch-shadow-elevated: 0 1px 0 rgba(15, 23, 42, 0.04), 0 12px 24px -8px rgba(15, 23, 42, 0.12);
+    position: relative;
+    z-index: 100;
+    transition: box-shadow 0.3s var(--omega-ch-ease), background-color 0.3s var(--omega-ch-ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .omega-classic-header,
+    .omega-classic-header * {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+    }
+}
+
+/* ── Sticky header (opt-in, Settings > Header Navigation) ────────
+ * Hides on scroll down, reveals on scroll up. classic-header.js tracks
+ * scroll direction and toggles .is-header-hidden; the spacer (each
+ * template file renders one right after </header> when $sticky is true)
+ * reserves the header's own height so taking it out of normal flow
+ * (position:fixed) never causes a layout jump - its own height is set by
+ * that same JS, since it varies by style/content and can't be a fixed
+ * CSS value.
+ */
+.omega-classic-header--sticky {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    transform: translateY(0);
+    transition: transform 0.35s var(--omega-ch-ease);
+    will-change: transform;
+}
+
+.omega-classic-header--sticky.is-header-hidden {
+    transform: translateY(-100%);
+}
+
+/* Elevates once the page is actually scrolled underneath it (classic-
+   header.js's onScroll toggles this on every sticky header, independent
+   of the show/hide state above) - a flat, borderless bar at the very top
+   of the page, then a real sense of depth the moment there's page content
+   sliding beneath it. */
+.omega-classic-header--sticky.is-scrolled {
+    box-shadow: var(--omega-ch-shadow-elevated);
+}
+
+.omega-classic-header__spacer {
+    display: block;
+    width: 100%;
+}
+
+/* ── Header shell ────────────────────────────────────────────── */
+.omega-classic-header__inner {
+    /* Positioning context for the Mega Menu panel below (see its own
+       comment) - without this, the panel's top:100% measures against
+       .site-header's *own* padded box (megamenu.css), which is taller
+       than this row alone, leaving a real gap between the trigger link
+       and where the panel visually starts that breaks :hover the moment
+       the mouse crosses it. */
+    position: relative;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0.9rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.25rem;
+}
+
+.omega-classic-header__title {
+    /* Theme's own "large" preset (theme.json settings.typography.fontSizes),
+       not a fixed rem value, so the title follows whatever scale the site
+       actually has configured instead of a number picked for one site. */
+    font-size: var(--wp--preset--font-size--large, 1.25rem);
+    /* 600, not 700 - matches this theme's own heading weight
+       (theme.json styles.elements.heading.typography.fontWeight), so the
+       site title doesn't read bolder than every actual heading on the
+       page. */
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    text-decoration: none;
+    color: inherit;
+    white-space: nowrap;
+    transition: opacity 0.2s var(--omega-ch-ease);
+}
+
+.omega-classic-header__title:hover,
+.omega-classic-header__title:focus-visible {
+    opacity: 0.72;
+}
+
+/* The site's own logo (classic_header.php's brand_html(), core's own
+   has_custom_logo()/get_custom_logo()) in place of the text title -
+   capped to a sane height so an admin's arbitrarily-sized upload never
+   blows out the header's own height. */
+.omega-classic-header .custom-logo-link {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+.omega-classic-header .custom-logo {
+    max-height: 40px;
+    width: auto;
+    display: block;
+}
+
+/* ── Hamburger toggle: 3 plain CSS bars, animates into an X ────── */
+.omega-classic-header__toggle {
+    display: none;
+    position: relative;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background-color 0.2s var(--omega-ch-ease);
+}
+
+.omega-classic-header__toggle:hover,
+.omega-classic-header__toggle:focus-visible {
+    background-color: rgba(127, 127, 127, 0.14);
+}
+
+.omega-classic-header__toggle:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+}
+
+.omega-classic-header__toggle span {
+    position: absolute;
+    left: 9px;
+    width: 22px;
+    height: 2px;
+    background: currentColor;
+    border-radius: 2px;
+    transition: transform 0.25s var(--omega-ch-ease), opacity 0.2s ease, top 0.25s var(--omega-ch-ease);
+}
+
+.omega-classic-header__toggle span:nth-child(1) { top: 13px; }
+.omega-classic-header__toggle span:nth-child(2) { top: 19px; }
+.omega-classic-header__toggle span:nth-child(3) { top: 25px; }
+
+.omega-classic-header__toggle.is-active span:nth-child(1) {
+    top: 19px;
+    transform: rotate(45deg);
+}
+.omega-classic-header__toggle.is-active span:nth-child(2) {
+    opacity: 0;
+}
+.omega-classic-header__toggle.is-active span:nth-child(3) {
+    top: 19px;
+    transform: rotate(-45deg);
+}
+
+/* ── Nav (top level) ─────────────────────────────────────────── */
+.omega-classic-header__nav ul {
+    display: flex;
+    align-items: center;
+    gap: 1.75rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.omega-classic-header__nav a {
+    text-decoration: none;
+    color: inherit;
+    transition: opacity 0.2s var(--omega-ch-ease);
+}
+
+.omega-classic-header__nav > ul > li > a {
+    position: relative;
+    display: inline-block;
+    padding: 0.3rem 0;
+    font-weight: 400;
+    /* A touch of tracking - purely typographic polish, the kind of small
+       detail that reads as "designed" rather than default browser type. */
+    letter-spacing: 0.01em;
+}
+
+/* Underline that reveals from the left on hover/focus, and stays put for
+   whichever item is the current page - a small but real "this feels
+   designed" touch rather than color-only feedback. */
+.omega-classic-header__nav > ul > li > a::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 100%;
+    bottom: -3px;
+    height: 2px;
+    border-radius: 2px;
+    background: currentColor;
+    opacity: 0.9;
+    transition: right 0.22s var(--omega-ch-ease);
+}
+
+.omega-classic-header__nav > ul > li > a:hover,
+.omega-classic-header__nav > ul > li > a:focus-visible {
+    opacity: 0.82;
+}
+.omega-classic-header__nav > ul > li > a:hover::before,
+.omega-classic-header__nav > ul > li > a:focus-visible::before,
+.omega-classic-header__nav > ul > li.current-menu-item > a::before,
+.omega-classic-header__nav > ul > li.current_page_item > a::before,
+.omega-classic-header__nav > ul > li.current-menu-ancestor > a::before,
+.omega-classic-header__nav > ul > li.current_page_ancestor > a::before {
+    right: 0;
+}
+
+/* Items that open a dropdown/panel already show their own arrow as the
+   "this has more content" affordance - the hover-underline above is
+   redundant on those specifically (and doubles up oddly with the arrow's
+   own rotate animation), so only plain leaf links keep it. */
+.omega-classic-header__nav .menu-item-has-children > a::before,
+.omega-classic-header .omega-megamenu-trigger > a::before {
+    content: none;
+}
+
+.omega-classic-header__nav :focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 4px;
+    border-radius: 2px;
+}
+
+/* ── Plain sub-menus (normal nested items, not a Mega Menu) ─────
+ * Mega Menu triggers never carry .menu-item-has-children -
+ * add_classic_trigger_class() in megamenu.php strips it in favour of
+ * .omega-megamenu-trigger - so these rules never touch a Mega Menu item.
+ * Desktop: CSS-only hover/focus dropdown, with its own small arrow.
+ * Mobile: overridden below with a dedicated arrow button instead, since
+ * there's no hover on touch (classic-header.js, inject_classic_submenu_toggle()).
+ */
+.omega-classic-header__nav .menu-item-has-children {
+    position: relative;
+}
+
+.omega-classic-header__nav .menu-item-has-children > a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+}
+
+/* Slim two-line chevron (a box's own bottom-right corner, rotated) rather
+   than a filled CSS-triangle - reads as a lighter, more modern indicator
+   at this small a size, and it's the same shape browsers/design systems
+   already use for "more options below". */
+.omega-classic-header__nav .menu-item-has-children > a::after {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    margin-top: -3px;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: rotate(45deg);
+    opacity: 0.6;
+    transition: transform 0.2s var(--omega-ch-ease), opacity 0.2s ease;
+}
+
+.omega-classic-header__nav .menu-item-has-children:hover > a::after,
+.omega-classic-header__nav .menu-item-has-children:focus-within > a::after {
+    transform: rotate(225deg);
+    opacity: 0.9;
+}
+
+.omega-classic-header__nav .sub-menu {
+    /* Overrides the earlier `.omega-classic-header__nav ul { display: flex }`
+       rule (meant for the horizontal top-level row), which was also
+       matching this nested <ul> and laying every item out as a horizontal
+       flex row instead of a stacked dropdown list. */
+    display: block;
+    position: absolute;
+    top: calc(100% + 14px);
+    left: 0;
+    min-width: 220px;
+    /* Never wider than the viewport itself, regardless of which edge it's
+       aligned to below. */
+    max-width: calc(100vw - 2rem);
+    margin: 0;
+    padding: 0.5rem;
+    list-style: none;
+    background-color: var(--wp--preset--color--background, #fff);
+    border-radius: var(--omega-ch-radius);
+    box-shadow: var(--omega-ch-shadow);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-6px);
+    transition: opacity 0.2s var(--omega-ch-ease), transform 0.2s var(--omega-ch-ease), visibility 0.2s;
+    z-index: 150;
+}
+
+/* The last top-level item sits at (or near) the right edge of the header,
+   so a dropdown anchored to its *left* edge (the default above) runs off
+   the right side of the screen. Anchor to the right edge instead, so it
+   opens back toward the left and stays fully on screen. */
+.omega-classic-header__nav > ul > li.menu-item-has-children:last-child > .sub-menu {
+    left: auto;
+    right: 0;
+}
+
+.omega-classic-header__nav .menu-item-has-children:hover > .sub-menu,
+.omega-classic-header__nav .menu-item-has-children:focus-within > .sub-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.omega-classic-header__nav .sub-menu li { border-top: 0; }
+
+.omega-classic-header__nav .sub-menu a {
+    display: block;
+    padding: 0.55rem 0.75rem;
+    border-radius: calc(var(--omega-ch-radius) - 4px);
+    white-space: nowrap;
+    opacity: 1;
+}
+
+.omega-classic-header__nav .sub-menu a:hover,
+.omega-classic-header__nav .sub-menu a:focus-visible {
+    background-color: rgba(127, 127, 127, 0.1);
+}
+
+/* ── Submenu/Mega-Menu arrow toggle (megamenu.php's
+ * inject_classic_submenu_toggle(), classic-header.js) ──────────
+ * A real element, never part of the <a> label itself, so tapping the
+ * label always just follows its link and only tapping this arrow
+ * expands/collapses the dropdown. Hidden here - only relevant on mobile,
+ * where there's no hover to rely on; desktop keeps opening dropdowns via
+ * hover/focus above, so this stays out of the way there entirely.
+ */
+.omega-classic-header__submenu-toggle {
+    display: none;
+}
+
+/* Mega Menu panels injected inline into a classic <li> (megamenu.php's
+   inject_classic_panel()) have no wrapping container to float against like
+   the block-based system's .omega-megamenu-panels does, so they need their
+   own absolute positioning here - otherwise .is-active just renders as
+   normal in-flow content and pushes the rest of the page down.
+   .omega-classic-header__inner (not .site-header - see its own comment) is
+   the positioning context; left:50% + width:100vw + the centering
+   transform below is the standard "full-bleed from inside a constrained,
+   centered container" technique, so it still spans the full viewport
+   width despite that container's own max-width.
+
+   top/padding-top pair below is an invisible hover bridge: the <li>'s own
+   hoverable box only reaches its link's natural content height, while
+   this panel starts at 100% of __inner's *full padded* height (which
+   varies per style - 1.4rem for style 2, 0.7rem for style 4, 0.9rem
+   elsewhere) - a real dead zone the mouse crosses on the way down that
+   breaks :hover the instant it's not perfectly vertical. Starting the
+   panel's own box 24px earlier and padding that same 24px back off the
+   top closes the gap for every style's padding value at once without
+   touching the trigger/nav/ul's own layout (which other styles - e.g.
+   style 4's pill-shaped nav background - depend on staying exactly its
+   natural content height). */
+.omega-megamenu-panel--inline {
+    position: absolute;
+    top: calc(100% - 24px);
+    padding-top: 24px;
+    left: 50%;
+    width: 100vw;
+    z-index: 199;
+}
+
+/* Reveal on hover/focus, purely in CSS - same pattern as the plain
+   sub-menus above, and why megamenu.js now skips attaching its
+   click/keydown handlers to classic triggers entirely (it always calls
+   e.preventDefault(), which would otherwise permanently block navigating
+   to the trigger's own link). Overrides megamenu.css's shared
+   `.omega-megamenu-panel { display:none }` unconditionally, since
+   .is-active never gets added here anymore - the mouseenter/mouseleave
+   listeners megamenu.js still attaches to non-classic triggers don't run
+   for these either, per that same skip. Both transforms below combine
+   the horizontal centering (which must stay applied at all times) with
+   the vertical fade-in offset (which only applies while closed) into one
+   declaration each, since a later `transform` fully replaces an earlier
+   one rather than merging with it. */
+.omega-classic-header .omega-megamenu-trigger > .omega-megamenu-panel {
+    display: block;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(-50%) translateY(-8px);
+    transition: opacity 0.2s var(--omega-ch-ease), transform 0.2s var(--omega-ch-ease), visibility 0.2s;
+}
+
+.omega-classic-header .omega-megamenu-trigger:hover > .omega-megamenu-panel,
+.omega-classic-header .omega-megamenu-trigger:focus-within > .omega-megamenu-panel {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateX(-50%) translateY(0);
+}
+
+@media (max-width: 781px) {
+    /* Floating full-width below the header makes no sense on a phone
+       screen anyway, and it's a descendant of .omega-classic-header__nav's
+       own overflow:hidden (needed for that panel's slide-open animation) -
+       an absolutely-positioned child still gets clipped by an ancestor's
+       overflow regardless of what element it's positioned relative to, so
+       "open" was rendering the Mega Menu completely invisible. In-flow
+       instead - and collapsed by default here, same as a plain sub-menu:
+       the .omega-classic-header__submenu-toggle arrow (shown below) is
+       what expands it, not tapping the label itself. */
+    .omega-megamenu-panel--inline {
+        position: static;
+        /* width:100vw isn't tied to position:absolute the way left/top
+           are - it's a plain length that would still force full
+           viewport width here (causing horizontal overflow) if left
+           unset, even though this is no longer positioned at all. */
+        width: auto;
+        /* Onto its own full-width line below the label+arrow row - the
+           trigger <li> is now a (wrapping) flex row itself. One shorthand
+           declaration, not a separate padding-top - a second, later
+           padding here would silently win over an earlier padding-top and
+           put it right back, which is what happened before. Symmetric
+           left/right (the inner .omega-megamenu content's own l/r padding,
+           forced equal on mobile in megamenu.css, is what actually
+           provides the visual inset - doubling it up here just to indent
+           only the left edge is what created the original unequal-sides
+           bug). */
+        padding: 0.5rem 0 1rem;
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.25s ease, opacity 0.2s ease;
+    }
+
+    /* Matches the desktop hover rule's own selector weight (3 classes) -
+       a lower-specificity override here would lose to that unconditional
+       rule's opacity/visibility/pointer-events regardless of it being
+       later in the file, since specificity always wins ties over source
+       order. .is-expanded below needs to outweigh *that* rule, not just
+       this one.
+
+       transform:none here (not on .omega-megamenu-panel--inline above) is
+       the actual fix for the panel rendering shifted half off-screen to
+       the left on mobile: the desktop rule that sets
+       translateX(-50%) - meant to re-center a 100vw full-bleed panel -
+       lives on this exact 3-class selector and so always wins over a
+       lower-specificity reset, transform being one of the few properties
+       that still applies to position:static elements regardless of
+       position. !important because :hover/:focus-within variants of this
+       same selector (below) are even more specific still (4 classes) and
+       would otherwise reapply that same shift the moment a submenu-toggle
+       button receives keyboard focus. */
+    .omega-classic-header .omega-megamenu-trigger > .omega-megamenu-panel {
+        transform: none !important;
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+    }
+
+    .omega-classic-header .omega-megamenu-trigger > .omega-megamenu-panel.is-expanded {
+        max-height: 2000px; /* generous cap - see .omega-classic-header__nav.is-open's own note */
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+    }
+
+    .omega-classic-header .omega-megamenu-trigger > a::after { display: none !important; }
+}
+
+/* Something outside our own CSS (WooCommerce's nav styles, most likely)
+   adds its own dropdown arrow based on the <li> structurally containing
+   extra content rather than a class we control - it renders in the wrong
+   place/style since it was never designed for a floated Mega Menu panel.
+   That one targets the <li> itself, so suppressing only there leaves
+   a::after free for our own caret below, scoped to .omega-megamenu-trigger
+   only so plain nav items stay bare. */
+.omega-classic-header .omega-megamenu-trigger::after,
+.omega-classic-header .omega-megamenu-trigger::before {
+    content: none !important;
+    display: none !important;
+}
+
+.omega-classic-header .omega-megamenu-trigger > a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+}
+
+/* ::after (not ::before) so the caret renders after the label text,
+   i.e. on the right - the flex row's natural trailing edge. */
+.omega-classic-header .omega-megamenu-trigger > a::after {
+    content: '';
+    /* No !important here - unlike the .omega-megamenu-trigger::after/
+       ::before suppression above (which fights an external, higher-
+       specificity WooCommerce rule targeting the <li> itself), nothing
+       else ever targets this specific `> a::after`, so !important here
+       only ever fights *our own* later mobile override below, forcing it
+       to stay !important too just to win - not worth the upkeep. Same
+       slim two-line chevron as the plain sub-menu arrow above, for a
+       consistent "this opens something" language across both. */
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    margin-top: -3px;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: rotate(45deg);
+    opacity: 0.6;
+    transition: transform 0.2s var(--omega-ch-ease), opacity 0.2s ease;
+}
+
+.omega-classic-header .omega-megamenu-trigger:hover > a::after,
+.omega-classic-header .omega-megamenu-trigger:focus-within > a::after {
+    transform: rotate(225deg);
+    opacity: 0.9;
+}
+
+/* ── Mobile: collapsible nav, animated open/close ───────────────── */
+@media (max-width: 781px) {
+    .omega-classic-header__toggle { display: block; }
+
+    /* Locked to the viewport (position:fixed), not to wherever the header
+       happens to sit in the page (position:absolute) - a non-sticky header
+       scrolled out of view would otherwise drag its own open mobile menu
+       off-screen with it. --omega-ch-height (classic-header.js,
+       initMobileNavOffsets()) is this exact header's own rendered height,
+       measured rather than guessed since it varies per style/site. */
+    .omega-classic-header__nav {
+        position: fixed;
+        top: var(--omega-ch-height, 64px);
+        left: 0;
+        right: 0;
+        max-height: 0;
+        overflow: hidden;
+        opacity: 0;
+        /* Not "inherit" - its parent has no background set, so that
+           resolved to transparent, making the open menu invisible
+           (technically expanded, but see-through over page content). */
+        background-color: var(--wp--preset--color--background, #fff);
+        box-shadow: var(--omega-ch-shadow);
+        transition: max-height 0.3s var(--omega-ch-ease), opacity 0.25s ease;
+        z-index: 100;
+    }
+
+    .omega-classic-header__nav.is-open {
+        /* The full remaining viewport height below the header - a true
+           full-screen menu, not a capped 90vh that left a visible strip of
+           page content at the bottom. Both height (so a short item list's
+           <ul> below has something definite to vertically center itself
+           within) and max-height (so overflow-y still kicks in and scrolls
+           a Mega Menu panel taller than the screen) are needed together. */
+        height: calc(100vh - var(--omega-ch-height, 64px));
+        max-height: calc(100vh - var(--omega-ch-height, 64px));
+        overflow-y: auto;
+        opacity: 1;
+    }
+
+    /* Companion to .omega-nav-open below - keeps the open full-screen menu
+       from having to compete with the page's own scroll position. */
+    html.omega-nav-open {
+        overflow: hidden;
+    }
+
+    .omega-classic-header__nav ul {
+        flex-direction: column;
+        /* stretch (not center) - each <li> stays full-width so its own
+           border-top divider still spans edge to edge; the actual link
+           text/arrow centers itself within that full-width row instead,
+           via text-align/justify-content below. */
+        align-items: stretch;
+        justify-content: center;
+        gap: 0;
+        padding: 0.5rem 1.25rem 1rem;
+        min-height: 100%;
+        /* Centers each plain (inline-block) link within its own full-width
+           <li> - the flex trigger rows above handle their own centering
+           via justify-content instead, since they're flex containers. */
+        text-align: center;
+    }
+
+    .omega-classic-header__nav li { border-top: 1px solid rgba(127, 127, 127, 0.14); }
+    .omega-classic-header__nav li:first-child { border-top: 0; }
+
+    .omega-classic-header__nav > ul > li > a {
+        padding: 0.85rem 0.25rem;
+        border-radius: 8px;
+        text-align: center;
+    }
+    .omega-classic-header__nav > ul > li > a::before { display: none; }
+    .omega-classic-header__nav > ul > li > a:hover,
+    .omega-classic-header__nav > ul > li > a:focus-visible {
+        background-color: rgba(127, 127, 127, 0.08);
+        opacity: 1;
+    }
+    .omega-classic-header__nav > ul > li.current-menu-item > a,
+    .omega-classic-header__nav > ul > li.current_page_item > a {
+        /* 600, matching the theme's own heading weight - see the site
+           title's own comment above - rather than a weight heavier than
+           anything else in the theme. */
+        font-weight: 600;
+    }
+
+    /* Label and arrow as plain side-by-side flex items - no
+       position:absolute/z-index coordination to get wrong, and no
+       possibility of the two overlapping and stealing each other's taps.
+       flex-wrap below then forces the sub-menu/panel (the <li>'s third
+       child) onto its own full-width line underneath, rather than
+       sitting beside them too. */
+    .omega-classic-header__nav li.menu-item-has-children,
+    .omega-classic-header__nav .omega-megamenu-trigger {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        /* Centers the label+arrow as a group instead of the arrow always
+           pinning itself to the row's right edge (which read as left-
+           aligned once the label below stopped stretching to fill the
+           row). */
+        justify-content: center;
+        gap: 0.25rem;
+    }
+    .omega-classic-header__nav li.menu-item-has-children > a,
+    .omega-classic-header__nav .omega-megamenu-trigger > a {
+        /* Not flex:1 1 auto anymore - that forced the link to stretch and
+           fill the row, which is exactly what pinned it to the left edge
+           regardless of any text-align. Sized to its own content instead,
+           so justify-content:center above can center the whole row. */
+        flex: 0 1 auto;
+        min-width: 0;
+    }
+
+    /* The tap target for expanding/collapsing (classic-header.js). No
+       hover on touch, and tapping the label itself is reserved for
+       actually following its link - collapsed by default here, same as a
+       plain sub-menu, until this arrow is tapped. */
+    .omega-classic-header__submenu-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        width: 44px;
+        height: 44px;
+        padding: 0;
+        border: 0;
+        border-radius: 50%;
+        background: transparent;
+        color: inherit;
+        cursor: pointer;
+        transition: background-color 0.2s var(--omega-ch-ease);
+    }
+
+    .omega-classic-header__submenu-toggle:hover,
+    .omega-classic-header__submenu-toggle:focus-visible {
+        background-color: rgba(127, 127, 127, 0.1);
+    }
+
+    .omega-classic-header__submenu-toggle span {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        margin-top: -3px;
+        border-right: 2px solid currentColor;
+        border-bottom: 2px solid currentColor;
+        transform: rotate(45deg);
+        opacity: 0.7;
+        transition: transform 0.2s var(--omega-ch-ease), opacity 0.2s ease;
+    }
+
+    .omega-classic-header__submenu-toggle.is-active span {
+        transform: rotate(225deg);
+        opacity: 1;
+    }
+
+    /* Plain sub-menus: collapsed by default, expands only once its arrow
+       (above) has been tapped - mirrors .omega-megamenu-panel--inline's
+       own is-expanded handling below for the exact same reason. flex-basis
+       forces it onto its own full-width line below the label+arrow row,
+       since the <li> above is now a (wrapping) flex row itself. */
+    .omega-classic-header__nav .sub-menu {
+        position: static;
+        flex-basis: 100%;
+        min-width: 0;
+        max-height: 0;
+        margin: 0;
+        /* No left indent - the top-level row above is centered now, not
+           left-aligned, so a left-anchored indent here would read as
+           misaligned rather than "nested". */
+        padding: 0;
+        text-align: center;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+        opacity: 0;
+        visibility: hidden;
+        overflow: hidden;
+        pointer-events: none;
+        transform: none;
+        transition: max-height 0.25s ease, opacity 0.2s ease;
+    }
+    .omega-classic-header__nav .sub-menu.is-expanded {
+        max-height: 2000px;
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        padding-top: 0.25rem;
+        padding-bottom: 0.5rem;
+    }
+    .omega-classic-header__nav .sub-menu li { border-top: 1px solid rgba(127, 127, 127, 0.1); }
+    .omega-classic-header__nav .sub-menu a { padding: 0.6rem 0.5rem; border-radius: 8px; }
+    .omega-classic-header__nav .menu-item-has-children > a::after { display: none !important; }
+
+    .omega-classic-header--2 .omega-classic-header__inner,
+    .omega-classic-header--3 .omega-classic-header__inner,
+    .omega-classic-header--4 .omega-classic-header__inner,
+    .omega-classic-header--5 .omega-classic-header__inner {
+        flex-direction: row;
+        text-align: left;
+    }
+}
+
+/* ── Style 1: Minimal Bar ────────────────────────────────────── */
+.omega-classic-header--1 {
+    background: var(--wp--preset--color--background, #fff);
+}
+/* Taller than the base __inner padding (0.9rem) - Minimal Bar's whole
+   point is a roomy, uncluttered strip, so it reads better with more
+   breathing room than the other, denser styles share by default. */
+.omega-classic-header--1 .omega-classic-header__inner {
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+}
+/* Slightly wider letter-spacing than the shared default - with this much
+   breathing room around it already, a bit more air in the type itself
+   reads as confident/minimal rather than sparse. */
+.omega-classic-header--1 .omega-classic-header__nav > ul > li > a {
+    letter-spacing: 0.02em;
+}
+
+/* ── Style 2: Centered ───────────────────────────────────────── */
+.omega-classic-header--2 {
+    background: var(--wp--preset--color--background, #fff);
+}
+.omega-classic-header--2 .omega-classic-header__inner {
+    flex-direction: column;
+    text-align: center;
+    padding-top: 1.4rem;
+    padding-bottom: 1.1rem;
+    gap: 0.65rem;
+}
+.omega-classic-header--2 .omega-classic-header__title { font-size: var(--wp--preset--font-size--x-large, 1.75rem); }
+.omega-classic-header--2 .omega-classic-header__toggle {
+    position: absolute;
+    top: 1rem;
+    right: 1.25rem;
+}
+/* A hairline separates the centered logo from the nav row beneath it -
+   subtle enough to read as intentional structure, not a hard rule. Scoped
+   to the desktop row itself, not .omega-classic-header, so it never shows
+   up as a stray line at the very top of the full-screen mobile menu. */
+.omega-classic-header--2 .omega-classic-header__inner > .omega-classic-header__nav {
+    padding-top: 0.6rem;
+    border-top: 1px solid rgba(127, 127, 127, 0.12);
+}
+@media (max-width: 781px) {
+    .omega-classic-header--2 .omega-classic-header__inner > .omega-classic-header__nav {
+        padding-top: 0;
+        border-top: 0;
+    }
+}
+@media (max-width: 781px) {
+    .omega-classic-header--2 .omega-classic-header__inner {
+        padding-top: 1rem;
+        padding-bottom: 0.85rem;
+    }
+}
+
+/* ── Style 3: Split ──────────────────────────────────────────── */
+.omega-classic-header--3 {
+    background: var(--wp--preset--color--surface, #f5f7f2);
+}
+.omega-classic-header--3 .omega-classic-header__nav > ul > li > a {
+    font-weight: 400;
+}
+/* The final item in the menu (whatever an admin happens to name it - a
+   "Contact"/"Get a Quote"/"Sign Up" link is the common case) gets a filled
+   pill/button treatment instead of a plain link - the classic "one clear
+   call to action inside the nav row" pattern that makes a header read as
+   professionally designed rather than just a list of links. Skipped for
+   dropdown/Mega Menu triggers specifically (:not() below) since a filled
+   button fighting with an open panel underneath it looks unintentional
+   rather than deliberate - those stay plain, same as every other item. */
+.omega-classic-header--3 .omega-classic-header__nav > ul > li:last-child:not(.menu-item-has-children):not(.omega-megamenu-trigger) > a {
+    padding: 0.55rem 1.25rem;
+    border-radius: 999px;
+    background: var(--wp--preset--color--primary, #1fbb00);
+    color: var(--wp--preset--color--button-text, #fff);
+    font-weight: 600;
+    opacity: 1;
+    transition: filter 0.2s var(--omega-ch-ease), transform 0.2s var(--omega-ch-ease);
+}
+.omega-classic-header--3 .omega-classic-header__nav > ul > li:last-child:not(.menu-item-has-children):not(.omega-megamenu-trigger) > a::before {
+    display: none;
+}
+.omega-classic-header--3 .omega-classic-header__nav > ul > li:last-child:not(.menu-item-has-children):not(.omega-megamenu-trigger) > a:hover,
+.omega-classic-header--3 .omega-classic-header__nav > ul > li:last-child:not(.menu-item-has-children):not(.omega-megamenu-trigger) > a:focus-visible {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+}
+@media (max-width: 781px) {
+    .omega-classic-header--3 .omega-classic-header__nav {
+        background-color: var(--wp--preset--color--surface, #f5f7f2);
+    }
+    .omega-classic-header--3 .omega-classic-header__nav > ul > li:last-child:not(.menu-item-has-children):not(.omega-megamenu-trigger) {
+        margin-top: 0.5rem;
+        border-top: 0;
+    }
+    .omega-classic-header--3 .omega-classic-header__nav > ul > li:last-child:not(.menu-item-has-children):not(.omega-megamenu-trigger) > a {
+        display: block;
+    }
+}
+
+/* ── Style 4: Boxed nav ──────────────────────────────────────── */
+.omega-classic-header--4 {
+    background: var(--wp--preset--color--background, #fff);
+    box-shadow: 0 1px 0 rgba(15, 23, 42, 0.06);
+}
+.omega-classic-header--4 .omega-classic-header__inner {
+    padding-top: 0.7rem;
+    padding-bottom: 0.7rem;
+}
+.omega-classic-header--4 .omega-classic-header__nav ul {
+    gap: 0.25rem;
+    background: rgba(127, 127, 127, 0.08);
+    border-radius: 999px;
+    padding: 0.3rem;
+}
+.omega-classic-header--4 .omega-classic-header__nav > ul > li > a {
+    padding: 0.5rem 1rem;
+    border-radius: 999px;
+    transition: background-color 0.2s var(--omega-ch-ease), color 0.2s var(--omega-ch-ease), box-shadow 0.2s var(--omega-ch-ease);
+}
+.omega-classic-header--4 .omega-classic-header__nav > ul > li > a::before {
+    display: none;
+}
+.omega-classic-header--4 .omega-classic-header__nav > ul > li > a:hover,
+.omega-classic-header--4 .omega-classic-header__nav > ul > li > a:focus-visible {
+    background-color: rgba(127, 127, 127, 0.12);
+    opacity: 1;
+}
+.omega-classic-header--4 .omega-classic-header__nav > ul > li.current-menu-item > a,
+.omega-classic-header--4 .omega-classic-header__nav > ul > li.current_page_item > a {
+    background-color: var(--wp--preset--color--primary, #1fbb00);
+    color: var(--wp--preset--color--button-text, #fff);
+    /* A soft colored glow under the active pill - the same "this one is
+       lifted/selected" cue a well-designed tab bar uses, instead of color
+       being the only signal. */
+    box-shadow: 0 3px 10px -2px color-mix(in srgb, var(--wp--preset--color--primary, #1fbb00) 55%, transparent);
+}
+@media (max-width: 781px) {
+    .omega-classic-header--4 .omega-classic-header__nav ul {
+        gap: 0;
+        background: none;
+        border-radius: 0;
+        padding: 0.5rem 1.25rem 1rem;
+    }
+    .omega-classic-header--4 .omega-classic-header__nav > ul > li > a {
+        border-radius: 8px;
+    }
+    .omega-classic-header--4 .omega-classic-header__nav > ul > li.current-menu-item > a,
+    .omega-classic-header--4 .omega-classic-header__nav > ul > li.current_page_item > a {
+        background-color: rgba(127, 127, 127, 0.1);
+        color: inherit;
+    }
+}
+
+/* ── Style 5: Bold accent ────────────────────────────────────── */
+.omega-classic-header--5 {
+    background-color: var(--wp--preset--color--secondary, #051a00);
+    /* A faint top-highlight over the flat color, plus a hairline of
+       light along the very bottom edge (inset, so it never reads as a
+       hard rule the way a real border/box-shadow would) - the kind of
+       subtle depth that separates "flat dark rectangle" from "considered
+       dark UI". Both are alpha-white overlays, not literal colors, so
+       they hold up over whatever secondary color a site actually has. */
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0) 65%);
+    box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.08);
+    color: var(--wp--preset--color--button-text, #fff);
+}
+.omega-classic-header--5 .omega-classic-header__title {
+    color: var(--wp--preset--color--primary, #1fbb00);
+}
+.omega-classic-header--5 .omega-classic-header__nav > ul > li > a:hover,
+.omega-classic-header--5 .omega-classic-header__nav > ul > li > a:focus-visible {
+    opacity: 1;
+    color: var(--wp--preset--color--primary, #1fbb00);
+}
+.omega-classic-header--5 .omega-classic-header__nav > ul > li > a::before {
+    background: var(--wp--preset--color--primary, #1fbb00);
+}
+.omega-classic-header--5.omega-classic-header--sticky.is-scrolled {
+    /* --omega-ch-shadow-elevated is tuned for a light background - on this
+       dark style it needs to actually be visible against a dark page, so
+       swap in a version with real opacity instead of the near-invisible
+       light-mode one. */
+    box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.08), 0 12px 24px -8px rgba(0, 0, 0, 0.35);
+}
+@media (max-width: 781px) {
+    .omega-classic-header--5 .omega-classic-header__nav {
+        background-color: var(--wp--preset--color--secondary, #051a00);
+    }
+    .omega-classic-header--5 .omega-classic-header__nav > ul > li > a:hover,
+    .omega-classic-header--5 .omega-classic-header__nav > ul > li > a:focus-visible {
+        background-color: rgba(255, 255, 255, 0.08);
+    }
+}
