@@ -44,7 +44,7 @@ class menus {
         if (!$screen || !in_array($screen->id, [$this->dashboard_hook, $this->settings_hook], true)) {
             return $classes;
         }
-        return $classes . ' ' . $this->color_mode_class();
+        return $classes . ' omega-admin-page-body ' . $this->color_mode_class();
     }
 
     public function init() {}
@@ -211,6 +211,26 @@ class menus {
                 true
             );
         }
+
+        if ($hook === $this->settings_hook) {
+            $layout_picker_js_path = OMEGA_DESIGN_ASSETS . '/js/admin-layout-picker.js';
+            wp_enqueue_script(
+                'omega-design-admin-layout-picker',
+                OMEGA_DESIGN_JS_URI . '/admin-layout-picker.js',
+                [],
+                file_exists($layout_picker_js_path) ? filemtime($layout_picker_js_path) : OMEGA_DESIGN_VERSION,
+                true
+            );
+
+            $tabs_js_path = OMEGA_DESIGN_ASSETS . '/js/admin-settings-tabs.js';
+            wp_enqueue_script(
+                'omega-design-admin-settings-tabs',
+                OMEGA_DESIGN_JS_URI . '/admin-settings-tabs.js',
+                [],
+                file_exists($tabs_js_path) ? filemtime($tabs_js_path) : OMEGA_DESIGN_VERSION,
+                true
+            );
+        }
     }
 
     /**
@@ -248,6 +268,8 @@ class menus {
             $nonce_field = 'omega_nonce_announcement';
         } elseif (isset($_POST['omega_section_footer'])) {
             $nonce_field = 'omega_nonce_footer';
+        } elseif (isset($_POST['omega_section_product_page'])) {
+            $nonce_field = 'omega_nonce_product_page';
         } else {
             $nonce_field = 'omega_nonce_mode';
         }
@@ -372,6 +394,14 @@ class menus {
             set_theme_mod('omega_footer_cta_url', $cta_url);
         }
 
+        if (isset($_POST['omega_section_product_page'])) {
+            $layout = isset($_POST['omega_product_page_layout']) ? wp_unslash($_POST['omega_product_page_layout']) : 'gallery-feature';
+            if (!array_key_exists($layout, product_page::style_choices())) {
+                $layout = 'gallery-feature';
+            }
+            set_theme_mod('omega_product_page_layout', $layout);
+        }
+
         $redirect_to = isset($_POST['omega_redirect_to'])
             ? esc_url_raw(wp_unslash($_POST['omega_redirect_to']))
             : admin_url('admin.php?page=omega-dashboard');
@@ -422,6 +452,7 @@ class menus {
     }
 
     private function render_header($subtitle) {
+        $current_page = isset($_GET['page']) ? sanitize_key(wp_unslash($_GET['page'])) : '';
         ?>
         <div class="omega-admin-header">
             <div class="omega-admin-header__brand">
@@ -435,8 +466,8 @@ class menus {
                 </div>
             </div>
             <div class="omega-admin-header__actions">
-                <a class="omega-btn omega-btn--ghost" href="<?php echo esc_url(admin_url('admin.php?page=omega-dashboard')); ?>"><span class="dashicons dashicons-dashboard"></span> <?php esc_html_e('Dashboard', 'omega-design'); ?></a>
-                <a class="omega-btn omega-btn--ghost" href="<?php echo esc_url(admin_url('admin.php?page=omega-settings')); ?>"><span class="dashicons dashicons-admin-settings"></span> <?php esc_html_e('Settings', 'omega-design'); ?></a>
+                <a class="omega-btn omega-btn--ghost <?php echo 'omega-dashboard' === $current_page ? 'is-active' : ''; ?>" href="<?php echo esc_url(admin_url('admin.php?page=omega-dashboard')); ?>"><span class="dashicons dashicons-dashboard"></span> <?php esc_html_e('Dashboard', 'omega-design'); ?></a>
+                <a class="omega-btn omega-btn--ghost <?php echo 'omega-settings' === $current_page ? 'is-active' : ''; ?>" href="<?php echo esc_url(admin_url('admin.php?page=omega-settings')); ?>"><span class="dashicons dashicons-admin-settings"></span> <?php esc_html_e('Settings', 'omega-design'); ?></a>
                 <a class="omega-btn omega-btn--primary" href="<?php echo esc_url(admin_url('site-editor.php')); ?>"><span class="dashicons dashicons-edit-large"></span> <?php esc_html_e('Site Editor', 'omega-design'); ?></a>
             </div>
         </div>
@@ -456,7 +487,6 @@ class menus {
                 <span class="dashicons dashicons-admin-appearance"></span>
                 <div>
                     <h2><?php esc_html_e('Site Color Mode', 'omega-design'); ?></h2>
-                    <p><?php esc_html_e("Automatic matches each visitor's device, on both desktop and mobile. Override it here to force one look for everyone.", 'omega-design'); ?></p>
                 </div>
             </div>
 
@@ -474,6 +504,7 @@ class menus {
                     <label for="<?php echo esc_attr($id); ?>"><?php echo esc_html($label); ?></label>
                 <?php endforeach; ?>
             </div>
+            <p class="description"><?php esc_html_e("Automatic follows each visitor's device.", 'omega-design'); ?></p>
 
             <?php submit_button(__('Save Mode', 'omega-design'), 'omega-btn omega-btn--primary', 'omega_submit_mode', false); ?>
         </form>
@@ -485,10 +516,13 @@ class menus {
      * every .omega-logo-picker on the page independently by querying for
      * these child classes, so any number of pickers can share one form.
      */
-    private function render_logo_picker($field_name, $logo_id, $label, $modal_title, $modal_button) {
+    private function render_logo_picker($field_name, $logo_id, $label, $modal_title, $modal_button, $hint = '') {
         ?>
         <div class="omega-logo-picker">
             <p class="omega-logo-picker__label"><?php echo esc_html($label); ?></p>
+            <?php if ('' !== $hint) : ?>
+                <p class="description"><?php echo esc_html($hint); ?></p>
+            <?php endif; ?>
             <input type="hidden" name="<?php echo esc_attr($field_name); ?>" class="omega-logo-picker__input" value="<?php echo esc_attr($logo_id); ?>" />
 
             <div class="omega-logo-preview omega-logo-picker__preview">
@@ -525,7 +559,6 @@ class menus {
                 <span class="dashicons dashicons-format-image"></span>
                 <div>
                     <h2><?php esc_html_e('Site Logo', 'omega-design'); ?></h2>
-                    <p><?php esc_html_e('Shown in the header next to the site title. Add a dark mode version to swap it in automatically when the site is in dark mode.', 'omega-design'); ?></p>
                 </div>
             </div>
 
@@ -542,7 +575,8 @@ class menus {
                 $dark_logo_id,
                 __('Dark Mode Logo (optional)', 'omega-design'),
                 __('Select Dark Mode Logo', 'omega-design'),
-                __('Use as dark mode logo', 'omega-design')
+                __('Use as dark mode logo', 'omega-design'),
+                __('Swaps in automatically in dark mode.', 'omega-design')
             );
             ?>
 
@@ -558,24 +592,26 @@ class menus {
         <div class="wrap omega-admin-page <?php echo esc_attr($this->color_mode_class()); ?>">
             <?php $this->render_header(__('Overview of your theme setup, at a glance.', 'omega-design')); ?>
 
-            <div class="omega-grid omega-grid--3">
-                <?php $this->render_color_mode_form($current_url); ?>
+            <div class="omega-grid omega-grid--2">
                 <?php $this->render_logo_form($current_url); ?>
 
-                <div class="omega-card">
-                    <div class="omega-card__head">
-                        <span class="dashicons dashicons-share"></span>
-                        <div>
-                            <h2><?php esc_html_e('Quick Links', 'omega-design'); ?></h2>
-                            <p><?php esc_html_e('Jump straight to the tools you use most.', 'omega-design'); ?></p>
+                <div class="omega-stack">
+                    <?php $this->render_color_mode_form($current_url); ?>
+
+                    <div class="omega-card">
+                        <div class="omega-card__head">
+                            <span class="dashicons dashicons-share"></span>
+                            <div>
+                                <h2><?php esc_html_e('Quick Links', 'omega-design'); ?></h2>
+                            </div>
                         </div>
-                    </div>
-                    <div class="omega-quicklinks">
-                        <a href="<?php echo esc_url(admin_url('customize.php')); ?>"><span class="dashicons dashicons-admin-customizer"></span><?php esc_html_e('Customizer', 'omega-design'); ?></a>
-                        <a href="<?php echo esc_url(admin_url('site-editor.php?p=/navigation')); ?>"><span class="dashicons dashicons-menu-alt"></span><?php esc_html_e('Navigation', 'omega-design'); ?></a>
-                        <a href="<?php echo esc_url(admin_url('edit.php?post_type=mega_menu')); ?>"><span class="dashicons dashicons-grid-view"></span><?php esc_html_e('Mega Menus', 'omega-design'); ?></a>
-                        <a href="<?php echo esc_url(admin_url('widgets.php')); ?>"><span class="dashicons dashicons-screenoptions"></span><?php esc_html_e('Widgets', 'omega-design'); ?></a>
-                        <a href="<?php echo esc_url(admin_url('site-editor.php?path=%2Fstyles')); ?>"><span class="dashicons dashicons-art"></span><?php esc_html_e('Global Styles', 'omega-design'); ?></a>
+                        <div class="omega-quicklinks">
+                            <a href="<?php echo esc_url(admin_url('customize.php')); ?>"><span class="dashicons dashicons-admin-customizer"></span><?php esc_html_e('Customizer', 'omega-design'); ?></a>
+                            <a href="<?php echo esc_url(admin_url('site-editor.php?p=/navigation')); ?>"><span class="dashicons dashicons-menu-alt"></span><?php esc_html_e('Navigation', 'omega-design'); ?></a>
+                            <a href="<?php echo esc_url(admin_url('edit.php?post_type=mega_menu')); ?>"><span class="dashicons dashicons-grid-view"></span><?php esc_html_e('Mega Menus', 'omega-design'); ?></a>
+                            <a href="<?php echo esc_url(admin_url('widgets.php')); ?>"><span class="dashicons dashicons-screenoptions"></span><?php esc_html_e('Widgets', 'omega-design'); ?></a>
+                            <a href="<?php echo esc_url(admin_url('site-editor.php?path=%2Fstyles')); ?>"><span class="dashicons dashicons-art"></span><?php esc_html_e('Global Styles', 'omega-design'); ?></a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -658,7 +694,6 @@ class menus {
                 <span class="dashicons dashicons-menu-alt2"></span>
                 <div>
                     <h2><?php esc_html_e('Header Navigation', 'omega-design'); ?></h2>
-                    <p><?php esc_html_e('Choose which header actually shows to visitors: the block-based one from the Site Editor, or one of 5 fast, mobile-friendly classic layouts (your site logo if one is set, else the site title) driven by a classic menu.', 'omega-design'); ?></p>
                 </div>
             </div>
 
@@ -673,15 +708,15 @@ class menus {
 
             <div class="omega-field">
                 <label for="omega_classic_menu_id"><?php esc_html_e('Classic menu to use (Classic styles only)', 'omega-design'); ?></label>
-                <?php if (empty($classic_menus)) : ?>
-                    <p class="description"><?php esc_html_e('No classic menus yet. Create one under Appearance > Menus first.', 'omega-design'); ?></p>
-                <?php else : ?>
+                <?php if (!empty($classic_menus)) : ?>
                     <select name="omega_classic_menu_id" id="omega_classic_menu_id">
                         <option value="0"><?php esc_html_e('— Select a menu —', 'omega-design'); ?></option>
                         <?php foreach ($classic_menus as $menu) : ?>
                             <option value="<?php echo esc_attr($menu->term_id); ?>" <?php selected($classic_id, $menu->term_id); ?>><?php echo esc_html($menu->name); ?></option>
                         <?php endforeach; ?>
                     </select>
+                <?php else : ?>
+                    <p class="description"><?php esc_html_e('None yet - create one under Appearance > Menus.', 'omega-design'); ?></p>
                 <?php endif; ?>
             </div>
 
@@ -692,40 +727,45 @@ class menus {
             </label>
 
             <h3><?php esc_html_e('Appearance overrides (Classic styles only)', 'omega-design'); ?></h3>
-            <p class="description"><?php esc_html_e('Leave any of these blank to keep following the theme\'s own Global Styles - these only override that one field, for the header specifically.', 'omega-design'); ?></p>
 
-            <div class="omega-field">
-                <label for="omega_header_bg_color"><?php esc_html_e('Header background color', 'omega-design'); ?></label>
-                <input type="text" name="omega_header_bg_color" id="omega_header_bg_color" value="<?php echo esc_attr($bg_color); ?>" placeholder="var(--wp--preset--color--background)" />
-            </div>
+            <div class="omega-field-row">
+                <div class="omega-field">
+                    <label for="omega_header_bg_color"><?php esc_html_e('Header background color', 'omega-design'); ?></label>
+                    <input type="text" name="omega_header_bg_color" id="omega_header_bg_color" value="<?php echo esc_attr($bg_color); ?>" placeholder="var(--wp--preset--color--background)" />
+                    <p class="description"><?php esc_html_e('Hex or CSS variable.', 'omega-design'); ?></p>
+                </div>
 
-            <div class="omega-field">
-                <label for="omega_header_text_color"><?php esc_html_e('Header text color', 'omega-design'); ?></label>
-                <input type="text" name="omega_header_text_color" id="omega_header_text_color" value="<?php echo esc_attr($text_color); ?>" placeholder="inherit" />
+                <div class="omega-field">
+                    <label for="omega_header_text_color"><?php esc_html_e('Header text color', 'omega-design'); ?></label>
+                    <input type="text" name="omega_header_text_color" id="omega_header_text_color" value="<?php echo esc_attr($text_color); ?>" placeholder="inherit" />
+                    <p class="description"><?php esc_html_e('Hex or CSS variable.', 'omega-design'); ?></p>
+                </div>
             </div>
 
             <div class="omega-field">
                 <label for="omega_header_font_family"><?php esc_html_e('Header font family', 'omega-design'); ?></label>
                 <input type="text" name="omega_header_font_family" id="omega_header_font_family" value="<?php echo esc_attr($font_family); ?>" placeholder="<?php esc_attr_e('theme default', 'omega-design'); ?>" />
-                <p class="description"><?php esc_html_e('A CSS font-family value, e.g. Georgia, serif - or the name of a font already loaded elsewhere on the site.', 'omega-design'); ?></p>
+                <p class="description"><?php esc_html_e('CSS font-family value.', 'omega-design'); ?></p>
             </div>
 
-            <div class="omega-field">
-                <label for="omega_header_font_size"><?php esc_html_e('Menu text size', 'omega-design'); ?></label>
-                <select name="omega_header_font_size" id="omega_header_font_size">
-                    <?php foreach (classic_header::FONT_SIZE_CHOICES as $value => $label) : ?>
-                        <option value="<?php echo esc_attr($value); ?>" <?php selected($font_size, $value); ?>><?php echo esc_html($label); ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
+            <div class="omega-field-row">
+                <div class="omega-field">
+                    <label for="omega_header_font_size"><?php esc_html_e('Menu text size', 'omega-design'); ?></label>
+                    <select name="omega_header_font_size" id="omega_header_font_size">
+                        <?php foreach (classic_header::FONT_SIZE_CHOICES as $value => $label) : ?>
+                            <option value="<?php echo esc_attr($value); ?>" <?php selected($font_size, $value); ?>><?php echo esc_html($label); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
 
-            <div class="omega-field">
-                <label for="omega_header_height"><?php esc_html_e('Header height', 'omega-design'); ?></label>
-                <select name="omega_header_height" id="omega_header_height">
-                    <?php foreach (classic_header::HEIGHT_CHOICES as $value => $label) : ?>
-                        <option value="<?php echo esc_attr($value); ?>" <?php selected($height, $value); ?>><?php echo esc_html($label); ?></option>
-                    <?php endforeach; ?>
-                </select>
+                <div class="omega-field">
+                    <label for="omega_header_height"><?php esc_html_e('Header height', 'omega-design'); ?></label>
+                    <select name="omega_header_height" id="omega_header_height">
+                        <?php foreach (classic_header::HEIGHT_CHOICES as $value => $label) : ?>
+                            <option value="<?php echo esc_attr($value); ?>" <?php selected($height, $value); ?>><?php echo esc_html($label); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
             </div>
 
             <?php submit_button(__('Save Header Navigation', 'omega-design'), 'omega-btn omega-btn--primary', 'omega_submit_header_nav', false); ?>
@@ -756,7 +796,6 @@ class menus {
                 <span class="dashicons dashicons-megaphone"></span>
                 <div>
                     <h2><?php esc_html_e('Announcement Bar', 'omega-design'); ?></h2>
-                    <p><?php esc_html_e('A second bar shown above the header on every page - a phone number, a promo message, social links, whatever HTML you need.', 'omega-design'); ?></p>
                 </div>
             </div>
 
@@ -769,17 +808,21 @@ class menus {
             <div class="omega-field">
                 <label for="omega_announcement_content"><?php esc_html_e('Content (HTML)', 'omega-design'); ?></label>
                 <textarea name="omega_announcement_content" id="omega_announcement_content" style="width:100%;height:100px;font-family:monospace;" spellcheck="false"><?php echo esc_textarea($content); ?></textarea>
-                <p class="description"><?php esc_html_e('E.g. Call us: <a href="tel:+15551234567">(555) 123-4567</a> &middot; Free shipping over $50', 'omega-design'); ?></p>
+                <p class="description"><?php esc_html_e('HTML allowed, e.g. links.', 'omega-design'); ?></p>
             </div>
 
-            <div class="omega-field">
-                <label for="omega_announcement_bg"><?php esc_html_e('Background color', 'omega-design'); ?></label>
-                <input type="text" name="omega_announcement_bg" id="omega_announcement_bg" value="<?php echo esc_attr($bg); ?>" placeholder="var(--wp--preset--color--primary)" />
-            </div>
+            <div class="omega-field-row">
+                <div class="omega-field">
+                    <label for="omega_announcement_bg"><?php esc_html_e('Background color', 'omega-design'); ?></label>
+                    <input type="text" name="omega_announcement_bg" id="omega_announcement_bg" value="<?php echo esc_attr($bg); ?>" placeholder="var(--wp--preset--color--primary)" />
+                    <p class="description"><?php esc_html_e('Hex or CSS variable.', 'omega-design'); ?></p>
+                </div>
 
-            <div class="omega-field">
-                <label for="omega_announcement_text_color"><?php esc_html_e('Text color', 'omega-design'); ?></label>
-                <input type="text" name="omega_announcement_text_color" id="omega_announcement_text_color" value="<?php echo esc_attr($text_color); ?>" placeholder="var(--wp--preset--color--button-text)" />
+                <div class="omega-field">
+                    <label for="omega_announcement_text_color"><?php esc_html_e('Text color', 'omega-design'); ?></label>
+                    <input type="text" name="omega_announcement_text_color" id="omega_announcement_text_color" value="<?php echo esc_attr($text_color); ?>" placeholder="var(--wp--preset--color--button-text)" />
+                    <p class="description"><?php esc_html_e('Hex or CSS variable.', 'omega-design'); ?></p>
+                </div>
             </div>
 
             <label class="omega-toggle">
@@ -791,6 +834,121 @@ class menus {
             <?php submit_button(__('Save Announcement Bar', 'omega-design'), 'omega-btn omega-btn--primary', 'omega_submit_announcement', false); ?>
         </form>
         <?php
+    }
+
+    /**
+     * One select, driven by product_page.php - each option swaps the whole
+     * single-product page for a hand-assembled layout built from
+     * WooCommerce's own real blocks (variations, stock, cart all keep
+     * working; only the surrounding structure and typography differ).
+     */
+    private function render_product_page_form($redirect_to) {
+        $layout  = product_page::active_layout();
+        $choices = product_page::style_choices();
+        ?>
+        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" class="omega-card">
+            <input type="hidden" name="action" value="omega_save_settings" />
+            <input type="hidden" name="omega_section_product_page" value="1" />
+            <input type="hidden" name="omega_redirect_to" value="<?php echo esc_url($redirect_to); ?>" />
+            <?php wp_nonce_field('omega_save_settings', 'omega_nonce_product_page'); ?>
+
+            <div class="omega-card__head">
+                <span class="dashicons dashicons-cart"></span>
+                <div>
+                    <h2><?php esc_html_e('Product Page Layout', 'omega-design'); ?></h2>
+                    <p><?php esc_html_e('Choose which layout WooCommerce product pages use. Works for both physical and digital (virtual/downloadable) products - the facts shown adapt automatically.', 'omega-design'); ?></p>
+                </div>
+            </div>
+
+            <div class="omega-layout-picker">
+                <?php foreach ($choices as $value => $label) : ?>
+                    <?php list($title, $description) = array_pad(explode(' - ', $label, 2), 2, ''); ?>
+                    <label class="omega-layout-card <?php echo $layout === $value ? 'is-selected' : ''; ?>">
+                        <input type="radio" name="omega_product_page_layout" value="<?php echo esc_attr($value); ?>" <?php checked($layout, $value); ?> />
+                        <?php $this->render_layout_preview($value); ?>
+                        <span class="omega-layout-card__title"><?php echo esc_html($title); ?></span>
+                        <span class="omega-layout-card__desc"><?php echo esc_html($description); ?></span>
+                    </label>
+                <?php endforeach; ?>
+            </div>
+
+            <?php if (!class_exists('WooCommerce')) : ?>
+                <p class="description"><?php esc_html_e('WooCommerce is not active - this only takes effect once it is.', 'omega-design'); ?></p>
+            <?php endif; ?>
+
+            <?php submit_button(__('Save Product Page Layout', 'omega-design'), 'omega-btn omega-btn--primary', 'omega_submit_product_page', false); ?>
+        </form>
+        <?php
+    }
+
+    /**
+     * A small CSS-drawn wireframe per layout (no screenshots to keep in
+     * sync) - shape and rough proportion only, so an admin can tell the
+     * five apart at a glance before picking one. Real typography/color
+     * come from product-page-layouts.css on the actual page.
+     */
+    private function render_layout_preview($layout) {
+        switch ($layout) {
+            case 'gallery-feature':
+                ?>
+                <span class="omega-lp omega-lp--gallery-feature" aria-hidden="true">
+                    <span class="omega-lp__photo"></span>
+                    <span class="omega-lp__col">
+                        <i class="omega-lp__line omega-lp__line--lg"></i>
+                        <i class="omega-lp__line"></i>
+                        <i class="omega-lp__line omega-lp__line--accent"></i>
+                        <i class="omega-lp__btn"></i>
+                    </span>
+                </span>
+                <?php
+                break;
+
+            case 'command-deck':
+                ?>
+                <span class="omega-lp omega-lp--command-deck" aria-hidden="true">
+                    <span class="omega-lp__rail"><i></i><i></i><i></i></span>
+                    <span class="omega-lp__photo"></span>
+                    <span class="omega-lp__panel"><i></i><i></i><i class="omega-lp__btn"></i></span>
+                </span>
+                <?php
+                break;
+
+            case 'split-stage':
+                ?>
+                <span class="omega-lp omega-lp--split-stage" aria-hidden="true">
+                    <span class="omega-lp__half omega-lp__half--dark"></span>
+                    <span class="omega-lp__half omega-lp__half--light">
+                        <i class="omega-lp__line omega-lp__line--lg"></i>
+                        <i class="omega-lp__line"></i>
+                        <i class="omega-lp__btn"></i>
+                    </span>
+                </span>
+                <?php
+                break;
+
+            case 'spec-sheet':
+                ?>
+                <span class="omega-lp omega-lp--spec-sheet" aria-hidden="true">
+                    <span class="omega-lp__row">
+                        <span class="omega-lp__thumb"></span>
+                        <span class="omega-lp__col"><i class="omega-lp__line"></i><i class="omega-lp__line omega-lp__line--sm"></i></span>
+                    </span>
+                    <span class="omega-lp__table"><i></i><i></i><i></i></span>
+                </span>
+                <?php
+                break;
+
+            case 'boutique':
+                ?>
+                <span class="omega-lp omega-lp--boutique" aria-hidden="true">
+                    <span class="omega-lp__circle"></span>
+                    <i class="omega-lp__line omega-lp__line--center"></i>
+                    <i class="omega-lp__line omega-lp__line--center omega-lp__line--sm"></i>
+                    <i class="omega-lp__btn omega-lp__btn--pill"></i>
+                </span>
+                <?php
+                break;
+        }
     }
 
     /**
@@ -874,96 +1032,252 @@ class menus {
         <?php
     }
 
+    /**
+     * Section map for the tabbed Settings screen: id => [label, icon]. One
+     * panel per tab, switched client-side (assets/js/admin-settings-tabs.js)
+     * so nothing here needs a page reload to navigate - each individual
+     * form inside still POSTs to admin-post.php exactly as before and
+     * redirects back to #<tab> so the save lands back on the same panel.
+     */
+    private function settings_tabs() {
+        return [
+            'general'     => [__('General', 'omega-design'), 'admin-generic'],
+            'header'      => [__('Header & Announcement', 'omega-design'), 'menu-alt2'],
+            'menus'       => [__('Menus & Pages', 'omega-design'), 'admin-page'],
+            'footer'      => [__('Footer', 'omega-design'), 'align-center'],
+            'woocommerce' => [__('WooCommerce', 'omega-design'), 'cart'],
+        ];
+    }
+
     public function settings_page() {
         $current_url = admin_url('admin.php?page=omega-settings');
         $sidebar_enabled = sidebar::get_instance()->is_sidebar_enabled();
         $sidebar_position = sidebar::get_instance()->get_sidebar_position();
         $sidebar_width = (int) get_theme_mod('omega_sidebar_width', 30);
         $status = $this->get_status_data();
+        $tabs = $this->settings_tabs();
+        // Each form's own redirect target includes its tab's hash, so a
+        // save (a full server round-trip through admin-post.php) lands the
+        // admin back on the same panel instead of always resetting to
+        // General - the hash rides along on the Location header even
+        // though it's never sent back to the server on the POST itself.
+        $tab_url = function ($tab) use ($current_url) {
+            return $current_url . '#' . $tab;
+        };
         ?>
         <div class="wrap omega-admin-page <?php echo esc_attr($this->color_mode_class()); ?>">
             <?php $this->render_header(__('All Omega Design options in one place.', 'omega-design')); ?>
 
-            <div class="omega-grid omega-grid--2">
-                <?php $this->render_color_mode_form($current_url); ?>
+            <div class="omega-settings-shell">
+                <nav class="omega-settings-nav" aria-label="<?php esc_attr_e('Settings sections', 'omega-design'); ?>">
+                    <?php foreach ($tabs as $id => [$label, $icon]) : ?>
+                        <a href="#<?php echo esc_attr($id); ?>" class="omega-settings-nav__item" data-tab="<?php echo esc_attr($id); ?>">
+                            <span class="dashicons dashicons-<?php echo esc_attr($icon); ?>"></span>
+                            <?php echo esc_html($label); ?>
+                        </a>
+                    <?php endforeach; ?>
+                </nav>
 
-                <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" class="omega-card">
-                    <input type="hidden" name="action" value="omega_save_settings" />
-                    <input type="hidden" name="omega_section_sidebar" value="1" />
-                    <input type="hidden" name="omega_redirect_to" value="<?php echo esc_url($current_url); ?>" />
-                    <?php wp_nonce_field('omega_save_settings', 'omega_nonce_sidebar'); ?>
+                <div class="omega-settings-panels">
 
-                    <div class="omega-card__head">
-                        <span class="dashicons dashicons-align-right"></span>
-                        <div>
-                            <h2><?php esc_html_e('Sidebar', 'omega-design'); ?></h2>
-                            <p><?php esc_html_e('Controls the sidebar template part used on category archives.', 'omega-design'); ?></p>
+                    <section class="omega-settings-panel" data-panel="general">
+                        <div class="omega-grid omega-grid--2">
+                            <?php $this->render_logo_form($tab_url('general')); ?>
+
+                            <div class="omega-stack">
+                            <?php $this->render_color_mode_form($tab_url('general')); ?>
+
+                            <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" class="omega-card">
+                                <input type="hidden" name="action" value="omega_save_settings" />
+                                <input type="hidden" name="omega_section_sidebar" value="1" />
+                                <input type="hidden" name="omega_redirect_to" value="<?php echo esc_url($tab_url('general')); ?>" />
+                                <?php wp_nonce_field('omega_save_settings', 'omega_nonce_sidebar'); ?>
+
+                                <div class="omega-card__head">
+                                    <span class="dashicons dashicons-align-right"></span>
+                                    <div>
+                                        <h2><?php esc_html_e('Sidebar', 'omega-design'); ?></h2>
+                                    </div>
+                                </div>
+
+                                <label class="omega-toggle">
+                                    <input type="checkbox" name="omega_enable_sidebar" value="1" <?php checked($sidebar_enabled); ?> />
+                                    <span class="omega-toggle__track"><span class="omega-toggle__thumb"></span></span>
+                                    <span class="omega-toggle__label"><?php esc_html_e('Enable sidebar', 'omega-design'); ?></span>
+                                </label>
+                                <p class="description"><?php esc_html_e('Used on category archives.', 'omega-design'); ?></p>
+
+                                <div class="omega-field">
+                                    <label for="omega_sidebar_position"><?php esc_html_e('Position', 'omega-design'); ?></label>
+                                    <select name="omega_sidebar_position" id="omega_sidebar_position">
+                                        <option value="left" <?php selected($sidebar_position, 'left'); ?>><?php esc_html_e('Left', 'omega-design'); ?></option>
+                                        <option value="right" <?php selected($sidebar_position, 'right'); ?>><?php esc_html_e('Right', 'omega-design'); ?></option>
+                                    </select>
+                                </div>
+
+                                <div class="omega-field">
+                                    <label for="omega_sidebar_width"><?php esc_html_e('Width', 'omega-design'); ?> (<span id="omega_sidebar_width_value"><?php echo esc_html($sidebar_width); ?></span>%)</label>
+                                    <input type="range" min="20" max="50" step="1" name="omega_sidebar_width" id="omega_sidebar_width" value="<?php echo esc_attr($sidebar_width); ?>" oninput="document.getElementById('omega_sidebar_width_value').textContent = this.value;" />
+                                </div>
+
+                                <?php submit_button(__('Save Sidebar Settings', 'omega-design'), 'omega-btn omega-btn--primary', 'omega_submit_sidebar', false); ?>
+                            </form>
+                            </div>
                         </div>
-                    </div>
+                    </section>
 
-                    <label class="omega-toggle">
-                        <input type="checkbox" name="omega_enable_sidebar" value="1" <?php checked($sidebar_enabled); ?> />
-                        <span class="omega-toggle__track"><span class="omega-toggle__thumb"></span></span>
-                        <span class="omega-toggle__label"><?php esc_html_e('Enable sidebar', 'omega-design'); ?></span>
-                    </label>
-
-                    <div class="omega-field">
-                        <label for="omega_sidebar_position"><?php esc_html_e('Position', 'omega-design'); ?></label>
-                        <select name="omega_sidebar_position" id="omega_sidebar_position">
-                            <option value="left" <?php selected($sidebar_position, 'left'); ?>><?php esc_html_e('Left', 'omega-design'); ?></option>
-                            <option value="right" <?php selected($sidebar_position, 'right'); ?>><?php esc_html_e('Right', 'omega-design'); ?></option>
-                        </select>
-                    </div>
-
-                    <div class="omega-field">
-                        <label for="omega_sidebar_width"><?php esc_html_e('Width', 'omega-design'); ?> (<span id="omega_sidebar_width_value"><?php echo esc_html($sidebar_width); ?></span>%)</label>
-                        <input type="range" min="20" max="50" step="1" name="omega_sidebar_width" id="omega_sidebar_width" value="<?php echo esc_attr($sidebar_width); ?>" oninput="document.getElementById('omega_sidebar_width_value').textContent = this.value;" />
-                    </div>
-
-                    <?php submit_button(__('Save Sidebar Settings', 'omega-design'), 'omega-btn omega-btn--primary', 'omega_submit_sidebar', false); ?>
-                </form>
-            </div>
-
-            <div class="omega-grid omega-grid--2">
-                <?php $this->render_header_nav_form($current_url); ?>
-
-                <div class="omega-card">
-                    <div class="omega-card__head">
-                        <span class="dashicons dashicons-menu-alt3"></span>
-                        <div>
-                            <h2><?php esc_html_e('Mega Menu', 'omega-design'); ?></h2>
-                            <p><?php esc_html_e('Build mega menus under Omega Design > Mega Menus (title, content, optional Custom CSS - each is its own post). Then, in the Site Editor\'s Navigation panel, add a "Mega Menu" item from the + inserter or attach one to any nav item from the block settings.', 'omega-design'); ?></p>
+                    <section class="omega-settings-panel" data-panel="header">
+                        <div class="omega-grid omega-grid--2">
+                            <?php $this->render_header_nav_form($tab_url('header')); ?>
+                            <?php $this->render_announcement_form($tab_url('header')); ?>
                         </div>
-                    </div>
-                    <?php if ($status['megamenu_published']) : ?>
-                        <span class="omega-badge omega-badge--success"><?php echo esc_html(sprintf(_n('%d mega menu ready', '%d mega menus ready', $status['megamenu_count'], 'omega-design'), $status['megamenu_count'])); ?></span>
-                    <?php else : ?>
-                        <span class="omega-badge omega-badge--warning"><?php esc_html_e('No mega menus yet', 'omega-design'); ?></span>
-                    <?php endif; ?>
-                    <p>
-                        <a class="omega-btn omega-btn--ghost" href="<?php echo esc_url(admin_url('edit.php?post_type=mega_menu')); ?>"><span class="dashicons dashicons-layout"></span> <?php esc_html_e('Manage Mega Menus', 'omega-design'); ?></a>
-                        <a class="omega-btn omega-btn--ghost" href="<?php echo esc_url(admin_url('site-editor.php?p=/navigation')); ?>"><span class="dashicons dashicons-edit-large"></span> <?php esc_html_e('Manage Navigation', 'omega-design'); ?></a>
-                    </p>
+                    </section>
+
+                    <section class="omega-settings-panel" data-panel="menus">
+                        <div class="omega-grid omega-grid--2">
+                            <?php $this->render_megamenu_card($status); ?>
+
+                            <div class="omega-card">
+                                <div class="omega-card__head">
+                                    <span class="dashicons dashicons-heading"></span>
+                                    <div>
+                                        <h2><?php esc_html_e('Page & Post Settings', 'omega-design'); ?></h2>
+                                    </div>
+                                </div>
+                                <p class="description"><?php esc_html_e('Set per page/post in the editor sidebar.', 'omega-design'); ?></p>
+                                <ul class="omega-tip-list">
+                                    <li><?php esc_html_e('Page Width (Normal/Wide/Full) lives in the same Page Settings panel.', 'omega-design'); ?></li>
+                                    <li><?php esc_html_e('Sidebar visibility per-page is set from that page\'s own block settings.', 'omega-design'); ?></li>
+                                </ul>
+                                <p>
+                                    <a class="omega-btn omega-btn--ghost" href="<?php echo esc_url(admin_url('edit.php?post_type=page')); ?>"><span class="dashicons dashicons-admin-page"></span> <?php esc_html_e('Go to Pages', 'omega-design'); ?></a>
+                                </p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="omega-settings-panel" data-panel="footer">
+                        <div class="omega-grid omega-grid--1">
+                            <?php $this->render_footer_form($tab_url('footer')); ?>
+                        </div>
+                    </section>
+
+                    <section class="omega-settings-panel" data-panel="woocommerce">
+                        <div class="omega-grid omega-grid--2">
+                            <?php $this->render_product_page_form($tab_url('woocommerce')); ?>
+                            <?php $this->render_woocommerce_pages_card(); ?>
+                        </div>
+                    </section>
+
                 </div>
+            </div>
+        </div>
+        <?php
+    }
 
-                <div class="omega-card">
-                    <div class="omega-card__head">
-                        <span class="dashicons dashicons-heading"></span>
-                        <div>
-                            <h2><?php esc_html_e('Page & Post Settings', 'omega-design'); ?></h2>
-                            <p><?php esc_html_e('Title and header visibility are set per page or post, not globally: open any Page or Post and use the "Hide page title" / "Hide header" toggles in the editor sidebar\'s Page Settings panel.', 'omega-design'); ?></p>
-                        </div>
-                    </div>
-                    <p>
-                        <a class="omega-btn omega-btn--ghost" href="<?php echo esc_url(admin_url('edit.php?post_type=page')); ?>"><span class="dashicons dashicons-admin-page"></span> <?php esc_html_e('Go to Pages', 'omega-design'); ?></a>
-                    </p>
+    /**
+     * The 4 WooCommerce core pages (Shop, Cart, Checkout, My Account), each
+     * with a real status badge - not just links, since a missing/trashed
+     * page here is a genuine storefront-breaking problem worth surfacing.
+     */
+    private function render_woocommerce_pages_card() {
+        ?>
+        <div class="omega-card">
+            <div class="omega-card__head">
+                <span class="dashicons dashicons-store"></span>
+                <div>
+                    <h2><?php esc_html_e('WooCommerce Pages', 'omega-design'); ?></h2>
+                    <p><?php esc_html_e('The core pages every store needs, and whether each one is actually set and published.', 'omega-design'); ?></p>
                 </div>
             </div>
 
-            <div class="omega-grid omega-grid--2">
-                <?php $this->render_announcement_form($current_url); ?>
-                <?php $this->render_footer_form($current_url); ?>
+            <?php if (!class_exists('WooCommerce')) : ?>
+                <div class="omega-empty-state">
+                    <span class="dashicons dashicons-cart"></span>
+                    <p><?php esc_html_e('WooCommerce isn\'t active yet - install and activate it to see this store\'s page status.', 'omega-design'); ?></p>
+                </div>
+            <?php else : ?>
+                <ul class="omega-resource-list">
+                    <?php
+                    $pages = [
+                        'shop'      => __('Shop', 'omega-design'),
+                        'cart'      => __('Cart', 'omega-design'),
+                        'checkout'  => __('Checkout', 'omega-design'),
+                        'myaccount' => __('My Account', 'omega-design'),
+                    ];
+                    foreach ($pages as $key => $label) :
+                        $page_id = wc_get_page_id($key);
+                        $page    = $page_id > 0 ? get_post($page_id) : null;
+                        $is_live = $page && 'publish' === $page->post_status;
+                        ?>
+                        <li>
+                            <span class="omega-resource-list__name">
+                                <?php echo esc_html($label); ?>
+                                <?php if ($is_live) : ?>
+                                    <span class="omega-badge omega-badge--success"><?php esc_html_e('Live', 'omega-design'); ?></span>
+                                <?php else : ?>
+                                    <span class="omega-badge omega-badge--danger"><?php esc_html_e('Not set', 'omega-design'); ?></span>
+                                <?php endif; ?>
+                            </span>
+                            <?php if ($is_live) : ?>
+                                <a class="omega-resource-list__edit" href="<?php echo esc_url(get_edit_post_link($page_id)); ?>"><?php esc_html_e('Edit', 'omega-design'); ?></a>
+                            <?php else : ?>
+                                <a class="omega-resource-list__edit" href="<?php echo esc_url(admin_url('edit.php?post_type=page&page=wc-settings&tab=advanced')); ?>"><?php esc_html_e('Fix', 'omega-design'); ?></a>
+                            <?php endif; ?>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+                <p>
+                    <a class="omega-btn omega-btn--ghost" href="<?php echo esc_url(admin_url('admin.php?page=wc-settings&tab=advanced')); ?>"><span class="dashicons dashicons-admin-settings"></span> <?php esc_html_e('Page Setup (WooCommerce)', 'omega-design'); ?></a>
+                </p>
+            <?php endif; ?>
+        </div>
+        <?php
+    }
+
+    /**
+     * Mega Menu status card - lists the actually-published mega menus (not
+     * just a count) with a direct edit link each, so the card carries real
+     * information instead of sitting mostly empty next to Header
+     * Navigation's long form.
+     */
+    private function render_megamenu_card($status) {
+        $menus = post_type_exists('mega_menu')
+            ? get_posts(['post_type' => 'mega_menu', 'post_status' => 'publish', 'numberposts' => 6, 'orderby' => 'title', 'order' => 'ASC'])
+            : [];
+        ?>
+        <div class="omega-card">
+            <div class="omega-card__head">
+                <span class="dashicons dashicons-menu-alt3"></span>
+                <div>
+                    <h2><?php esc_html_e('Mega Menu', 'omega-design'); ?></h2>
+                </div>
             </div>
+            <p class="description"><?php esc_html_e('Attach one to a nav item from the Site Editor.', 'omega-design'); ?></p>
+
+            <?php if (!empty($menus)) : ?>
+                <ul class="omega-resource-list">
+                    <?php foreach ($menus as $menu) : ?>
+                        <li>
+                            <span class="omega-resource-list__name"><?php echo esc_html($menu->post_title ?: __('(no title)', 'omega-design')); ?></span>
+                            <a class="omega-resource-list__edit" href="<?php echo esc_url(get_edit_post_link($menu->ID)); ?>"><?php esc_html_e('Edit', 'omega-design'); ?></a>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+                <?php if ($status['megamenu_count'] > count($menus)) : ?>
+                    <p class="omega-status-card__meta"><?php echo esc_html(sprintf(__('+%d more', 'omega-design'), $status['megamenu_count'] - count($menus))); ?></p>
+                <?php endif; ?>
+            <?php else : ?>
+                <div class="omega-empty-state">
+                    <span class="dashicons dashicons-menu-alt3"></span>
+                    <p><?php esc_html_e('No mega menus yet. Build your first one to attach rich dropdown content to any nav item.', 'omega-design'); ?></p>
+                </div>
+            <?php endif; ?>
+
+            <p>
+                <a class="omega-btn omega-btn--ghost" href="<?php echo esc_url(admin_url('edit.php?post_type=mega_menu')); ?>"><span class="dashicons dashicons-layout"></span> <?php esc_html_e('Manage Mega Menus', 'omega-design'); ?></a>
+                <a class="omega-btn omega-btn--ghost" href="<?php echo esc_url(admin_url('site-editor.php?p=/navigation')); ?>"><span class="dashicons dashicons-edit-large"></span> <?php esc_html_e('Manage Navigation', 'omega-design'); ?></a>
+            </p>
         </div>
         <?php
     }

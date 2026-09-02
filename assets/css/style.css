@@ -75,6 +75,43 @@
 }
 
 /**
+ * Block Link (Row/Stack/Grid, Columns, Column blocks).
+ *
+ * Set via the "Link" panel in the block Inspector (see assets/js/editor.js).
+ * The URL is rendered as a full-cover overlay <a> - see hooks.php,
+ * add_block_link_overlay() - so the whole block is one click target without
+ * wrapping its own markup (which may already contain a link or button) in
+ * an outer <a>, which would be invalid nested-<a> HTML.
+ */
+.omega-has-block-link {
+	position: relative;
+}
+
+.omega-has-block-link > .omega-block-link {
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+}
+
+.omega-has-block-link > .omega-block-link:focus-visible {
+	outline: 2px solid var(--wp--preset--color--primary, #0d6efd);
+	outline-offset: 2px;
+}
+
+/* Anything inside that needs its own click target stays reachable above the overlay. */
+.omega-has-block-link a:not(.omega-block-link),
+.omega-has-block-link button {
+	position: relative;
+	z-index: 2;
+}
+
+/* Editor canvas only - the overlay above is a front-end-only render_block transform. */
+.editor-styles-wrapper .is-omega-linked-block {
+	outline: 1px dashed var(--wp--preset--color--primary, #0d6efd);
+	outline-offset: 2px;
+}
+
+/**
  * Site header (parts/header.html).
  */
 .site-header .site-navigation a {

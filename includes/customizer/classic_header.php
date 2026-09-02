@@ -252,8 +252,11 @@ class classic_header {
             ]);
         }
 
-        $brand_html = $this->brand_html();
-        $sticky     = (bool) get_theme_mod('omega_header_sticky', false);
+        $brand_html    = $this->brand_html();
+        $sticky        = (bool) get_theme_mod('omega_header_sticky', false);
+        $wc_icons_html = class_exists('OmegaDesign\\customizer\\woocommerce_header')
+            ? woocommerce_header::get_instance()->icons_html()
+            : '';
 
         ob_start();
         include $template_path;

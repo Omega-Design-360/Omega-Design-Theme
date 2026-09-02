@@ -337,6 +337,29 @@
 	 */
 	var HOVER_BLOCKS = ['core/group', 'core/columns', 'core/column'];
 
+	/**
+	 * core/icon gets the same Hover Colors & Shadow panel as the blocks
+	 * above, but kept in its own array rather than pushed into HOVER_BLOCKS -
+	 * that array is also reused below as ALIGN_BLOCKS for Text Alignment,
+	 * which doesn't apply to a single icon. isHoverEligible() below is the
+	 * one place both arrays are checked together.
+	 *
+	 * core/icon is a dynamic block (PHP render_callback, see
+	 * includes/core/hooks.php's render_block_core_icon() handling) - unlike
+	 * Group/Columns/Column, the front end never uses this block's save()
+	 * output, so the 'blocks.getSaveContent.extraProps' filter below can't
+	 * put the hover class/vars on the rendered markup the way it does for
+	 * those blocks. The PHP side re-derives the same class/vars from
+	 * attributes.style.omegaHover independently for the actual front-end
+	 * output; this filter still runs for core/icon anyway so the editor's
+	 * own validation copy of the saved markup stays consistent.
+	 */
+	var ICON_HOVER_BLOCKS = ['core/icon'];
+
+	function isHoverEligible(name) {
+		return HOVER_BLOCKS.indexOf(name) !== -1 || ICON_HOVER_BLOCKS.indexOf(name) !== -1;
+	}
+
 	var HOVER_FIELDS = [
 		{ key: 'text', cssVar: '--omega-hover-text-color', label: __('Hover Text Color', 'omega-design') },
 		{ key: 'background', cssVar: '--omega-hover-bg-color', label: __('Hover Background Color', 'omega-design') },
@@ -415,7 +438,7 @@
 
 	var withHoverColorControls = createHigherOrderComponent(function (BlockEdit) {
 		return function (props) {
-			if (HOVER_BLOCKS.indexOf(props.name) === -1 || !props.isSelected) {
+			if (!isHoverEligible(props.name) || !props.isSelected) {
 				return createElement(BlockEdit, props);
 			}
 
@@ -522,7 +545,7 @@
 	 */
 	var withHoverColorStyleEditor = createHigherOrderComponent(function (BlockListBlock) {
 		return function (props) {
-			if (HOVER_BLOCKS.indexOf(props.name) === -1) {
+			if (!isHoverEligible(props.name)) {
 				return createElement(BlockListBlock, props);
 			}
 
@@ -551,7 +574,7 @@
 	 * render on the front end without needing a render_block PHP filter.
 	 */
 	addFilter('blocks.getSaveContent.extraProps', 'omega-design/hover-color-style-save', function (extraProps, blockType, attributes) {
-		if (HOVER_BLOCKS.indexOf(blockType.name) === -1) {
+		if (!isHoverEligible(blockType.name)) {
 			return extraProps;
 		}
 
@@ -767,6 +790,8 @@
 	}
 
 	var ComboboxControl = wp.components.ComboboxControl;
+	var TextControl = wp.components.TextControl;
+	var ToggleControl = wp.components.ToggleControl;
 	var useSelect = wp.data.useSelect;
 
 	function useMegaMenuOptions() {
@@ -828,4 +853,136 @@
 	if (ComboboxControl) {
 		addFilter('editor.BlockEdit', 'omega-design/megamenu-control', withMegaMenuControl);
 	}
+
+	/**
+	 * Adds a "Link" panel to the Inspector for Group/Row/Stack/Grid, Columns
+	 * and Column blocks, letting an editor paste a URL that makes the entire
+	 * block clickable - not just a heading or button somewhere inside it
+	 * (e.g. a mega menu grid tile). Stored under attributes.style.omegaLink -
+	 * a custom key nested in the same "style" attribute core already
+	 * auto-registers for these blocks' color/border supports - the same
+	 * approach as `omegaHover`/`omegaAlign`/`dimensions` above, rather than
+	 * new top-level attributes requiring their own `blocks.registerBlockType`
+	 * registration.
+	 *
+	 * Rendered on the front end as a full-cover overlay <a> (see
+	 * includes/core/hooks.php, modify_block_render()) absolutely positioned
+	 * over the block, rather than wrapping the block's own markup in an <a>,
+	 * so a card that already has its own inner link or button never ends up
+	 * as invalid nested-<a> HTML - that inner element just needs a higher
+	 * z-index (assets/css/style.css) to stay clickable above the overlay.
+	 */
+	var LINK_BLOCKS = ['core/group', 'core/columns', 'core/column'];
+
+	function getBlockLink(attributes) {
+		return (attributes.style && attributes.style.omegaLink) || {};
+	}
+
+	function setBlockLink(props, key, value) {
+		var style = props.attributes.style || {};
+		var link = Object.assign({}, style.omegaLink);
+
+		if (value) {
+			link[key] = value;
+		} else {
+			delete link[key];
+		}
+
+		var nextStyle = Object.assign({}, style);
+		if (Object.keys(link).length) {
+			nextStyle.omegaLink = link;
+		} else {
+			delete nextStyle.omegaLink;
+		}
+
+		props.setAttributes({ style: nextStyle });
+	}
+
+	var withBlockLinkControl = createHigherOrderComponent(function (BlockEdit) {
+		return function (props) {
+			if (LINK_BLOCKS.indexOf(props.name) === -1 || !props.isSelected) {
+				return createElement(BlockEdit, props);
+			}
+
+			var link = getBlockLink(props.attributes);
+			var hasUrl = !!link.url;
+
+			var fields = [
+				createElement(TextControl, {
+					key: 'url',
+					label: __('Link URL', 'omega-design'),
+					type: 'url',
+					value: link.url || '',
+					onChange: function (value) {
+						setBlockLink(props, 'url', value);
+					}
+				})
+			];
+
+			if (hasUrl) {
+				fields.push(
+					createElement(ToggleControl, {
+						key: 'target',
+						label: __('Open in new tab', 'omega-design'),
+						checked: '_blank' === link.target,
+						onChange: function (checked) {
+							setBlockLink(props, 'target', checked ? '_blank' : '');
+						}
+					}),
+					createElement(TextControl, {
+						key: 'label',
+						label: __('Accessible label', 'omega-design'),
+						value: link.label || '',
+						onChange: function (value) {
+							setBlockLink(props, 'label', value);
+						}
+					})
+				);
+			}
+
+			return createElement(
+				Fragment,
+				{},
+				createElement(BlockEdit, props),
+				createElement(
+					InspectorControls,
+					{},
+					createElement(
+						PanelBody,
+						{ title: __('Link', 'omega-design'), initialOpen: false },
+						fields
+					)
+				)
+			);
+		};
+	}, 'withBlockLinkControl');
+
+	if (TextControl && ToggleControl) {
+		addFilter('editor.BlockEdit', 'omega-design/block-link-control', withBlockLinkControl);
+	}
+
+	/**
+	 * Editor-canvas-only visual indicator (a dashed outline, see
+	 * assets/css/style.css) that a block has a Link URL set. The actual
+	 * clickable overlay above is only rendered on the front end - Group/
+	 * Columns/Column are static blocks, so PHP's render_block filter never
+	 * runs against the editor's own live canvas the way it does for a real
+	 * page request.
+	 */
+	var withBlockLinkIndicator = createHigherOrderComponent(function (BlockListBlock) {
+		return function (props) {
+			if (LINK_BLOCKS.indexOf(props.name) === -1 || !getBlockLink(props.attributes).url) {
+				return createElement(BlockListBlock, props);
+			}
+
+			var existingClassName = (props.wrapperProps && props.wrapperProps.className) || '';
+			var wrapperProps = Object.assign({}, props.wrapperProps, {
+				className: (existingClassName + ' is-omega-linked-block').trim()
+			});
+
+			return createElement(BlockListBlock, Object.assign({}, props, { wrapperProps: wrapperProps }));
+		};
+	}, 'withBlockLinkIndicator');
+
+	addFilter('editor.BlockListBlock', 'omega-design/block-link-indicator', withBlockLinkIndicator);
 })(window.wp);

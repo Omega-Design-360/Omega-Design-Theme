@@ -46,6 +46,21 @@
 				target.classList.toggle('is-expanded', expanding);
 				submenuToggle.classList.toggle('is-active', expanding);
 				submenuToggle.setAttribute('aria-expanded', expanding ? 'true' : 'false');
+
+				// Explicit, rather than relying on the browser's own
+				// "scroll the newly-focused button into view" behavior
+				// (inconsistent across browsers, and was the actual
+				// source of the instant, no-animation "jump to the top" -
+				// scroll-behavior:smooth on the nav (classic-header.css)
+				// is what makes this glide instead of snap. block:
+				// 'nearest' only scrolls if the row isn't already fully
+				// visible, never re-centers something already on screen.
+				if (expanding) {
+					var row = submenuToggle.closest('li');
+					if (row && row.scrollIntoView) {
+						row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+					}
+				}
 			}
 			return;
 		}

@@ -1,16 +1,10 @@
 <!-- wp:template-part {"slug":"header"} /-->
 
-<!-- wp:group {"tagName":"main"} -->
+<!-- wp:group {"tagName":"main","layout":{"inherit":true,"type":"constrained"}} -->
 <main class="wp-block-group">
-	<!-- wp:woocommerce/product-image-gallery /-->
-	<!-- wp:woocommerce/product-title /-->
-	<!-- wp:woocommerce/product-price /-->
-	<!-- wp:woocommerce/product-rating /-->
-	<!-- wp:woocommerce/product-short-description /-->
-	<!-- wp:woocommerce/add-to-cart-form /-->
-	<!-- wp:woocommerce/product-meta /-->
-	<!-- wp:woocommerce/product-tabs /-->
-	<!-- wp:woocommerce/related-products /-->
+	<!-- wp:html -->
+	<div data-omega-product-layout></div>
+	<!-- /wp:html -->
 </main>
 <!-- /wp:group -->
 

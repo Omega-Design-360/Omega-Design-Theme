@@ -198,16 +198,17 @@
 			settings.HideTitleControl ? createElement( settings.HideTitleControl ) : null,
 			settings.HideHeaderControl ? createElement( settings.HideHeaderControl ) : null,
 			settings.HideFooterControl ? createElement( settings.HideFooterControl ) : null,
+			settings.FeaturedImageControl ? createElement( settings.FeaturedImageControl ) : null,
 			settings.ContentWidthControl ? createElement( settings.ContentWidthControl ) : null,
 			createElement( BackgroundColorControl )
 		);
 	}
 
 	// This script is enqueued last in the dependency chain (title-toggle ->
-	// content-width -> hide-header -> hide-footer -> background-color), so
-	// by the time it runs, every other control has already registered
-	// itself on the shared namespace, and PageSettingsPanel can combine
-	// all of them.
+	// content-width -> hide-header -> hide-footer -> featured-image-toggle
+	// -> background-color), so by the time it runs, every other control has
+	// already registered itself on the shared namespace, and
+	// PageSettingsPanel can combine all of them.
 	registerPlugin( 'omega-design-page-settings', {
 		render: PageSettingsPanel,
 	} );

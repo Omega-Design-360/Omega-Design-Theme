@@ -1,0 +1,390 @@
+/**
+ * Cart page (templates/page-cart.html -> the "Cart" page's woocommerce/cart
+ * block). Every color is a --wp--preset--color--* token, so it follows
+ * color-mode.css's light/dark swap automatically. Only enqueued on the
+ * cart page - see hooks.php enqueue_frontend_assets().
+ */
+
+/* Belt-and-braces width fix: the theme's own "Page Width" control (set to
+   "wide" for this page - see includes/customizer/content_width.php) should
+   already get .wp-block-post-content to the theme's wide-size, but
+   WooCommerce's own two-column split for this block is decided by a CSS
+   *container query* on .wp-block-woocommerce-cart's own measured width
+   (@container (max-width: 699px) in the plugin's cart.css), not a normal
+   media query - so if anything upstream still leaves it under ~700px, it
+   silently falls back to one stacked column with no error to debug. Forcing
+   the width here directly, scoped to this page only, removes that
+   uncertainty regardless of how the ancestor cascade resolves. */
+body.woocommerce-cart .wp-block-post-content {
+	max-width: var(--wp--style--global--wide-size, 1400px) !important;
+	width: 100% !important;
+}
+
+.wp-block-woocommerce-cart {
+	margin-top: var(--wp--preset--spacing--m);
+	margin-bottom: var(--wp--preset--spacing--2xl);
+	max-width: none !important;
+}
+
+.wc-block-cart {
+	align-items: start;
+	gap: var(--wp--preset--spacing--xl);
+}
+
+/* Force the two-column split even if WooCommerce's own container query
+   still measures this element as "small" for any reason - min-width here
+   is a real viewport media query, independent of that container query. */
+@media (min-width: 700px) {
+	.wc-block-components-sidebar-layout.wc-block-cart {
+		flex-wrap: nowrap !important;
+	}
+
+	.wc-block-cart .wc-block-components-main {
+		width: 62% !important;
+		padding-right: 3rem !important;
+	}
+
+	.wc-block-cart .wc-block-components-sidebar {
+		width: 38% !important;
+		padding-left: 0 !important;
+	}
+}
+
+/* Line items */
+.wc-block-cart-items__header {
+	border-bottom: 1px solid var(--wp--preset--color--border);
+	padding-bottom: 0.75rem;
+	margin-bottom: 0.5rem;
+	font-size: var(--wp--preset--font-size--x-small);
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var(--wp--preset--color--body-text);
+	opacity: 0.6;
+}
+
+.wc-block-cart-items__row {
+	padding: 1.5rem 0;
+	border-bottom: 1px solid var(--wp--preset--color--border);
+	align-items: flex-start;
+}
+
+.wc-block-cart-items__row:first-of-type {
+	padding-top: 0.5rem;
+}
+
+.wc-block-cart-item__image img {
+	border-radius: 10px;
+	box-shadow: 0 1px 1px rgba(4, 18, 0, 0.03), 0 10px 24px -14px rgba(4, 18, 0, 0.3);
+}
+
+.wc-block-components-product-name {
+	font-weight: 600;
+	color: var(--wp--preset--color--heading);
+	text-decoration: none;
+	line-height: 1.4;
+}
+
+.wc-block-components-product-name:hover {
+	color: var(--wp--preset--color--primary);
+}
+
+.wc-block-components-product-metadata {
+	font-size: 0.8125rem;
+	color: var(--wp--preset--color--body-text);
+	opacity: 0.65;
+	margin-top: 0.3rem;
+}
+
+.wc-block-components-product-badge,
+.wc-block-components-product-sale-badge {
+	display: inline-flex;
+	align-items: center;
+	height: auto;
+	padding: 0.3em 0.65em;
+	margin: 0.4rem 0 0;
+	border-radius: 999px;
+	background: var(--wp--preset--color--accent);
+	color: #fff;
+	font-size: 0.6875rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.wc-block-cart-item__quantity .wc-block-components-quantity-selector {
+	border: 1px solid var(--wp--preset--color--border);
+	border-radius: 8px;
+	overflow: hidden;
+}
+
+.wc-block-components-quantity-selector__button {
+	color: var(--wp--preset--color--body-text);
+	transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.wc-block-components-quantity-selector__button:hover {
+	color: var(--wp--preset--color--primary);
+}
+
+.wc-block-components-quantity-selector__button:active {
+	transform: scale(0.9);
+}
+
+.wc-block-components-quantity-selector__input {
+	-moz-appearance: textfield;
+}
+
+.wc-block-components-quantity-selector__input::-webkit-inner-spin-button,
+.wc-block-components-quantity-selector__input::-webkit-outer-spin-button {
+	-webkit-appearance: none;
+	margin: 0;
+}
+
+.wc-block-cart-item__remove-link,
+.wc-block-cart-item__save-for-later-link {
+	font-size: 0.8125rem;
+	text-decoration: none;
+	color: var(--wp--preset--color--body-text);
+	opacity: 0.6;
+	transition: color 0.15s ease, opacity 0.15s ease;
+}
+
+.wc-block-cart-item__remove-link:hover {
+	color: var(--wp--preset--color--danger);
+	opacity: 1;
+}
+
+.wc-block-cart-item__save-for-later-link:hover {
+	color: var(--wp--preset--color--primary);
+	opacity: 1;
+}
+
+.wc-block-components-product-price {
+	font-weight: 600;
+	color: var(--wp--preset--color--heading);
+}
+
+.wc-block-components-product-price .wc-block-components-product-price__regular {
+	opacity: 0.5;
+	font-weight: 400;
+	text-decoration: line-through;
+	margin-right: 0.4em;
+}
+
+.wc-block-cart-item__total .wc-block-components-product-price {
+	font-size: 1rem;
+}
+
+/* Order summary sidebar */
+.wc-block-cart__sidebar > * {
+	background: var(--wp--preset--color--page-background);
+	border-radius: 16px;
+	padding: 1.75rem;
+	box-shadow: 0 1px 1px rgba(4, 18, 0, 0.03), 0 20px 40px -28px rgba(4, 18, 0, 0.25);
+	position: sticky;
+	top: var(--wp--preset--spacing--l);
+}
+
+.wc-block-cart__totals-title {
+	font-size: 1.0625rem;
+	font-weight: 700;
+	color: var(--wp--preset--color--heading);
+	margin: 0 0 1.25rem;
+}
+
+.wc-block-components-totals-item {
+	padding: 0.6rem 0;
+	font-size: 0.9375rem;
+}
+
+.wc-block-components-totals-item__label {
+	color: var(--wp--preset--color--body-text);
+	opacity: 0.75;
+}
+
+.wc-block-components-totals-item__value {
+	font-weight: 500;
+	color: var(--wp--preset--color--heading);
+}
+
+.wc-block-components-totals-footer-item {
+	margin-top: 0.5rem;
+	padding-top: 1rem;
+	border-top: 1px solid var(--wp--preset--color--border);
+}
+
+.wc-block-components-totals-footer-item .wc-block-components-totals-item__label,
+.wc-block-components-totals-footer-item .wc-block-components-totals-item__value {
+	font-size: 1.1875rem;
+	font-weight: 700;
+	color: var(--wp--preset--color--heading);
+	opacity: 1;
+}
+
+/* Coupon form */
+.wc-block-components-totals-coupon .wc-block-components-panel__button {
+	color: var(--wp--preset--color--primary);
+	font-size: 0.875rem;
+	font-weight: 500;
+}
+
+.wc-block-components-totals-coupon__content {
+	margin-top: 0.75rem;
+}
+
+.wc-block-components-totals-coupon__form {
+	display: flex;
+	align-items: flex-start;
+	gap: 0.5rem;
+}
+
+.wc-block-components-totals-coupon__input input {
+	border-color: var(--wp--preset--color--border);
+	border-radius: 8px;
+	background: #fff;
+}
+
+.wc-block-components-totals-coupon__input input:focus-visible {
+	outline: 2px solid var(--wp--preset--color--primary);
+	outline-offset: 1px;
+	border-color: var(--wp--preset--color--primary);
+}
+
+.wc-block-components-totals-coupon__button {
+	flex: none;
+	border-radius: 8px;
+	font-size: 0.8125rem;
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+/* Checkout CTA */
+.wc-block-cart__submit-container {
+	margin-top: 1.5rem;
+}
+
+.wc-block-cart__submit-button {
+	width: 100%;
+	padding: 1.05rem;
+	border-radius: 10px;
+	font-weight: 700;
+	font-size: 0.9375rem;
+	box-shadow: 0 14px 26px -14px color-mix(in srgb, var(--wp--preset--color--primary) 60%, transparent);
+	transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+}
+
+.wc-block-cart__submit-button:hover {
+	transform: translateY(-2px);
+}
+
+.wc-block-cart__submit-button:active {
+	transform: scale(0.98) !important;
+}
+
+.wp-block-woocommerce-cart-accepted-payment-methods-block {
+	margin-top: 1.25rem;
+	opacity: 0.6;
+}
+
+.wp-block-woocommerce-cart-express-payment-block:not(:has(*)) {
+	display: none;
+}
+
+/* Empty cart state */
+.wc-block-cart__empty-cart__title {
+	font-size: var(--wp--preset--font-size--xx-large);
+	margin-top: var(--wp--preset--spacing--xl);
+}
+
+.wp-block-woocommerce-empty-cart-block hr.wp-block-separator {
+	margin: var(--wp--preset--spacing--l) auto;
+	opacity: 0.4;
+}
+
+.wp-block-woocommerce-empty-cart-block .wp-block-heading {
+	text-align: center;
+}
+
+/* Cross-sells ("You may be interested in...") - matches the product card
+   treatment used on the shop archive and related-products sections. */
+.wc-block-cart-items .wp-block-woocommerce-product-collection {
+	margin-top: var(--wp--preset--spacing--2xl);
+	padding-top: var(--wp--preset--spacing--l);
+	border-top: 1px solid var(--wp--preset--color--border);
+}
+
+.wc-block-cart-items .wp-block-woocommerce-product-collection .wp-block-heading {
+	font-size: var(--wp--preset--font-size--large);
+}
+
+.wc-block-cart-items .wc-block-components-product-image img {
+	border-radius: 10px;
+}
+
+.wc-block-cart-items .wc-block-components-product-button__button {
+	border-radius: 6px;
+	font-weight: 500;
+}
+
+/* Micro-interaction: quantity increment/decrement (cart-page-interactions.js) */
+@keyframes omega-cart-qty-pop {
+	0% {
+		transform: scale(1);
+	}
+	45% {
+		transform: scale(1.2);
+	}
+	100% {
+		transform: scale(1);
+	}
+}
+
+.wc-block-components-quantity-selector__input.omega-cart-qty-pop {
+	animation: omega-cart-qty-pop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Micro-interaction: removing a line item. WooCommerce re-renders the item
+   list via React the instant the request resolves, so there's no moment to
+   animate the row actually leaving the DOM - this starts an optimistic
+   fade/shrink the instant the remove link is clicked (before the request
+   even completes), so by the time React removes the row it's already most
+   of the way through the transition instead of just vanishing. */
+.wc-block-cart-items__row.omega-cart-row-removing {
+	opacity: 0.3;
+	transform: scale(0.98);
+	transition: opacity 0.35s ease, transform 0.35s ease;
+	pointer-events: none;
+}
+
+/* Micro-interaction: the total pulses when its value actually changes
+   (quantity update, coupon applied, item removed). */
+@keyframes omega-cart-total-pulse {
+	0% {
+		color: var(--wp--preset--color--primary);
+	}
+	100% {
+		color: var(--wp--preset--color--heading);
+	}
+}
+
+.wc-block-components-totals-footer-item .wc-block-components-totals-item__value.omega-cart-total-pulse {
+	animation: omega-cart-total-pulse 0.6s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.wc-block-components-quantity-selector__input.omega-cart-qty-pop,
+	.wc-block-components-totals-footer-item .wc-block-components-totals-item__value.omega-cart-total-pulse {
+		animation: none;
+	}
+
+	.wc-block-cart-items__row.omega-cart-row-removing {
+		transition: none;
+	}
+}
+
+@media (max-width: 782px) {
+	.wc-block-cart__sidebar > * {
+		position: static;
+	}
+}

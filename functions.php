@@ -4,20 +4,27 @@
  * Theme Functions and Definitions
  * 
  * @package OmegaDesign
- * @author Your Name
- * @link https://yourwebsite.com
+ * @author Amjad Shahzad
+ * @link https://omegadesign.io/amjad-shahzad/
  */
 
 defined('ABSPATH') || exit;
 
 /**
  * Theme Basic Information
+ *
+ * OMEGA_DESIGN_VERSION is read from style.css's own "Version:" header (the
+ * one WordPress itself already treats as this theme's canonical version) so
+ * there is exactly one place to bump on a release - get_file_data() is a
+ * plain header-parsing helper (no theme cache/object involved), safe to
+ * call this early in the load order.
  */
-define('OMEGA_DESIGN_VERSION', '1.0.0');
+$omega_design_style_data = get_file_data(__DIR__ . '/style.css', ['Version' => 'Version']);
+define('OMEGA_DESIGN_VERSION', $omega_design_style_data['Version'] ?: '1.0.0');
 define('OMEGA_DESIGN_SLUG', 'omega-design');
 define('OMEGA_DESIGN_TEXTDOMAIN', 'omega-design');
 define('OMEGA_DESIGN_AUTHOR', 'Amjad Shahzad');
-define('OMEGA_DESIGN_AUTHOR_URI', 'https://yourwebsite.com');
+define('OMEGA_DESIGN_AUTHOR_URI', 'https://omegadesign.io/amjad-shahzad/');
 
 /**
  * Core Theme Paths

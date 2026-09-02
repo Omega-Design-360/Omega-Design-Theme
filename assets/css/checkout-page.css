@@ -1,0 +1,385 @@
+/**
+ * Checkout page (templates/page-checkout.html -> the "Checkout" page's
+ * woocommerce/checkout block). Every color is a --wp--preset--color--*
+ * token, so it follows color-mode.css's light/dark swap automatically.
+ * Only enqueued on the checkout page - see hooks.php.
+ *
+ * The Terms and Place Order blocks were moved (in the Checkout page's own
+ * block content, via a one-time script - not CSS) out of the long left-hand
+ * form and into the right-hand sidebar, directly under the order summary,
+ * so the primary action always sits next to the total it's confirming
+ * rather than at the bottom of a form the customer has scrolled past.
+ */
+
+/* Belt-and-braces width fix - see the matching comment in cart-page.css.
+   WooCommerce's checkout main/sidebar split is decided by the same kind of
+   CSS container query on this block's own measured width, so it's forced
+   directly here rather than trusting the ancestor width cascade alone. */
+body.woocommerce-checkout .wp-block-post-content {
+	max-width: var(--wp--style--global--wide-size, 1400px) !important;
+	width: 100% !important;
+}
+
+.wp-block-woocommerce-checkout {
+	margin-top: var(--wp--preset--spacing--l);
+	margin-bottom: var(--wp--preset--spacing--2xl);
+	max-width: none !important;
+}
+
+.wc-block-checkout {
+	gap: var(--wp--preset--spacing--2xl);
+	align-items: start;
+}
+
+@media (min-width: 700px) {
+	.wc-block-components-sidebar-layout.wc-block-checkout {
+		flex-wrap: nowrap !important;
+	}
+
+	.wc-block-checkout .wc-block-components-main {
+		width: 62% !important;
+		padding-right: 3rem !important;
+	}
+
+	.wc-block-checkout .wc-block-components-sidebar {
+		width: 38% !important;
+		padding-left: 0 !important;
+	}
+}
+
+.wc-block-checkout__main {
+	max-width: 640px;
+}
+
+/* Numbered steps (Contact, Shipping, Payment...) - a plain CSS counter, not
+   WooCommerce's own --with-step-numbers attribute, so it works regardless
+   of how the block itself is configured. */
+.wc-block-checkout__form {
+	counter-reset: omega-checkout-step;
+}
+
+.wc-block-components-checkout-step {
+	position: relative;
+	padding: var(--wp--preset--spacing--l) 0 var(--wp--preset--spacing--l) 3rem;
+	border-bottom: 1px solid var(--wp--preset--color--border);
+}
+
+.wc-block-components-checkout-step:first-child {
+	padding-top: 0;
+}
+
+.wc-block-components-checkout-step:last-child {
+	border-bottom: none;
+	padding-bottom: 0;
+}
+
+.wc-block-components-checkout-step::before {
+	counter-increment: omega-checkout-step;
+	content: counter(omega-checkout-step);
+	position: absolute;
+	left: 0;
+	top: var(--wp--preset--spacing--l);
+	width: 28px;
+	height: 28px;
+	border-radius: 50%;
+	background: var(--wp--preset--color--page-background);
+	color: var(--wp--preset--color--heading);
+	font-size: 0.8125rem;
+	font-weight: 700;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.wc-block-components-checkout-step:first-child::before {
+	top: 0;
+}
+
+.wc-block-components-checkout-step__title {
+	font-size: 1.0625rem;
+	font-weight: 700;
+	color: var(--wp--preset--color--heading);
+}
+
+.wc-block-components-checkout-step__description {
+	font-size: 0.875rem;
+	color: var(--wp--preset--color--body-text);
+	opacity: 0.7;
+}
+
+.wc-block-components-checkout-step__content {
+	margin-top: 1.25rem;
+}
+
+/* Text inputs - address, contact, payment fields all share this component */
+.wc-block-components-text-input input {
+	border-color: var(--wp--preset--color--border);
+	border-radius: 8px;
+	background: #fff;
+}
+
+.wc-block-components-text-input input:focus-visible,
+.wc-block-components-text-input.is-active input {
+	border-color: var(--wp--preset--color--primary);
+}
+
+.wc-block-components-text-input label {
+	color: var(--wp--preset--color--body-text);
+}
+
+select {
+	border-radius: 8px;
+}
+
+.wc-block-components-validation-error {
+	color: var(--wp--preset--color--danger);
+	font-size: 0.8125rem;
+	margin-top: 0.35rem;
+}
+
+/* Checkboxes (save address, create account, terms) */
+.wc-block-components-checkbox__mark {
+	color: var(--wp--preset--color--primary);
+}
+
+.wc-block-components-checkbox__input:checked + .wc-block-components-checkbox__mark {
+	background: var(--wp--preset--color--primary);
+}
+
+/* Saved-address summary card (after autocomplete/entry, before edit) */
+.wc-block-components-address-card {
+	border: 1px solid var(--wp--preset--color--border);
+	border-radius: 10px;
+	padding: 1rem 1.1rem;
+}
+
+.wc-block-components-address-card__edit {
+	color: var(--wp--preset--color--primary);
+}
+
+/* Shipping method options - selectable cards, not a bare radio list */
+.wc-block-checkout__shipping-method-option {
+	border: 1px solid var(--wp--preset--color--border);
+	border-radius: 10px;
+	padding: 0.9rem 1.1rem;
+	margin-bottom: 0.6rem;
+	transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.wc-block-checkout__shipping-method-option:hover {
+	border-color: color-mix(in srgb, var(--wp--preset--color--primary) 45%, var(--wp--preset--color--border));
+}
+
+.wc-block-checkout__shipping-method-option--selected {
+	border-color: var(--wp--preset--color--primary);
+	background: color-mix(in srgb, var(--wp--preset--color--primary) 5%, transparent);
+}
+
+.wc-block-checkout__shipping-method-option-title {
+	font-weight: 600;
+	color: var(--wp--preset--color--heading);
+}
+
+.wc-block-checkout__shipping-method-option-price {
+	font-weight: 600;
+	color: var(--wp--preset--color--primary);
+}
+
+/* Payment methods - same selectable-card language as shipping */
+.wc-block-components-radio-control__option {
+	border: 1px solid var(--wp--preset--color--border);
+	border-radius: 10px;
+	padding: 0.9rem 1.1rem;
+	margin-bottom: 0.6rem;
+	transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.wc-block-components-radio-control__option:hover {
+	border-color: color-mix(in srgb, var(--wp--preset--color--primary) 45%, var(--wp--preset--color--border));
+}
+
+.wc-block-components-radio-control__option-checked,
+.wc-block-components-radio-control__option[aria-checked="true"] {
+	border-color: var(--wp--preset--color--primary);
+	background: color-mix(in srgb, var(--wp--preset--color--primary) 5%, transparent);
+}
+
+.wc-block-components-radio-control__input:checked {
+	accent-color: var(--wp--preset--color--primary);
+}
+
+.wc-block-components-radio-control__label {
+	font-weight: 600;
+	color: var(--wp--preset--color--heading);
+}
+
+.wc-block-components-payment-method-icons {
+	opacity: 0.7;
+}
+
+/* ---------------------------------------------------------------------
+   Sidebar: order summary + terms + Place Order, one continuous card.
+   The sidebar itself now has 3 direct children (order summary, terms,
+   actions - moved there from the form, see the top of this file), so the
+   card/sticky styling goes on the sidebar wrapper itself, not "each of its
+   children" (which would have produced 3 separate floating cards). */
+.wc-block-checkout__sidebar {
+	background: var(--wp--preset--color--page-background);
+	border-radius: 16px;
+	padding: 1.75rem;
+	box-shadow: 0 1px 1px rgba(4, 18, 0, 0.03), 0 24px 48px -28px rgba(4, 18, 0, 0.28);
+	position: sticky;
+	top: var(--wp--preset--spacing--l);
+}
+
+.wc-block-components-checkout-order-summary__title {
+	font-size: 1.0625rem;
+	font-weight: 700;
+	color: var(--wp--preset--color--heading);
+}
+
+.wc-block-components-order-summary-item__image {
+	border-radius: 8px;
+}
+
+.wc-block-components-order-summary-item__quantity {
+	background: var(--wp--preset--color--heading);
+	color: #fff;
+	font-size: 0.6875rem;
+	font-weight: 700;
+}
+
+.wc-block-components-order-summary-item__description {
+	font-size: 0.8125rem;
+	color: var(--wp--preset--color--body-text);
+	opacity: 0.65;
+}
+
+.wc-block-components-totals-item {
+	padding: 0.6rem 0;
+	font-size: 0.9375rem;
+}
+
+.wc-block-components-totals-item__label {
+	color: var(--wp--preset--color--body-text);
+	opacity: 0.75;
+}
+
+.wc-block-components-totals-item__value {
+	font-weight: 500;
+	color: var(--wp--preset--color--heading);
+}
+
+.wc-block-components-totals-footer-item {
+	margin-top: 0.5rem;
+	padding-top: 1rem;
+	border-top: 1px solid var(--wp--preset--color--border);
+}
+
+.wc-block-components-totals-footer-item .wc-block-components-totals-item__label,
+.wc-block-components-totals-footer-item .wc-block-components-totals-item__value {
+	font-size: 1.1875rem;
+	font-weight: 700;
+	color: var(--wp--preset--color--heading);
+	opacity: 1;
+}
+
+/* Terms - now living directly above the button it gates, inside the sidebar */
+.wc-block-checkout__sidebar .wc-block-checkout__terms {
+	margin-top: 1.5rem;
+	padding-top: 1.25rem;
+	border-top: 1px solid var(--wp--preset--color--border);
+	font-size: 0.8125rem;
+}
+
+.wc-block-checkout__sidebar .wc-block-checkout__terms a {
+	color: var(--wp--preset--color--primary);
+}
+
+/* Place Order - the primary action, styled like the cart/product CTAs */
+.wc-block-checkout__sidebar .wc-block-components-checkout-place-order-button {
+	width: 100%;
+	margin-top: 1rem;
+	padding: 1.1rem;
+	border-radius: 10px;
+	font-weight: 700;
+	font-size: 0.9375rem;
+	box-shadow: 0 16px 30px -14px color-mix(in srgb, var(--wp--preset--color--primary) 60%, transparent);
+	transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+}
+
+.wc-block-checkout__sidebar .wc-block-components-checkout-place-order-button:hover {
+	transform: translateY(-2px);
+}
+
+.wc-block-checkout__sidebar .wc-block-components-checkout-place-order-button:active {
+	transform: scale(0.98) !important;
+}
+
+.wc-block-checkout__sidebar .wc-block-components-checkout-place-order-button--loading {
+	opacity: 0.75;
+}
+
+@keyframes omega-checkout-press {
+	0% {
+		transform: scale(1);
+	}
+	35% {
+		transform: scale(0.97);
+	}
+	65% {
+		transform: scale(1.015);
+	}
+	100% {
+		transform: scale(1);
+	}
+}
+
+.wc-block-checkout__sidebar .wc-block-components-checkout-place-order-button.omega-checkout-press {
+	animation: omega-checkout-press 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.wc-block-checkout__sidebar .wc-block-components-checkout-place-order-button.omega-checkout-press {
+		animation: none;
+	}
+}
+
+/* ---------------------------------------------------------------------
+   Store notices - kept (payment/coupon errors that redirect back still
+   need to be visible), but styled as a real banner instead of the
+   plugin/browser default box.
+   --------------------------------------------------------------------- */
+.woocommerce-message,
+.woocommerce-error,
+.woocommerce-info {
+	list-style: none;
+	margin: 0 0 1.5rem;
+	padding: 1rem 1.25rem;
+	border-radius: 10px;
+	border-left: 3px solid var(--wp--preset--color--primary);
+	background: var(--wp--preset--color--page-background);
+	color: var(--wp--preset--color--heading);
+	font-size: 0.9375rem;
+}
+
+.woocommerce-error {
+	border-left-color: var(--wp--preset--color--danger);
+}
+
+.woocommerce-message a.button,
+.woocommerce-error a.button {
+	margin-left: 0.75rem;
+	color: var(--wp--preset--color--primary);
+	text-decoration: underline;
+}
+
+@media (max-width: 782px) {
+	.wc-block-checkout__sidebar {
+		position: static;
+	}
+
+	.wc-block-components-checkout-step {
+		padding-left: 2.5rem;
+	}
+}

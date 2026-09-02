@@ -18,6 +18,11 @@
     position: relative;
     z-index: 100;
     transition: box-shadow 0.3s var(--omega-ch-ease), background-color 0.3s var(--omega-ch-ease);
+    /* Every interactive control below gets its own deliberate :active
+       press state - the browser's own default tap highlight (a gray/blue
+       flash box, inconsistent between browsers and rarely matching the
+       design) would otherwise show instead of/on top of it. */
+    -webkit-tap-highlight-color: transparent;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -25,6 +30,12 @@
     .omega-classic-header * {
         transition-duration: 0.01ms !important;
         animation-duration: 0.01ms !important;
+    }
+
+    /* scroll-behavior isn't a transition/animation, so the blanket rule
+       above doesn't touch it - reset separately. */
+    .omega-classic-header__nav {
+        scroll-behavior: auto;
     }
 }
 
@@ -120,6 +131,32 @@
     display: block;
 }
 
+@media (max-width: 781px) {
+    /* On mobile, the account/cart/toggle controls in
+       .omega-classic-header__actions must always stay fully on screen -
+       flex-shrink:0 on .custom-logo-link (above) exists precisely so the
+       logo never gets visually squished, but that same rule means it
+       never gives up space either. A wide wordmark logo (or a long site
+       title, for the no-logo fallback) then has nowhere to go but to push
+       the controls right off the edge of a narrow phone screen, which is
+       exactly what was happening. Capping the brand's own width here -
+       not the controls - means it's the brand that shrinks/truncates on
+       a very narrow screen with an unusually wide logo, never the
+       functional controls next to it. */
+    .omega-classic-header__title,
+    .omega-classic-header .custom-logo-link {
+        max-width: 42%;
+    }
+    .omega-classic-header__title {
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .omega-classic-header .custom-logo {
+        max-width: 100%;
+        max-height: 34px;
+    }
+}
+
 /* ── Hamburger toggle: 3 plain CSS bars, animates into an X ────── */
 .omega-classic-header__toggle {
     display: none;
@@ -132,12 +169,21 @@
     background: transparent;
     cursor: pointer;
     flex-shrink: 0;
-    transition: background-color 0.2s var(--omega-ch-ease);
+    touch-action: manipulation;
+    transition: background-color 0.2s var(--omega-ch-ease), transform 0.15s var(--omega-ch-ease);
 }
 
 .omega-classic-header__toggle:hover,
 .omega-classic-header__toggle:focus-visible {
     background-color: rgba(127, 127, 127, 0.14);
+}
+
+/* A real, immediate press response - fires the instant a finger lands
+   rather than waiting on (sometimes unreliable on touch) :hover, and
+   settles the "does this feel like a button" question outright. */
+.omega-classic-header__toggle:active {
+    background-color: rgba(127, 127, 127, 0.2);
+    transform: scale(0.92);
 }
 
 .omega-classic-header__toggle:focus-visible {
@@ -169,6 +215,148 @@
 .omega-classic-header__toggle.is-active span:nth-child(3) {
     top: 19px;
     transform: rotate(-45deg);
+}
+
+/* ── Actions group: nav, then WooCommerce icons, then the mobile
+   toggle - in that DOM order deliberately (woocommerce_header.php,
+   classic_header.php's template files). On desktop the toggle is
+   display:none, so this reads left-to-right as "nav links, then
+   cart/account icons" at the header's right edge. On mobile the nav
+   itself becomes a position:fixed full-screen overlay (classic-
+   header.css's own mobile block) and so no longer occupies space here,
+   leaving exactly "icons, then toggle" - which is what puts the icons
+   right before the toggle button on a phone screen. ───────────────── */
+.omega-classic-header__actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    /* A flex item's default min-width is auto, not 0 - meaning the browser
+       refuses to shrink it below the natural width of its own content
+       (nav + icons + toggle) even when flex-shrink would otherwise allow
+       it, which is exactly what let this whole group overflow the header
+       and push the toggle button off-screen on mobile instead of
+       compressing. 0 here is what actually lets .omega-classic-header__nav
+       ul's own children wrap/shrink instead of forcing an overflow. */
+    min-width: 0;
+}
+
+.omega-classic-header__wc-icons {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+/* Same circle-button visual language as .omega-classic-header__toggle
+   (40px, transparent at rest, soft neutral hover/focus fill) so the icons
+   read as part of the same control family rather than a bolted-on
+   afterthought. */
+.omega-classic-header__wc-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    color: inherit;
+    flex-shrink: 0;
+    touch-action: manipulation;
+    transition: background-color 0.2s var(--omega-ch-ease), transform 0.15s var(--omega-ch-ease);
+}
+
+.omega-classic-header__wc-icon:hover,
+.omega-classic-header__wc-icon:focus-visible {
+    background-color: rgba(127, 127, 127, 0.14);
+}
+
+.omega-classic-header__wc-icon:active {
+    background-color: rgba(127, 127, 127, 0.2);
+    transform: scale(0.92);
+}
+
+.omega-classic-header__wc-icon:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+}
+
+.omega-classic-header__wc-icon svg {
+    display: block;
+}
+
+/* Cart item count - a small filled badge overlapping the icon's own
+   top-right corner, the universal "N items" convention. Uses the
+   theme's own primary/button-text colors (theme.json), not fixed hex
+   values, so it always matches whatever brand color a site has. */
+.omega-cart-count {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: var(--wp--preset--color--primary, #1fbb00);
+    color: var(--wp--preset--color--button-text, #fff);
+    font-size: 0.65rem;
+    font-weight: 600;
+    line-height: 16px;
+    text-align: center;
+}
+
+.omega-cart-count.is-hidden {
+    display: none;
+}
+
+/* The real WooCommerce Mini Cart block's own trigger button (woocommerce_
+   header.php's mini_cart_html()) - matched to the same 40px circle,
+   transparent-at-rest, soft-hover-fill language as the account icon and
+   mobile toggle right next to it, so all three read as one family of
+   controls rather than WC's own default button styling sitting oddly next
+   to this theme's. Scoped to .omega-classic-header specifically, so a
+   Mini Cart block used anywhere else on the site (a widget, a page) keeps
+   WooCommerce's own default look untouched. */
+.omega-classic-header .wc-block-mini-cart {
+    display: flex;
+    align-items: center;
+    font-size: 1rem;
+}
+/* !important throughout this button/icon block: WooCommerce's own
+   mini-cart.css sizes both the button (padding-based, no fixed box) and
+   its icon (`em`-based, chained through .wc-block-mini-cart__button
+   .wc-block-mini-cart__icon) off font-size, at a specificity close enough
+   to this override that load order between the two stylesheets could
+   otherwise decide which one wins - not worth leaving to chance for the
+   one thing this rule exists to guarantee: a 40px circle matching the
+   account icon and toggle button next to it, not a small, padding-sized
+   button that reads as visually smaller than the nav's own text. */
+.omega-classic-header .wc-block-mini-cart__button {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 40px !important;
+    height: 40px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 50% !important;
+    background: transparent !important;
+    color: inherit !important;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: background-color 0.2s var(--omega-ch-ease), transform 0.15s var(--omega-ch-ease);
+}
+.omega-classic-header .wc-block-mini-cart__button:hover,
+.omega-classic-header .wc-block-mini-cart__button:focus-visible {
+    background-color: rgba(127, 127, 127, 0.14);
+}
+.omega-classic-header .wc-block-mini-cart__button:active {
+    background-color: rgba(127, 127, 127, 0.2);
+    transform: scale(0.92);
+}
+.omega-classic-header .wc-block-mini-cart__button .wc-block-mini-cart__icon,
+.omega-classic-header .wc-block-mini-cart__button svg {
+    width: 24px !important;
+    height: 24px !important;
+    margin: 0 !important;
 }
 
 /* ── Nav (top level) ─────────────────────────────────────────── */
@@ -216,6 +404,12 @@
 .omega-classic-header__nav > ul > li > a:hover,
 .omega-classic-header__nav > ul > li > a:focus-visible {
     opacity: 0.82;
+}
+/* A quick, immediate dip on press/tap - independent of the underline
+   animation above, which is a slower reveal-on-hover effect not meant to
+   double as tap feedback. */
+.omega-classic-header__nav > ul > li > a:active {
+    opacity: 0.65;
 }
 .omega-classic-header__nav > ul > li > a:hover::before,
 .omega-classic-header__nav > ul > li > a:focus-visible::before,
@@ -332,11 +526,17 @@
     border-radius: calc(var(--omega-ch-radius) - 4px);
     white-space: nowrap;
     opacity: 1;
+    touch-action: manipulation;
+    transition: background-color 0.15s var(--omega-ch-ease);
 }
 
 .omega-classic-header__nav .sub-menu a:hover,
 .omega-classic-header__nav .sub-menu a:focus-visible {
     background-color: rgba(127, 127, 127, 0.1);
+}
+
+.omega-classic-header__nav .sub-menu a:active {
+    background-color: rgba(127, 127, 127, 0.18);
 }
 
 /* ── Submenu/Mega-Menu arrow toggle (megamenu.php's
@@ -430,19 +630,23 @@
            unset, even though this is no longer positioned at all. */
         width: auto;
         /* Onto its own full-width line below the label+arrow row - the
-           trigger <li> is now a (wrapping) flex row itself. One shorthand
-           declaration, not a separate padding-top - a second, later
-           padding here would silently win over an earlier padding-top and
-           put it right back, which is what happened before. Symmetric
-           left/right (the inner .omega-megamenu content's own l/r padding,
-           forced equal on mobile in megamenu.css, is what actually
-           provides the visual inset - doubling it up here just to indent
-           only the left edge is what created the original unequal-sides
-           bug). */
-        padding: 0.5rem 0 1rem;
+           trigger <li> is now a (wrapping) flex row itself. Zero padding
+           while collapsed, not just max-height:0 - this element isn't
+           box-sizing:border-box, so max-height only zeroes the *content*
+           box and a padding set here unconditionally still renders and
+           takes up real layout height even with nothing visible inside it,
+           which was exactly why a Mega Menu trigger's own row sat visibly
+           taller than every plain item next to it. Real padding only
+           applies once .is-expanded below, mirroring the plain .sub-menu's
+           already-correct collapse handling above. Symmetric left/right
+           (the inner .omega-megamenu content's own l/r padding, forced
+           equal on mobile in megamenu.css, is what actually provides the
+           visual inset - doubling it up here just to indent only the left
+           edge is what created the original unequal-sides bug). */
+        padding: 0;
         max-height: 0;
         overflow: hidden;
-        transition: max-height 0.25s ease, opacity 0.2s ease;
+        transition: max-height 0.25s ease, opacity 0.2s ease, padding 0.25s ease;
     }
 
     /* Matches the desktop hover rule's own selector weight (3 classes) -
@@ -472,6 +676,7 @@
 
     .omega-classic-header .omega-megamenu-trigger > .omega-megamenu-panel.is-expanded {
         max-height: 2000px; /* generous cap - see .omega-classic-header__nav.is-open's own note */
+        padding: 0.5rem 0 1rem;
         opacity: 1;
         visibility: visible;
         pointer-events: auto;
@@ -532,6 +737,24 @@
 @media (max-width: 781px) {
     .omega-classic-header__toggle { display: block; }
 
+    /* Tighter than desktop's 40px/0.5rem - reclaims real width for
+       whatever's left over after the (now width-capped) logo above, on
+       top of that cap rather than instead of it, since a very small
+       phone plus a full-length wordmark logo can still be tight even at
+       42% max-width. */
+    .omega-classic-header__actions {
+        gap: 0.25rem;
+    }
+    .omega-classic-header__wc-icons {
+        gap: 0;
+    }
+    .omega-classic-header__wc-icon,
+    .omega-classic-header__toggle,
+    .omega-classic-header .wc-block-mini-cart__button {
+        width: 36px !important;
+        height: 36px !important;
+    }
+
     /* Locked to the viewport (position:fixed), not to wherever the header
        happens to sit in the page (position:absolute) - a non-sticky header
        scrolled out of view would otherwise drag its own open mobile menu
@@ -553,6 +776,14 @@
         box-shadow: var(--omega-ch-shadow);
         transition: max-height 0.3s var(--omega-ch-ease), opacity 0.25s ease;
         z-index: 100;
+        /* Any scroll position change inside this container (the browser's
+           own "scroll the newly-focused submenu-toggle button into view"
+           behavior, or the container growing once a Mega Menu panel
+           expands below the fold) animates instead of jumping instantly -
+           this, not the panel's own open/close transition, is what was
+           reading as an ugly "jump to the top" on tapping a Mega Menu
+           arrow. */
+        scroll-behavior: smooth;
     }
 
     .omega-classic-header__nav.is-open {
@@ -576,33 +807,50 @@
 
     .omega-classic-header__nav ul {
         flex-direction: column;
-        /* stretch (not center) - each <li> stays full-width so its own
-           border-top divider still spans edge to edge; the actual link
-           text/arrow centers itself within that full-width row instead,
-           via text-align/justify-content below. */
+        /* stretch (not center) - each <li> stays full-width, so the whole
+           row (not just the text) is tappable; the actual link text/arrow
+           centers itself within that full-width row instead, via
+           text-align/justify-content below. */
         align-items: stretch;
-        justify-content: center;
-        gap: 0;
-        padding: 0.5rem 1.25rem 1rem;
-        min-height: 100%;
+        /* Top-aligned, not vertically centered (justify-content:center +
+           min-height:100% used to do this) - centering a short item list
+           looked nice while closed, but the instant a Mega Menu/submenu
+           expanded and grew taller than the centered block, the whole
+           list had to visually snap to a new position with no way to
+           animate that recentering - exactly the "jumps to the top" bug.
+           Top-aligned never needs to recompute a centering offset, so
+           there's nothing left to jump. */
+        justify-content: flex-start;
+        /* Items are separated by breathing room now, not divider lines
+           (border-top removed below) - gap between rows plus generous
+           top/bottom padding around the whole list. */
+        gap: 0.4rem;
+        padding: 1.75rem 1.25rem 2rem;
         /* Centers each plain (inline-block) link within its own full-width
            <li> - the flex trigger rows above handle their own centering
            via justify-content instead, since they're flex containers. */
         text-align: center;
     }
 
-    .omega-classic-header__nav li { border-top: 1px solid rgba(127, 127, 127, 0.14); }
-    .omega-classic-header__nav li:first-child { border-top: 0; }
-
     .omega-classic-header__nav > ul > li > a {
-        padding: 0.85rem 0.25rem;
+        padding: 1.1rem 0.25rem;
         border-radius: 8px;
         text-align: center;
+        touch-action: manipulation;
+        transition: background-color 0.15s var(--omega-ch-ease), opacity 0.2s var(--omega-ch-ease);
     }
     .omega-classic-header__nav > ul > li > a::before { display: none; }
     .omega-classic-header__nav > ul > li > a:hover,
     .omega-classic-header__nav > ul > li > a:focus-visible {
         background-color: rgba(127, 127, 127, 0.08);
+        opacity: 1;
+    }
+    /* A visibly stronger fill than :hover, not just the base rule's
+       opacity dip - on a touch screen this is the ONLY feedback a tap
+       gets (there's no lingering :hover state the way a mouse leaves
+       one), so it needs to read clearly on its own. */
+    .omega-classic-header__nav > ul > li > a:active {
+        background-color: rgba(127, 127, 127, 0.16);
         opacity: 1;
     }
     .omega-classic-header__nav > ul > li.current-menu-item > a,
@@ -650,15 +898,20 @@
         align-items: center;
         justify-content: center;
         flex-shrink: 0;
-        width: 44px;
-        height: 44px;
+        /* Sized to sit close to the label text next to it rather than
+           towering over it - still a real, easy-to-tap circle, just not
+           one that reads as visually oversized against a single line of
+           menu text. */
+        width: 28px;
+        height: 28px;
         padding: 0;
         border: 0;
         border-radius: 50%;
         background: transparent;
         color: inherit;
         cursor: pointer;
-        transition: background-color 0.2s var(--omega-ch-ease);
+        touch-action: manipulation;
+        transition: background-color 0.2s var(--omega-ch-ease), transform 0.15s var(--omega-ch-ease);
     }
 
     .omega-classic-header__submenu-toggle:hover,
@@ -666,13 +919,18 @@
         background-color: rgba(127, 127, 127, 0.1);
     }
 
+    .omega-classic-header__submenu-toggle:active {
+        background-color: rgba(127, 127, 127, 0.18);
+        transform: scale(0.9);
+    }
+
     .omega-classic-header__submenu-toggle span {
         display: inline-block;
-        width: 8px;
-        height: 8px;
-        margin-top: -3px;
-        border-right: 2px solid currentColor;
-        border-bottom: 2px solid currentColor;
+        width: 6px;
+        height: 6px;
+        margin-top: -2px;
+        border-right: 1.5px solid currentColor;
+        border-bottom: 1.5px solid currentColor;
         transform: rotate(45deg);
         opacity: 0.7;
         transition: transform 0.2s var(--omega-ch-ease), opacity 0.2s ease;
@@ -714,11 +972,13 @@
         opacity: 1;
         visibility: visible;
         pointer-events: auto;
-        padding-top: 0.25rem;
-        padding-bottom: 0.5rem;
+        padding-top: 0.5rem;
+        padding-bottom: 0.75rem;
     }
-    .omega-classic-header__nav .sub-menu li { border-top: 1px solid rgba(127, 127, 127, 0.1); }
-    .omega-classic-header__nav .sub-menu a { padding: 0.6rem 0.5rem; border-radius: 8px; }
+    /* Spacing instead of a divider line here too, matching the top-level
+       list above. */
+    .omega-classic-header__nav .sub-menu li + li { margin-top: 0.3rem; }
+    .omega-classic-header__nav .sub-menu a { padding: 0.7rem 0.5rem; border-radius: 8px; }
     .omega-classic-header__nav .menu-item-has-children > a::after { display: none !important; }
 
     .omega-classic-header--2 .omega-classic-header__inner,
@@ -765,16 +1025,18 @@
     top: 1rem;
     right: 1.25rem;
 }
-/* A hairline separates the centered logo from the nav row beneath it -
-   subtle enough to read as intentional structure, not a hard rule. Scoped
-   to the desktop row itself, not .omega-classic-header, so it never shows
-   up as a stray line at the very top of the full-screen mobile menu. */
-.omega-classic-header--2 .omega-classic-header__inner > .omega-classic-header__nav {
+/* A hairline separates the centered logo from the nav/icons row beneath
+   it - subtle enough to read as intentional structure, not a hard rule.
+   Scoped to .omega-classic-header__actions (the desktop row itself, not
+   .omega-classic-header__nav specifically - the wrapper also holds the
+   WooCommerce icons now), so it never shows up as a stray line at the
+   very top of the full-screen mobile menu. */
+.omega-classic-header--2 .omega-classic-header__actions {
     padding-top: 0.6rem;
     border-top: 1px solid rgba(127, 127, 127, 0.12);
 }
 @media (max-width: 781px) {
-    .omega-classic-header--2 .omega-classic-header__inner > .omega-classic-header__nav {
+    .omega-classic-header--2 .omega-classic-header__actions {
         padding-top: 0;
         border-top: 0;
     }
@@ -818,6 +1080,13 @@
     filter: brightness(1.08);
     transform: translateY(-1px);
 }
+/* Presses back down into the page rather than lifting - the opposite
+   direction from :hover's lift above, which is what makes a press
+   actually feel like a press instead of just a slightly different hover. */
+.omega-classic-header--3 .omega-classic-header__nav > ul > li:last-child:not(.menu-item-has-children):not(.omega-megamenu-trigger) > a:active {
+    filter: brightness(0.95);
+    transform: translateY(0) scale(0.97);
+}
 @media (max-width: 781px) {
     .omega-classic-header--3 .omega-classic-header__nav {
         background-color: var(--wp--preset--color--surface, #f5f7f2);
@@ -857,6 +1126,10 @@
 .omega-classic-header--4 .omega-classic-header__nav > ul > li > a:hover,
 .omega-classic-header--4 .omega-classic-header__nav > ul > li > a:focus-visible {
     background-color: rgba(127, 127, 127, 0.12);
+    opacity: 1;
+}
+.omega-classic-header--4 .omega-classic-header__nav > ul > li > a:active {
+    background-color: rgba(127, 127, 127, 0.2);
     opacity: 1;
 }
 .omega-classic-header--4 .omega-classic-header__nav > ul > li.current-menu-item > a,
@@ -923,5 +1196,8 @@
     .omega-classic-header--5 .omega-classic-header__nav > ul > li > a:hover,
     .omega-classic-header--5 .omega-classic-header__nav > ul > li > a:focus-visible {
         background-color: rgba(255, 255, 255, 0.08);
+    }
+    .omega-classic-header--5 .omega-classic-header__nav > ul > li > a:active {
+        background-color: rgba(255, 255, 255, 0.14);
     }
 }
