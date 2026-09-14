@@ -2,7 +2,21 @@
 
 <!-- wp:group {"tagName":"main"} -->
 <main class="wp-block-group">
-	<!-- wp:post-content {"layout":{"type":"constrained"}} /-->
+	<!-- wp:columns {"className":"omega-sidebar-layout"} -->
+	<div class="wp-block-columns omega-sidebar-layout">
+		<!-- wp:column {"className":"omega-sidebar-layout__main"} -->
+		<div class="wp-block-column omega-sidebar-layout__main">
+			<!-- wp:post-content {"layout":{"type":"constrained"}} /-->
+		</div>
+		<!-- /wp:column -->
+
+		<!-- wp:column {"className":"omega-sidebar-layout__aside"} -->
+		<div class="wp-block-column omega-sidebar-layout__aside">
+			<!-- wp:template-part {"slug":"sidebar"} /-->
+		</div>
+		<!-- /wp:column -->
+	</div>
+	<!-- /wp:columns -->
 </main>
 <!-- /wp:group -->
 

@@ -1,0 +1,509 @@
+.omega-slider {
+	position: relative;
+}
+
+.omega-slider__track {
+	position: relative;
+	width: 100%;
+}
+
+/*
+ * The two extra copies view.js appends for a true infinite loop (see
+ * "infiniteLoop" in view.js) - purely transitional scroll targets, never
+ * meant to be read or clicked. `inert` (set in JS) already covers this in
+ * browsers that support it; pointer-events is a plain-CSS fallback for the
+ * ones that don't.
+ */
+.omega-slider__clone {
+	pointer-events: none;
+}
+
+/*
+ * "slide" / "vertical" effects: positioning is native scroll
+ * (scrollLeft / scrollTo()), not a JS-driven CSS transform - a
+ * transform-based track hit a real Chromium bug in testing where a slide
+ * scrolled into view via transform painted completely blank despite every
+ * computed style being correct (confirmed by removing the transform
+ * entirely: the same slide rendered fine in plain document flow). Native
+ * scroll-snap sidesteps it entirely since the browser's own
+ * scrolling/compositing does the work instead of JS recalculating a
+ * transform.
+ */
+.omega-slider__track--scroll {
+	display: flex;
+	overflow-x: auto;
+	overflow-y: hidden;
+	scroll-snap-type: x mandatory;
+	-webkit-overflow-scrolling: touch;
+	scrollbar-width: none;
+	touch-action: pan-y;
+}
+
+.omega-slider__track--scroll::-webkit-scrollbar {
+	display: none;
+}
+
+.omega-slider__track--scroll > * {
+	min-width: 0;
+	scroll-snap-align: start;
+	scroll-snap-stop: always;
+}
+
+.omega-slider__track--vertical {
+	flex-direction: column;
+	overflow-x: hidden;
+	overflow-y: auto;
+	scroll-snap-type: y mandatory;
+	height: 480px;
+}
+
+/*
+ * A sliver of the next slide peeking at the edge, as a hint there's more.
+ * Sizing each slide at 90% of the track (rather than the full 100%) is
+ * what creates the peek on its own - no extra padding on the track
+ * needed (padding-right here previously added 10% on TOP of the
+ * track's own 100% width, since the box isn't border-box, which bled
+ * the whole page 10% wider than the viewport and caused real horizontal
+ * scroll).
+ */
+.omega-slider--peek .omega-slider__track--scroll > * {
+	flex: 0 0 90% !important;
+	margin-right: 16px;
+}
+
+/*
+ * "fade" / "zoom" / "coverflow" effects: slides are stacked absolutely in
+ * the same spot instead of scrolled past - a structurally different
+ * pattern from --scroll above (not the transform+overflow:hidden
+ * combination that triggered the Chromium bug), so it's safe rather than
+ * a workaround. Track height is set explicitly by syncStackedHeight() in
+ * view.js since absolutely positioned children don't otherwise
+ * contribute to it.
+ */
+.omega-slider__track--stacked {
+	overflow: hidden;
+}
+
+.omega-slider__track--stacked > * {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	opacity: 0;
+	visibility: hidden;
+	pointer-events: none;
+	z-index: 1;
+	transition: opacity 0.7s ease;
+}
+
+.omega-slider__track--stacked > .is-active {
+	opacity: 1;
+	visibility: visible;
+	pointer-events: auto;
+	z-index: 3;
+}
+
+/* Ken Burns: the whole slide (text included) eases up to a gentle zoom. */
+.omega-slider--effect-zoom .omega-slider__track--stacked > * {
+	transition: opacity 0.7s ease, transform 6s ease-out;
+	transform: scale(1);
+	overflow: hidden;
+}
+
+.omega-slider--effect-zoom .omega-slider__track--stacked > .is-active {
+	transform: scale(1.1);
+}
+
+/*
+ * "Coverflow" is the destination-style card stack: the active slide is a
+ * full-bleed fade like above, and a strip of small portrait cards - one
+ * per upcoming slide, built by buildPeekCards() in view.js - stacks with
+ * a staggered offset over it, each clickable to jump straight there.
+ */
+.omega-slider__peek-cards {
+	position: absolute;
+	top: 50%;
+	right: 5%;
+	transform: translateY(-50%);
+	width: clamp(120px, 16vw, 220px);
+	aspect-ratio: 3 / 4;
+	z-index: 5;
+	pointer-events: none;
+}
+
+.omega-slider__peek-card {
+	position: absolute;
+	inset: 0;
+	display: block;
+	width: 100%;
+	height: 100%;
+	padding: 0;
+	border: 3px solid var(--wp--preset--color--background, #fff);
+	border-radius: 16px;
+	overflow: hidden;
+	background: var(--wp--preset--color--background, #fff);
+	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+	cursor: pointer;
+	opacity: 0;
+	visibility: hidden;
+	pointer-events: none;
+	transition: transform 0.5s ease, opacity 0.5s ease;
+	transform: translateX(60px) scale(0.85);
+}
+
+.omega-slider__peek-card.is-visible {
+	opacity: 1;
+	visibility: visible;
+	pointer-events: auto;
+	transform: translateX(calc((var(--omega-peek-distance, 1) - 1) * 18px))
+		scale(calc(1 - (var(--omega-peek-distance, 1) - 1) * 0.08));
+}
+
+.omega-slider__peek-card img {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.omega-slider__peek-card-label {
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	padding: 10px 12px;
+	font-size: 0.75rem;
+	font-weight: 600;
+	line-height: 1.3;
+	color: #fff;
+	background: linear-gradient(to top, rgba(0, 0, 0, 0.65), transparent);
+}
+
+.omega-slider__thumbnails {
+	display: flex;
+	justify-content: center;
+	flex-wrap: wrap;
+	gap: 10px;
+	margin-top: 16px;
+	overflow-x: auto;
+	padding: 4px;
+}
+
+.omega-slider__thumbnail {
+	flex: 0 0 auto;
+	width: 64px;
+	height: 44px;
+	padding: 0;
+	border: 2px solid transparent;
+	border-radius: 8px;
+	overflow: hidden;
+	background: var(--wp--preset--color--border, #d0d0d0);
+	cursor: pointer;
+	opacity: 0.6;
+	transition: opacity 0.2s ease, border-color 0.2s ease;
+	font-size: 0.75rem;
+	font-weight: 600;
+	color: var(--wp--preset--color--heading, #041200);
+}
+
+.omega-slider__thumbnail img {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.omega-slider__thumbnail.is-active {
+	opacity: 1;
+	border-color: var(--wp--preset--color--primary, #1fbb00);
+}
+
+.omega-slider__progressbar {
+	height: 3px;
+	margin-top: 16px;
+	background: var(--wp--preset--color--border, #d0d0d0);
+	border-radius: 999px;
+	overflow: hidden;
+}
+
+.omega-slider__progressbar-fill {
+	height: 100%;
+	width: 0%;
+	background: var(--wp--preset--color--primary, #1fbb00);
+}
+
+/*
+ * "Cards" effect: a full-bleed hero photo with a horizontal row of up to
+ * 3 upcoming-slide preview cards bottom-right. Clicking one visually
+ * "expands" it into the new hero image via a cloned, position/size-
+ * animated element (see expandToSlide()/shrinkToSlide() in view.js) -
+ * the card itself IS the transition, not a plain cross-fade.
+ */
+.omega-slider--effect-cards .omega-slider__track--stacked > * {
+	transition: none;
+}
+
+.omega-slider__card-row {
+	position: absolute;
+	right: 5%;
+	bottom: 55px;
+	width: 390px;
+	height: 145px;
+	z-index: 30;
+}
+
+.omega-slider__card {
+	position: absolute;
+	top: 0;
+	width: 120px;
+	height: 140px;
+	margin: 0;
+	padding: 0;
+	border: 1px solid rgba(255, 255, 255, 0.45);
+	border-radius: 12px;
+	overflow: hidden;
+	cursor: pointer;
+	background: #222;
+	box-shadow: 0 15px 35px rgba(0, 0, 0, 0.45);
+	transition: left 850ms cubic-bezier(0.22, 0.61, 0.36, 1), transform 850ms cubic-bezier(0.22, 0.61, 0.36, 1), opacity 350ms ease;
+}
+
+.omega-slider__card:hover {
+	transform: translateY(-6px) scale(1.03);
+}
+
+.omega-slider__card--hide {
+	opacity: 0 !important;
+	pointer-events: none !important;
+}
+
+.omega-slider__card img {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.omega-slider__card-label {
+	position: absolute;
+	left: 11px;
+	right: 8px;
+	bottom: 9px;
+	margin: 0;
+	font-size: 10px;
+	line-height: 1.2;
+	letter-spacing: 1.2px;
+	text-transform: uppercase;
+	color: #fff;
+	text-shadow: 0 2px 8px rgba(0, 0, 0, 0.75);
+}
+
+.omega-slider__expander {
+	position: absolute;
+	z-index: 6;
+	overflow: hidden;
+	pointer-events: none;
+	box-shadow: 0 25px 70px rgba(0, 0, 0, 0.4);
+}
+
+.omega-slider__expander img {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+@media (max-width: 700px) {
+	.omega-slider__card-row {
+		right: 5%;
+		bottom: 20px;
+		width: 285px;
+		height: 95px;
+	}
+
+	.omega-slider__card {
+		width: 85px;
+		height: 92px;
+		border-radius: 8px;
+	}
+
+	.omega-slider__card:nth-child(2) { left: 90px !important; }
+	.omega-slider__card:nth-child(3) { left: 180px !important; }
+}
+
+/*
+ * The editor never builds a runtime .omega-slider__track wrapper (that's a
+ * view.js-only DOM construction, front end only) - InnerBlocks renders the
+ * slides as direct children of .omega-slider--editing itself, so the
+ * preview layout applies straight to the root here instead.
+ */
+.omega-slider--editing {
+	display: flex;
+	overflow-x: auto;
+	cursor: default;
+}
+
+.omega-slider--editing > * {
+	flex: 0 0 85% !important;
+	min-width: 0;
+}
+
+.omega-slider__arrows {
+	pointer-events: none;
+}
+
+.omega-slider__arrow {
+	position: absolute;
+	top: 50%;
+	transform: translateY(-50%);
+	width: 44px;
+	height: 44px;
+	border-radius: 999px;
+	border: none;
+	background: var(--wp--preset--color--background, #fff);
+	color: var(--wp--preset--color--heading, #041200);
+	box-shadow: var(--wp--preset--shadow--medium, 0 4px 12px rgba(0, 0, 0, 0.12));
+	cursor: pointer;
+	pointer-events: auto;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	/*
+	 * Must beat every other layered element in a stacked-effect slide -
+	 * the active slide itself (z-index 3) and the coverflow peek-cards
+	 * (z-index 5) - or slide content reaching the slide's edges (as
+	 * omega-design/content-slider's edge-to-edge image/text layout does)
+	 * sits on top and silently eats the arrow's clicks.
+	 */
+	z-index: 8;
+	transition: background 0.2s ease, opacity 0.2s ease;
+}
+
+.omega-slider__arrow:hover {
+	background: var(--wp--preset--color--primary, #1fbb00);
+	color: var(--wp--preset--color--button-text, #fff);
+}
+
+.omega-slider__arrow:disabled {
+	opacity: 0.35;
+	cursor: default;
+}
+
+.omega-slider__arrow::before {
+	content: '';
+	width: 10px;
+	height: 10px;
+	border-top: 2px solid currentColor;
+	border-right: 2px solid currentColor;
+	/*
+	 * The visible "ink" of this border-corner chevron sits in the corner of
+	 * its own 10x10 box, not at the box's center - flexbox centers the box
+	 * itself perfectly, but the drawn V-shape still reads as off-center
+	 * inside the circle. Nudging it back in its own (pre-rotation) local
+	 * space before each direction's rotate() recenters the visible mark
+	 * rather than the invisible box it's drawn in.
+	 */
+	transform: translate(-2px, 2px);
+}
+
+.omega-slider__arrow--prev {
+	left: var(--wp--preset--spacing--l, 32px);
+}
+
+.omega-slider__arrow--prev::before {
+	transform: translate(-2px, 2px) rotate(-135deg);
+}
+
+.omega-slider__arrow--next {
+	right: var(--wp--preset--spacing--l, 32px);
+}
+
+.omega-slider__arrow--next::before {
+	transform: translate(-2px, 2px) rotate(45deg);
+}
+
+.omega-slider__dots {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 8px;
+	margin-top: 16px;
+}
+
+.omega-slider__dot {
+	width: 8px;
+	height: 8px;
+	border-radius: 999px;
+	border: none;
+	padding: 0;
+	background: var(--wp--preset--color--border, #d0d0d0);
+	cursor: pointer;
+	transition: background 0.2s ease, width 0.2s ease;
+}
+
+.omega-slider__dot.is-active {
+	background: var(--wp--preset--color--primary, #1fbb00);
+	width: 22px;
+	border-radius: 999px;
+}
+
+/*
+ * Per-slide text entrance animation - any element inside a slide can opt
+ * in with a bare data-slide-animation="fade-up" (etc.) attribute; view.js's
+ * armSlideAnimations()/playSlideAnimation() add/replay the --armed/--play
+ * classes below automatically (the same mechanism omega-design/content-
+ * slider uses, see blocks/omega-content-slider/style.css) without needing
+ * that block's own layout rules, so a plain slide (e.g. the Fashion Store
+ * hero) can use it too.
+ */
+[data-slide-animation].omega-content-slider--armed {
+	opacity: 0;
+	transition: opacity 600ms ease, transform 600ms ease;
+}
+
+[data-slide-animation="fade-up"].omega-content-slider--armed { transform: translateY(24px); }
+[data-slide-animation="fade-down"].omega-content-slider--armed { transform: translateY(-24px); }
+[data-slide-animation="slide-left"].omega-content-slider--armed { transform: translateX(-40px); }
+[data-slide-animation="slide-right"].omega-content-slider--armed { transform: translateX(40px); }
+[data-slide-animation="zoom-in"].omega-content-slider--armed { transform: scale(0.92); }
+[data-slide-animation="fade-in"].omega-content-slider--armed { transform: none; }
+
+[data-slide-animation].omega-content-slider--armed.omega-content-slider--play {
+	opacity: 1;
+	transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	[data-slide-animation].omega-content-slider--armed {
+		opacity: 1;
+		transform: none;
+		transition: none;
+	}
+}
+
+@media (max-width: 600px) {
+	/*
+	 * The arrows are vertically centered on the *whole* slide's height
+	 * (top: 50%), which works fine for an image-only slide, but a
+	 * text+stats+image slide (the common hero pattern) stacks its content
+	 * into one tall column at this width instead of sitting side by side -
+	 * "50% of the height" then lands somewhere in the middle of the text,
+	 * not next to the image. Swipe (already smooth and native via
+	 * scroll-snap) is the expected way to navigate a slider on a touch
+	 * screen anyway, so the arrows just step aside here rather than
+	 * floating in a nonsensical spot; the dots (normal document flow,
+	 * unaffected by slide height) still give an explicit way to navigate.
+	 */
+	.omega-slider__arrows {
+		display: none;
+	}
+
+	.omega-slider__peek-cards {
+		right: 4%;
+		width: clamp(70px, 22vw, 110px);
+	}
+
+	.omega-slider__peek-card-label {
+		display: none;
+	}
+}

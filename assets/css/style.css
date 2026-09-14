@@ -1,4 +1,75 @@
 /**
+ * Every template's <main> is a plain "Group" block with no explicit layout,
+ * so WordPress's global block-gap spacing gives it a margin-top by default
+ * (the same spacing it'd insert between two ordinary stacked blocks) even
+ * though its actual previous sibling is the site header, not page content.
+ * That shows up as a visible, unintentional-looking gap of bare page
+ * background between the header and wherever the template's own content
+ * starts. Every template wants the header to sit flush against its
+ * content, so this is a global fix rather than a per-template one.
+ */
+main.wp-block-group {
+	margin-top: 0;
+}
+
+/**
+ * Global button micro-interaction: theme.json already swaps the button's
+ * background color on :hover (styles.elements.button), but with no
+ * transition and no motion it just snaps, which reads as inert rather than
+ * responsive. A lift + shadow + eased color swap makes every button on the
+ * site (not just this one landing page) feel like it's actually reacting
+ * to the pointer.
+ */
+.wp-element-button {
+	transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease, opacity 0.2s ease;
+}
+
+.wp-element-button:hover {
+	transform: translateY(-2px);
+	box-shadow: var(--wp--preset--shadow--medium, 0 6px 16px rgba(0, 0, 0, 0.15));
+}
+
+.wp-element-button:active {
+	transform: translateY(0);
+	box-shadow: none;
+}
+
+/**
+ * Global horizontal-scrollbar safety net.
+ *
+ * The landing page patterns' "full width" sections bleed edge-to-edge using
+ * a `width: 100vw; margin-left: calc(50% - 50vw)` trick (see .omega-landing
+ * > .alignfull in landing-pages.css) - the only technique that actually
+ * escapes their wrapping constrained group. `vw` units are defined against
+ * the browser's OUTER viewport (the one a vertical scrollbar carves into),
+ * while `%` and a page's actual content box are measured against the
+ * INNER, scrollbar-excluded width. Whenever the page is tall enough to show
+ * a normal (non-overlay) scrollbar - the common case on Windows/Linux
+ * desktop browsers - `100vw` ends up a scrollbar's-width (~15-17px) wider
+ * than the page can actually show, so every full-bleed section overshoots
+ * the right edge by that amount and the page gains its own tiny but real
+ * horizontal scrollbar. Clipping it here is the standard fix: it only ever
+ * trims that harmless few-pixel overshoot and never affects vertical
+ * scrolling or any intentional full-bleed visual.
+ *
+ * clip, not hidden: per the CSS Overflow spec, an element with overflow-x
+ * set to anything other than visible while overflow-y is visible computes
+ * overflow-y as auto instead - and that promotion happens even when
+ * overflow-y: visible is written out explicitly, so there's no combination
+ * of hidden/visible that avoids it. With overflow-y silently forced to
+ * auto on both html AND body, each became its own independently scrollable
+ * box - two real, separate scrollbars stacked at the page edge instead of
+ * the usual single one. overflow: clip is exempt from that promotion
+ * rule entirely (it never creates a scroll container to begin with), so
+ * pairing it with an untouched overflow-y is what actually gets back to
+ * plain single-scrollbar document scrolling.
+ */
+html,
+body {
+	overflow-x: clip;
+}
+
+/**
  * Page-level content width override.
  *
  * Set via the "Page Width" control in the editor sidebar (Page > Summary).
@@ -43,16 +114,130 @@
 	box-shadow: var(--wp--preset--shadow--medium);
 }
 
-.omega-product-card .wc-block-components-product-image img {
+.omega-product-card .wc-block-components-product-image img,
+li.wc-block-product .wc-block-components-product-image img {
 	transition: transform 0.3s ease;
 }
 
-.omega-product-card:hover .wc-block-components-product-image img {
+.omega-product-card:hover .wc-block-components-product-image img,
+li.wc-block-product:hover .wc-block-components-product-image img {
 	transform: scale(1.04);
 }
 
-.omega-product-card .wc-block-components-product-image {
+.omega-product-card .wc-block-components-product-image,
+li.wc-block-product .wc-block-components-product-image {
 	overflow: hidden;
+}
+
+/*
+ * The theme's global button padding (theme.json's styles.elements.button,
+ * 0.75rem top/bottom) is sized for a standalone CTA - inside this compact
+ * card it reads as oversized next to the image/title/price above it.
+ * Scoped to the card so every other button on the site (hero CTAs, footer
+ * "Contact us", newsletter signup, ...) keeps the normal global size.
+ */
+.omega-product-card .wc-block-components-product-button__button,
+li.wc-block-product .wc-block-components-product-button__button {
+	padding-top: 0.45rem;
+	padding-bottom: 0.45rem;
+}
+
+/**
+ * Card background for WooCommerce's own Product Template output wherever
+ * it ISN'T already wrapped in the theme's .omega-product-card group (e.g.
+ * the "Trending Products" tabs on the landing pages, built in
+ * includes/patterns/pattern-helpers.php).
+ *
+ * This deliberately styles WooCommerce's own native per-product <li> via
+ * plain CSS rather than adding a wrapping block around product-template's
+ * children: nesting an extra block there breaks the Product Collection
+ * block's own server-side rendering (it silently double-renders every
+ * product instead of once) - a real WooCommerce Blocks limitation, not a
+ * theme bug, confirmed by reverting that approach after it duplicated the
+ * whole Trending Products grid. Pure CSS on the existing element carries
+ * none of that risk.
+ *
+ * :not(:has(.omega-product-card)) excludes the Shop archive's own cards
+ * (templates/archive-product.html), which already wrap their content in a
+ * .omega-product-card group with this exact same background/padding/radius
+ * - without this guard, that page would get the same treatment twice
+ * (once from its own group, once from this <li>), doubling the padding and
+ * nesting one rounded card inside another.
+ */
+li.wc-block-product:not(:has(.omega-product-card)) {
+	background: var(--wp--preset--color--surface);
+	border-radius: 12px;
+	box-shadow: var(--wp--preset--shadow--soft);
+	padding: var(--wp--preset--spacing--s) var(--wp--preset--spacing--s) var(--wp--preset--spacing--m);
+	overflow: hidden;
+	transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+li.wc-block-product:not(:has(.omega-product-card)):hover,
+li.wc-block-product:not(:has(.omega-product-card)):focus-within {
+	transform: translateY(-4px);
+	box-shadow: var(--wp--preset--shadow--medium);
+}
+
+/**
+ * The product image (WooCommerce's own woocommerce/product-image block)
+ * leaves its <img> as an ordinary inline element sized by its own
+ * intrinsic aspect ratio, rather than filling the box drawn around it -
+ * on a non-square source photo that meant the image rendered narrower
+ * than its own card (visible whitespace either side) and, combined with
+ * object-fit:cover on a mismatched box, at least one product effectively
+ * disappeared. Forcing the image itself to fill the container (block,
+ * 100%/100%, cover) makes every photo actually act as a fill container
+ * regardless of its native size/aspect ratio. A shorter fixed height here
+ * (down from the ~310-480px this was rendering at) is also most of what
+ * was making the whole card feel oversized.
+ */
+.omega-product-card .wc-block-components-product-image,
+li.wc-block-product .wc-block-components-product-image {
+	height: 200px;
+}
+
+/*
+ * The <a> WooCommerce wraps the image in is an inline element by default,
+ * which sizes to its own content (the image) instead of stretching to
+ * fill this box - leaving the image nothing real to resolve its own
+ * width:100%/height:100% against, so it fell back to a small intrinsic
+ * size instead. Making the link a block-level fill container breaks that
+ * circular reference.
+ */
+.omega-product-card .wc-block-components-product-image > a,
+li.wc-block-product .wc-block-components-product-image > a {
+	display: block;
+	width: 100%;
+	height: 100%;
+}
+
+.omega-product-card .wc-block-components-product-image img,
+li.wc-block-product .wc-block-components-product-image img {
+	/*
+	 * !important is required here: WooCommerce's product-image block
+	 * writes aspect-ratio directly onto the <img> tag's own style
+	 * attribute (style="object-fit:cover;aspect-ratio:3/4;"), and an
+	 * inline style beats any external stylesheet rule regardless of
+	 * selector specificity. Without overriding it explicitly, the image
+	 * keeps sizing itself from its own 3:4 aspect ratio instead of
+	 * filling this fixed-height box, which is what let the box and the
+	 * image visibly disagree in size (one product's photo effectively
+	 * vanished because of it).
+	 */
+	display: block !important;
+	width: 100% !important;
+	height: 100% !important;
+	aspect-ratio: auto !important;
+	/*
+	 * contain, not cover: cover fills the box completely but crops
+	 * whichever edge doesn't match the box's proportions - fine for a
+	 * uniform photoshoot, but this catalog's product photos vary widely
+	 * in shape (a perfume bottle vs. a full pair of jeans), so cropping
+	 * was cutting real product content off. contain always shows the
+	 * whole photo, letterboxed on the card's own background instead.
+	 */
+	object-fit: contain !important;
 }
 
 /**
@@ -246,24 +431,18 @@
 	box-shadow: 0 0 0 6px color-mix(in srgb, var(--wp--preset--color--primary) 14%, transparent);
 }
 
-/**
- * --surface is a dark green in this theme even in light mode (it's used as a
- * dark accent card, matching the site header/footer), so its text needs the
- * light "-dark" token pair rather than the default heading/body-text colors,
- * which assume a light background.
- */
-.omega-checkout-auth-notice__title {
+.omega-checkout-auth-notice .omega-checkout-auth-notice__title {
 	margin: 0 0 0.625rem;
 	font-size: var(--wp--preset--font-size--large);
 	font-weight: 600;
 	line-height: 1.3;
-	color: var(--wp--preset--color--heading-dark);
+	color: var(--wp--preset--color--heading) !important;
 }
 
-.omega-checkout-auth-notice__message {
+.omega-checkout-auth-notice .omega-checkout-auth-notice__message {
 	max-width: 25rem;
 	margin: 0 auto 2rem;
-	color: var(--wp--preset--color--body-text-dark);
+	color: var(--wp--preset--color--body-text) !important;
 	opacity: 0.85;
 	line-height: 1.6;
 }
@@ -315,4 +494,64 @@
 	.omega-checkout-auth-notice__button {
 		width: 100%;
 	}
+}
+
+/**
+ * Blog sidebar layout (see includes/customizer/sidebar.php).
+ *
+ * Every template that can show the sidebar (category.html, archive.html,
+ * search.html, index.html, home.html, single.html, page.html) uses the same
+ * two-column markup with these two className hooks. Which side the sidebar
+ * sits on and whether it shows at all is NOT baked into the static template
+ * markup - it is resolved per-request in PHP (sidebar.php's
+ * should_show_sidebar() / get_sidebar_position()) and expressed here purely
+ * via body classes and a CSS custom property, so one theme_mod change (or a
+ * per-page override from the editor's Page Settings panel) affects every
+ * template at once without editing template files.
+ */
+/*
+ * WordPress auto-generates a per-instance layout stylesheet for any
+ * "flex" layout block (a ".wp-container-core-columns-is-layout-<hash> >
+ * .wp-block-column{flex-basis:0;flex-grow:1;...}" rule scoped to this
+ * exact wp:columns block) whenever the block itself doesn't declare fixed
+ * per-column widths. That generated selector's specificity (a class
+ * combined with a child combinator) beats a single plain class here
+ * regardless of stylesheet load order, so every rule below needs
+ * !important to reliably win - the same fix already used in
+ * background_color.php for the equivalent theme.json-generated-rule
+ * problem.
+ */
+.wp-block-column.omega-sidebar-layout__aside {
+	flex: 0 0 var(--omega-sidebar-width, 30%) !important;
+	order: 2 !important;
+}
+
+.wp-block-column.omega-sidebar-layout__main {
+	flex: 1 1 0% !important;
+	order: 1 !important;
+	min-width: 0;
+}
+
+body.omega-sidebar-pos-left .wp-block-column.omega-sidebar-layout__aside {
+	order: 1 !important;
+}
+
+body.omega-sidebar-pos-left .wp-block-column.omega-sidebar-layout__main {
+	order: 2 !important;
+}
+
+body.omega-sidebar-hidden .wp-block-column.omega-sidebar-layout__aside {
+	display: none !important;
+}
+
+body.omega-sidebar-hidden .wp-block-column.omega-sidebar-layout__main {
+	flex: 1 1 100% !important;
+}
+
+.omega-sidebar-layout__aside .widget + .widget {
+	margin-top: 2rem;
+}
+
+.omega-sidebar-layout__aside .widget-title {
+	margin-top: 0;
 }

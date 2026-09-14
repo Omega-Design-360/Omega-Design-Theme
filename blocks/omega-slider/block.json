@@ -1,0 +1,40 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "omega-design/slider",
+	"title": "Omega Slider",
+	"category": "omega-design",
+	"icon": "images-alt2",
+	"description": "A touch-swipeable, autoplay-capable carousel. Every direct child block becomes one slide - add any blocks you like inside each slide, or use \"Add Images as Slides\" to pick several photos at once and turn each into its own slide.",
+	"keywords": ["slider", "carousel", "slideshow", "hero"],
+	"textdomain": "omega-design",
+	"attributes": {
+		"autoplay": { "type": "boolean", "default": true },
+		"autoplaySpeed": { "type": "number", "default": 6000 },
+		"loop": { "type": "boolean", "default": true },
+		"showArrows": { "type": "boolean", "default": true },
+		"showDots": { "type": "boolean", "default": true },
+		"slidesPerView": { "type": "number", "default": 1 },
+		"slidesPerViewTablet": { "type": "number", "default": 1 },
+		"slidesPerViewMobile": { "type": "number", "default": 1 },
+		"gap": { "type": "string", "default": "0px" },
+		"prevLabel": { "type": "string", "default": "Previous slide" },
+		"nextLabel": { "type": "string", "default": "Next slide" },
+		"dotsLabel": { "type": "string", "default": "Slides" },
+		"effect": { "type": "string", "default": "slide" },
+		"showThumbnails": { "type": "boolean", "default": false },
+		"showProgressBar": { "type": "boolean", "default": false },
+		"showPeek": { "type": "boolean", "default": false }
+	},
+	"supports": {
+		"html": false,
+		"align": ["wide", "full"],
+		"spacing": { "margin": true, "padding": true, "blockGap": false },
+		"color": { "background": true, "text": true, "gradients": true },
+		"border": { "radius": true, "width": true, "color": true },
+		"shadow": true
+	},
+	"editorScript": "omega-slider-block-editor",
+	"style": "omega-slider-block",
+	"viewScript": "omega-slider-block-view"
+}

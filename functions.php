@@ -11,6 +11,18 @@
 defined('ABSPATH') || exit;
 
 /**
+ * Core Theme Paths
+ */
+define('OMEGA_DESIGN_DIR', get_template_directory());
+define('OMEGA_DESIGN_URI', get_template_directory_uri());
+
+/**
+ * Text domain for all __()/_e() calls across the theme - matches the "Text
+ * Domain:" header in style.css.
+ */
+define('OMEGA_DESIGN_TEXTDOMAIN', 'omega-design');
+
+/**
  * Theme Basic Information
  *
  * OMEGA_DESIGN_VERSION is read from style.css's own "Version:" header (the
@@ -19,18 +31,9 @@ defined('ABSPATH') || exit;
  * plain header-parsing helper (no theme cache/object involved), safe to
  * call this early in the load order.
  */
-$omega_design_style_data = get_file_data(__DIR__ . '/style.css', ['Version' => 'Version']);
-define('OMEGA_DESIGN_VERSION', $omega_design_style_data['Version'] ?: '1.0.0');
-define('OMEGA_DESIGN_SLUG', 'omega-design');
-define('OMEGA_DESIGN_TEXTDOMAIN', 'omega-design');
-define('OMEGA_DESIGN_AUTHOR', 'Amjad Shahzad');
-define('OMEGA_DESIGN_AUTHOR_URI', 'https://omegadesign.io/amjad-shahzad/');
-
-/**
- * Core Theme Paths
- */
-define('OMEGA_DESIGN_DIR', get_template_directory());
-define('OMEGA_DESIGN_URI', get_template_directory_uri());
+$omega_design_theme_data = get_file_data(OMEGA_DESIGN_DIR . '/style.css', ['Version' => 'Version']);
+define('OMEGA_DESIGN_VERSION', !empty($omega_design_theme_data['Version']) ? $omega_design_theme_data['Version'] : '1.0.0');
+unset($omega_design_theme_data);
 
 /**
  * Child Theme Support (if child theme is used)

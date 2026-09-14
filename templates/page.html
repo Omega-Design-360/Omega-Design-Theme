@@ -2,13 +2,27 @@
 
 <!-- wp:group {"tagName":"main"} -->
 <main class="wp-block-group">
-	<!-- wp:group {"layout":{"type":"constrained"}} -->
-	<div class="wp-block-group">
-		<!-- wp:post-featured-image {} /-->
-		<!-- wp:post-title {} /-->
+	<!-- wp:columns {"className":"omega-sidebar-layout"} -->
+	<div class="wp-block-columns omega-sidebar-layout">
+		<!-- wp:column {"className":"omega-sidebar-layout__main"} -->
+		<div class="wp-block-column omega-sidebar-layout__main">
+			<!-- wp:group {"layout":{"type":"constrained"}} -->
+			<div class="wp-block-group">
+				<!-- wp:post-featured-image {} /-->
+				<!-- wp:post-title {} /-->
+			</div>
+			<!-- /wp:group -->
+			<!-- wp:post-content {"layout":{"type":"constrained"}} /-->
+		</div>
+		<!-- /wp:column -->
+
+		<!-- wp:column {"className":"omega-sidebar-layout__aside"} -->
+		<div class="wp-block-column omega-sidebar-layout__aside">
+			<!-- wp:template-part {"slug":"sidebar"} /-->
+		</div>
+		<!-- /wp:column -->
 	</div>
-	<!-- /wp:group -->
-	<!-- wp:post-content {"layout":{"type":"constrained"}} /-->
+	<!-- /wp:columns -->
 </main>
 <!-- /wp:group -->
 

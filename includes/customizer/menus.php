@@ -49,6 +49,28 @@ class menus {
 
     public function init() {}
 
+    /**
+     * The left-hand admin menu icon for "Omega Design" - a base64 data URI
+     * (WordPress's own recommended approach for a custom SVG menu icon, per
+     * add_menu_page()'s docs) rather than a plain file URL, so it works the
+     * same way a dashicon does without an extra HTTP request. Falls back to
+     * a dashicon if the file is ever missing so a bad path can't leave the
+     * whole admin menu item without an icon.
+     */
+    private function get_menu_icon_data_uri() {
+        $path = OMEGA_DESIGN_ASSETS . '/images/theme-icon.svg';
+        if (!file_exists($path)) {
+            return 'dashicons-layout';
+        }
+
+        $svg = file_get_contents($path);
+        if (false === $svg) {
+            return 'dashicons-layout';
+        }
+
+        return 'data:image/svg+xml;base64,' . base64_encode($svg);
+    }
+
     public function register_admin_menu() {
         $this->dashboard_hook = add_menu_page(
             __('Omega Design', 'omega-design'),
@@ -56,7 +78,7 @@ class menus {
             'manage_options',
             'omega-dashboard',
             [$this, 'dashboard_page'],
-            'dashicons-layout',
+            $this->get_menu_icon_data_uri(),
             2
         );
 
@@ -129,7 +151,10 @@ class menus {
 
         $wp_admin_bar->add_node([
             'id'    => 'omega-design',
-            'title' => 'Omega Design',
+            // A plain <img>, not a background-image span - core's admin-bar
+            // CSS forces "background-image: none !important" on anything
+            // classed .ab-icon, which an <img> tag simply isn't subject to.
+            'title' => '<img src="' . esc_url(omega_design_versioned_asset_url('/images/theme-icon.svg')) . '" class="omega-topbar-icon" alt="" />' . esc_html__('Omega Design', 'omega-design'),
             'href'  => admin_url('admin.php?page=omega-dashboard'),
         ]);
 
@@ -258,8 +283,12 @@ class menus {
             wp_die(esc_html__('You do not have permission to do this.', 'omega-design'));
         }
 
-        if (isset($_POST['omega_section_sidebar'])) {
+        if (isset($_POST['omega_section_color_scheme'])) {
+            $nonce_field = 'omega_nonce_color_scheme';
+        } elseif (isset($_POST['omega_section_sidebar'])) {
             $nonce_field = 'omega_nonce_sidebar';
+        } elseif (isset($_POST['omega_section_design'])) {
+            $nonce_field = 'omega_nonce_design';
         } elseif (isset($_POST['omega_section_logo'])) {
             $nonce_field = 'omega_nonce_logo';
         } elseif (isset($_POST['omega_section_header_nav'])) {
@@ -275,6 +304,11 @@ class menus {
         }
         check_admin_referer('omega_save_settings', $nonce_field);
 
+        if (isset($_POST['omega_section_color_scheme'])) {
+            $scheme = isset($_POST['omega_color_scheme']) ? wp_unslash($_POST['omega_color_scheme']) : color_scheme::DEFAULT_SCHEME;
+            set_theme_mod('omega_color_scheme', color_scheme::get_instance()->sanitize_scheme($scheme));
+        }
+
         if (isset($_POST['omega_section_color_mode'])) {
             $mode = isset($_POST['omega_color_mode']) ? wp_unslash($_POST['omega_color_mode']) : 'auto';
             set_theme_mod('omega_color_mode', color_mode::get_instance()->sanitize_mode($mode));
@@ -288,6 +322,29 @@ class menus {
 
             $width = isset($_POST['omega_sidebar_width']) ? absint($_POST['omega_sidebar_width']) : 30;
             set_theme_mod('omega_sidebar_width', max(20, min(50, $width)));
+
+            $template = isset($_POST['omega_sidebar_default_template']) ? wp_unslash($_POST['omega_sidebar_default_template']) : 'sidebar';
+            set_theme_mod('omega_sidebar_default_template', sidebar::get_instance()->sanitize_template($template));
+
+            foreach (sidebar::get_instance()->get_sidebar_locations_map() as $option_name) {
+                set_theme_mod($option_name, !empty($_POST[$option_name]));
+            }
+        }
+
+        if (isset($_POST['omega_section_design'])) {
+            $radius = isset($_POST['omega_button_radius']) ? wp_unslash($_POST['omega_button_radius']) : 'soft';
+            if (!array_key_exists($radius, self::BUTTON_RADIUS_CHOICES)) {
+                $radius = 'soft';
+            }
+            set_theme_mod('omega_button_radius', $radius);
+
+            $look = isset($_POST['omega_button_look']) ? wp_unslash($_POST['omega_button_look']) : 'fill';
+            if (!array_key_exists($look, self::BUTTON_LOOK_CHOICES)) {
+                $look = 'fill';
+            }
+            set_theme_mod('omega_button_look', $look);
+
+            set_theme_mod('omega_svg_uploads_enabled', !empty($_POST['omega_svg_uploads_enabled']));
         }
 
         if (isset($_POST['omega_section_logo'])) {
@@ -400,6 +457,8 @@ class menus {
                 $layout = 'gallery-feature';
             }
             set_theme_mod('omega_product_page_layout', $layout);
+
+            set_theme_mod('omega_related_products_carousel', !empty($_POST['omega_related_products_carousel']));
         }
 
         $redirect_to = isset($_POST['omega_redirect_to'])
@@ -456,7 +515,7 @@ class menus {
         ?>
         <div class="omega-admin-header">
             <div class="omega-admin-header__brand">
-                <img src="<?php echo esc_url(omega_design_versioned_asset_url('/icons/Omega-Design.png')); ?>" alt="" class="omega-admin-header__logo" />
+                <img src="<?php echo esc_url(omega_design_versioned_asset_url('/images/theme-icon.svg')); ?>" alt="" class="omega-admin-header__logo" />
                 <div>
                     <h1 class="omega-admin-header__title">
                         <?php esc_html_e('Omega Design', 'omega-design'); ?>
@@ -843,8 +902,9 @@ class menus {
      * working; only the surrounding structure and typography differ).
      */
     private function render_product_page_form($redirect_to) {
-        $layout  = product_page::active_layout();
-        $choices = product_page::style_choices();
+        $layout          = product_page::active_layout();
+        $choices         = product_page::style_choices();
+        $related_carousel = (bool) get_theme_mod('omega_related_products_carousel', true);
         ?>
         <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" class="omega-card">
             <input type="hidden" name="action" value="omega_save_settings" />
@@ -875,6 +935,15 @@ class menus {
             <?php if (!class_exists('WooCommerce')) : ?>
                 <p class="description"><?php esc_html_e('WooCommerce is not active - this only takes effect once it is.', 'omega-design'); ?></p>
             <?php endif; ?>
+
+            <h3><?php esc_html_e('Related Products', 'omega-design'); ?></h3>
+
+            <label class="omega-toggle">
+                <input type="checkbox" name="omega_related_products_carousel" value="1" <?php checked($related_carousel); ?> />
+                <span class="omega-toggle__track"><span class="omega-toggle__thumb"></span></span>
+                <span class="omega-toggle__label"><?php esc_html_e('Show related products as a swipeable carousel', 'omega-design'); ?></span>
+            </label>
+            <p class="description"><?php esc_html_e('Uses the same slider engine as the rest of the theme (arrows, touch swipe). Turn off to use WooCommerce\'s plain grid instead.', 'omega-design'); ?></p>
 
             <?php submit_button(__('Save Product Page Layout', 'omega-design'), 'omega-btn omega-btn--primary', 'omega_submit_product_page', false); ?>
         </form>
@@ -1032,6 +1101,128 @@ class menus {
         <?php
     }
 
+    const BUTTON_RADIUS_CHOICES = [
+        'sharp'   => '2px',
+        'soft'    => '6px',
+        'rounded' => '14px',
+        'pill'    => '999px',
+    ];
+
+    /**
+     * These names must match the "omega-{name}" style names registered in
+     * block_style_variations::register_styles() - a default look reuses
+     * exactly the same CSS rule as the matching per-button Style choice,
+     * just scoped to a body class instead (see block-style-variations.css).
+     */
+    const BUTTON_LOOK_CHOICES = [
+        'fill'  => 'Fill (default)',
+        'ghost' => 'Ghost',
+        'soft'  => 'Soft',
+        'pill'  => 'Pill',
+        '3d'    => '3D',
+    ];
+
+    /**
+     * Site-wide design defaults: how new/unstyled Button blocks look
+     * (corner rounding + overall look), and whether admins can upload SVGs
+     * at all (includes/core/svg_upload.php already restricts SVG uploads to
+     * administrators - this is the on/off switch for that capability, not
+     * a role change). Everything here only ever affects the *default*
+     * appearance - a block with its own explicit Style or a custom corner
+     * radius the admin set by hand always wins over these.
+     */
+    private function render_color_scheme_form($redirect_to) {
+        $scheme_obj = color_scheme::get_instance();
+        $current = $scheme_obj->get_scheme_key();
+        ?>
+        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" class="omega-card">
+            <input type="hidden" name="action" value="omega_save_settings" />
+            <input type="hidden" name="omega_section_color_scheme" value="1" />
+            <input type="hidden" name="omega_redirect_to" value="<?php echo esc_url($redirect_to); ?>" />
+            <?php wp_nonce_field('omega_save_settings', 'omega_nonce_color_scheme'); ?>
+
+            <div class="omega-card__head">
+                <span class="dashicons dashicons-admin-customizer"></span>
+                <div>
+                    <h2><?php esc_html_e('Color Scheme', 'omega-design'); ?></h2>
+                    <p><?php esc_html_e('Applies everywhere - header, footer, buttons, Shop page, every landing page.', 'omega-design'); ?></p>
+                </div>
+            </div>
+
+            <?php
+            color_scheme::render_scheme_cards(
+                $scheme_obj->get_schemes(),
+                $current,
+                function ($key) {
+                    echo 'name="omega_color_scheme"';
+                }
+            );
+            ?>
+
+            <?php submit_button(__('Save Color Scheme', 'omega-design'), 'omega-btn omega-btn--primary', 'omega_submit_color_scheme', false); ?>
+        </form>
+        <?php
+    }
+
+    private function render_design_form($redirect_to) {
+        $radius       = get_theme_mod('omega_button_radius', 'soft');
+        if (!array_key_exists($radius, self::BUTTON_RADIUS_CHOICES)) {
+            $radius = 'soft';
+        }
+        $look         = get_theme_mod('omega_button_look', 'fill');
+        if (!array_key_exists($look, self::BUTTON_LOOK_CHOICES)) {
+            $look = 'fill';
+        }
+        $svg_uploads  = (bool) get_theme_mod('omega_svg_uploads_enabled', true);
+        ?>
+        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" class="omega-card">
+            <input type="hidden" name="action" value="omega_save_settings" />
+            <input type="hidden" name="omega_section_design" value="1" />
+            <input type="hidden" name="omega_redirect_to" value="<?php echo esc_url($redirect_to); ?>" />
+            <?php wp_nonce_field('omega_save_settings', 'omega_nonce_design'); ?>
+
+            <div class="omega-card__head">
+                <span class="dashicons dashicons-art"></span>
+                <div>
+                    <h2><?php esc_html_e('Site-wide Button Defaults', 'omega-design'); ?></h2>
+                    <p><?php esc_html_e('Applies to any Button block that hasn\'t been given its own Style or custom radius in the block editor - an explicit per-button choice always overrides this.', 'omega-design'); ?></p>
+                </div>
+            </div>
+
+            <div class="omega-field">
+                <label for="omega_button_radius"><?php esc_html_e('Corner style', 'omega-design'); ?></label>
+                <select name="omega_button_radius" id="omega_button_radius">
+                    <option value="sharp" <?php selected($radius, 'sharp'); ?>><?php esc_html_e('Sharp', 'omega-design'); ?></option>
+                    <option value="soft" <?php selected($radius, 'soft'); ?>><?php esc_html_e('Soft (default)', 'omega-design'); ?></option>
+                    <option value="rounded" <?php selected($radius, 'rounded'); ?>><?php esc_html_e('Rounded', 'omega-design'); ?></option>
+                    <option value="pill" <?php selected($radius, 'pill'); ?>><?php esc_html_e('Pill', 'omega-design'); ?></option>
+                </select>
+            </div>
+
+            <div class="omega-field">
+                <label for="omega_button_look"><?php esc_html_e('Default look', 'omega-design'); ?></label>
+                <select name="omega_button_look" id="omega_button_look">
+                    <?php foreach (self::BUTTON_LOOK_CHOICES as $value => $label) : ?>
+                        <option value="<?php echo esc_attr($value); ?>" <?php selected($look, $value); ?>><?php echo esc_html($label); ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <p class="description"><?php esc_html_e('The same looks available per-button under Styles in the block editor.', 'omega-design'); ?></p>
+            </div>
+
+            <h3><?php esc_html_e('Media', 'omega-design'); ?></h3>
+
+            <label class="omega-toggle">
+                <input type="checkbox" name="omega_svg_uploads_enabled" value="1" <?php checked($svg_uploads); ?> />
+                <span class="omega-toggle__track"><span class="omega-toggle__thumb"></span></span>
+                <span class="omega-toggle__label"><?php esc_html_e('Allow administrators to upload SVG images', 'omega-design'); ?></span>
+            </label>
+            <p class="description"><?php esc_html_e('Every SVG is still sanitized on upload either way - this only controls whether the option exists at all. Editors and other roles can never upload SVGs regardless of this setting.', 'omega-design'); ?></p>
+
+            <?php submit_button(__('Save Design Settings', 'omega-design'), 'omega-btn omega-btn--primary', 'omega_submit_design', false); ?>
+        </form>
+        <?php
+    }
+
     /**
      * Section map for the tabbed Settings screen: id => [label, icon]. One
      * panel per tab, switched client-side (assets/js/admin-settings-tabs.js)
@@ -1042,6 +1233,7 @@ class menus {
     private function settings_tabs() {
         return [
             'general'     => [__('General', 'omega-design'), 'admin-generic'],
+            'design'      => [__('Design', 'omega-design'), 'art'],
             'header'      => [__('Header & Announcement', 'omega-design'), 'menu-alt2'],
             'menus'       => [__('Menus & Pages', 'omega-design'), 'admin-page'],
             'footer'      => [__('Footer', 'omega-design'), 'align-center'],
@@ -1054,6 +1246,7 @@ class menus {
         $sidebar_enabled = sidebar::get_instance()->is_sidebar_enabled();
         $sidebar_position = sidebar::get_instance()->get_sidebar_position();
         $sidebar_width = (int) get_theme_mod('omega_sidebar_width', 30);
+        $sidebar_default_template = get_theme_mod('omega_sidebar_default_template', 'sidebar');
         $status = $this->get_status_data();
         $tabs = $this->settings_tabs();
         // Each form's own redirect target includes its tab's hash, so a
@@ -1105,7 +1298,7 @@ class menus {
                                     <span class="omega-toggle__track"><span class="omega-toggle__thumb"></span></span>
                                     <span class="omega-toggle__label"><?php esc_html_e('Enable sidebar', 'omega-design'); ?></span>
                                 </label>
-                                <p class="description"><?php esc_html_e('Used on category archives.', 'omega-design'); ?></p>
+                                <p class="description"><?php esc_html_e('Master switch for every page type below. A single post or page can still override this from its own Page Settings panel in the editor.', 'omega-design'); ?></p>
 
                                 <div class="omega-field">
                                     <label for="omega_sidebar_position"><?php esc_html_e('Position', 'omega-design'); ?></label>
@@ -1120,9 +1313,37 @@ class menus {
                                     <input type="range" min="20" max="50" step="1" name="omega_sidebar_width" id="omega_sidebar_width" value="<?php echo esc_attr($sidebar_width); ?>" oninput="document.getElementById('omega_sidebar_width_value').textContent = this.value;" />
                                 </div>
 
+                                <div class="omega-field">
+                                    <label for="omega_sidebar_default_template"><?php esc_html_e('Default Sidebar Content', 'omega-design'); ?></label>
+                                    <select name="omega_sidebar_default_template" id="omega_sidebar_default_template">
+                                        <?php foreach (sidebar::get_instance()->get_template_choices() as $slug => $label) : ?>
+                                            <option value="<?php echo esc_attr($slug); ?>" <?php selected($sidebar_default_template, $slug); ?>><?php echo esc_html($label); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+
+                                <p class="omega-field-heading"><strong><?php esc_html_e('Show sidebar on:', 'omega-design'); ?></strong></p>
+                                <?php foreach (sidebar::get_instance()->get_location_labels() as $option_name => $meta) : ?>
+                                    <label class="omega-toggle">
+                                        <input type="checkbox" name="<?php echo esc_attr($option_name); ?>" value="1" <?php checked((bool) get_theme_mod($option_name, $meta['default'])); ?> />
+                                        <span class="omega-toggle__track"><span class="omega-toggle__thumb"></span></span>
+                                        <span class="omega-toggle__label"><?php echo esc_html($meta['label']); ?></span>
+                                    </label>
+                                    <?php if ($meta['description']) : ?>
+                                        <p class="description"><?php echo esc_html($meta['description']); ?></p>
+                                    <?php endif; ?>
+                                <?php endforeach; ?>
+
                                 <?php submit_button(__('Save Sidebar Settings', 'omega-design'), 'omega-btn omega-btn--primary', 'omega_submit_sidebar', false); ?>
                             </form>
                             </div>
+                        </div>
+                    </section>
+
+                    <section class="omega-settings-panel" data-panel="design">
+                        <div class="omega-grid omega-grid--2">
+                            <?php $this->render_color_scheme_form($tab_url('design')); ?>
+                            <?php $this->render_design_form($tab_url('design')); ?>
                         </div>
                     </section>
 

@@ -1,0 +1,22 @@
+<!--
+wp_template_part:
+  slug: sidebar-shop
+  area: sidebar
+  theme: omega-design
+-->
+<!-- wp:group {"tagName":"aside"} -->
+<aside class="wp-block-group omega-sidebar-widgetarea">
+	<!-- wp:search {"label":"Search products","placeholder":"Search products…","buttonText":"Search"} /-->
+
+	<!-- wp:group -->
+	<div class="wp-block-group omega-sidebar-block">
+		<!-- wp:heading {"level":3} -->
+		<h3>Shop by Category</h3>
+		<!-- /wp:heading -->
+		<!-- wp:shortcode -->[product_categories]<!-- /wp:shortcode -->
+	</div>
+	<!-- /wp:group -->
+
+	<!-- wp:shortcode -->[omega_sidebar]<!-- /wp:shortcode -->
+</aside>
+<!-- /wp:group -->

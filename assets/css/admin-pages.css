@@ -428,6 +428,127 @@ body.omega-admin-page-body #wpcontent {
 	color: var(--wp--preset--color--heading);
 }
 
+/* Color Scheme picker: a showcase card per scheme - a gradient banner
+ * (name + tagline) over a row of labelled, hex-stamped swatches for the
+ * roles that actually vary between schemes (Primary/Secondary/Accent/
+ * Background/Text). Used identically on the Settings page and inside the
+ * native Customizer control (narrower panel just collapses to one column
+ * via the auto-fill minmax below). */
+.omega-scheme-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+	gap: 14px;
+	margin-bottom: 18px;
+}
+
+.omega-scheme-card {
+	position: relative;
+	display: block;
+	cursor: pointer;
+	border-radius: 10px;
+	overflow: hidden;
+	background: #fff;
+	border: 1px solid #E2E5DE;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+	transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.omega-scheme-card:hover {
+	box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+}
+
+.omega-scheme-card:has(.omega-scheme-card__input:checked) {
+	border-color: var(--wp--preset--color--primary);
+	box-shadow: 0 0 0 2px var(--wp--preset--color--primary);
+}
+
+.omega-scheme-card__input {
+	position: absolute;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.omega-scheme-card:has(.omega-scheme-card__input:checked) .omega-scheme-card__banner::after {
+	content: "\2713";
+	position: absolute;
+	top: 8px;
+	right: 8px;
+	width: 18px;
+	height: 18px;
+	border-radius: 50%;
+	background: rgba(255, 255, 255, 0.95);
+	color: var(--wp--preset--color--primary);
+	font-size: 11px;
+	font-weight: 700;
+	line-height: 18px;
+	text-align: center;
+}
+
+.omega-scheme-card__banner {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	gap: 2px;
+	padding: 12px 34px 12px 14px;
+	min-height: 58px;
+}
+
+.omega-scheme-card__name {
+	font-size: 14px;
+	font-weight: 700;
+	color: #fff;
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+	line-height: 1.3;
+}
+
+.omega-scheme-card__tagline {
+	font-size: 11px;
+	color: rgba(255, 255, 255, 0.9);
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+	line-height: 1.3;
+}
+
+.omega-scheme-card__swatches {
+	display: flex;
+	justify-content: space-between;
+	gap: 4px;
+	padding: 12px 8px;
+	border-top: 1px solid #F0F1EF;
+}
+
+.omega-scheme-card__swatch {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 4px;
+	flex: 1;
+	min-width: 0;
+}
+
+.omega-scheme-card__circle {
+	width: 24px;
+	height: 24px;
+	border-radius: 50%;
+	border: 1px solid rgba(0, 0, 0, 0.1);
+	flex-shrink: 0;
+}
+
+.omega-scheme-card__swatch-label {
+	font-size: 9.5px;
+	font-weight: 600;
+	color: #50575E;
+	text-align: center;
+	white-space: nowrap;
+}
+
+.omega-scheme-card__hex {
+	font-size: 9px;
+	color: #8C9196;
+	text-align: center;
+	font-family: Consolas, Monaco, monospace;
+}
+
 /* Fields */
 .omega-field {
 	margin-bottom: 18px;

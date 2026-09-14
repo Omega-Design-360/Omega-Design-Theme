@@ -71,9 +71,18 @@
     box-shadow: var(--omega-ch-shadow-elevated);
 }
 
+/*
+ * This is a template-part sibling in the block tree, so WordPress's own
+ * default block-gap spacing gave it a margin-top exactly like it once did
+ * for <main> (see main.wp-block-group in style.css) - here it stacked on
+ * top of the spacer's own JS-set height (classic-header.js, matching the
+ * fixed header's own offsetHeight), leaving a real gap of blank page
+ * background between the sticky header and whatever content follows it.
+ */
 .omega-classic-header__spacer {
     display: block;
     width: 100%;
+    margin-top: 0;
 }
 
 /* ── Header shell ────────────────────────────────────────────── */

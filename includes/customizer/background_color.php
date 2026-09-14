@@ -86,7 +86,7 @@ class background_color {
         wp_enqueue_script(
             'omega-design-background-color',
             OMEGA_DESIGN_JS_URI . '/background-color.js',
-            ['wp-plugins', 'wp-edit-post', 'wp-element', 'wp-components', 'wp-data', 'wp-compose', 'wp-i18n', 'omega-design-featured-image-toggle'],
+            ['wp-plugins', 'wp-edit-post', 'wp-element', 'wp-components', 'wp-data', 'wp-compose', 'wp-i18n', 'omega-design-featured-image-toggle', 'omega-design-sidebar-toggle'],
             $this->asset_version(OMEGA_DESIGN_ASSETS . '/js/background-color.js'),
             true
         );

@@ -1,0 +1,44 @@
+/**
+ * Brand palette override for this page only - remaps the theme's global
+ * preset colors to a modern indigo/navy/cyan tech identity so every block
+ * already using backgroundColor/textColor:"primary" etc. recolors
+ * automatically without touching the pattern markup.
+ */
+.omega-landing--digital-agency {
+	--wp--preset--color--primary: #4f46e5;
+	--wp--preset--color--secondary: #0f172a;
+	--wp--preset--color--accent: #22d3ee;
+	--wp--preset--color--heading: #0f172a;
+	--wp--preset--color--surface: #f1f5f9;
+	--omega-photo-card-tint: rgba(15, 23, 42, 0.45);
+}
+
+/**
+ * Page-specific styling for the Digital Agency landing pattern
+ * (pattern/landing-digital-agency.php). Loaded only when the page's content
+ * contains the "omega-landing--digital-agency" marker class - see
+ * enqueue_frontend_assets() in includes/core/hooks.php.
+ *
+ * The 10 pastel service-card tints below used to be hand-typed as inline
+ * `style="background-color:#hex"` JSON on each card's Group block, which
+ * doesn't reliably match what the block editor's own save() would
+ * generate. Applying the tint by class instead keeps the block's saved
+ * markup limited to a plain className, so it never trips the editor's
+ * "attempt recovery" validation.
+ */
+
+.omega-service-card {
+	border-radius: 12px;
+	padding: var(--wp--preset--spacing--m, 1.5rem);
+}
+
+.omega-service-card--1 { background-color: #E0E7FF; }
+.omega-service-card--2 { background-color: #FCE7F3; }
+.omega-service-card--3 { background-color: #FFE4E6; }
+.omega-service-card--4 { background-color: #FFEDD5; }
+.omega-service-card--5 { background-color: #D1FAE5; }
+.omega-service-card--6 { background-color: #EDE9FE; }
+.omega-service-card--7 { background-color: #CCFBF1; }
+.omega-service-card--8 { background-color: #FEE2E2; }
+.omega-service-card--9 { background-color: #DBEAFE; }
+.omega-service-card--10 { background-color: #FEF3C7; }

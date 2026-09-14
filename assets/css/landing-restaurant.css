@@ -1,0 +1,58 @@
+/**
+ * Brand palette override for this page only - remaps the theme's global
+ * preset colors to an upscale-dining wine/near-black/gold identity so every
+ * block already using backgroundColor/textColor:"primary" etc. recolors
+ * automatically without touching the pattern markup.
+ */
+.omega-landing--restaurant {
+	--wp--preset--color--primary: #8b1e3f;
+	--wp--preset--color--secondary: #1b1b1b;
+	--wp--preset--color--accent: #c9a227;
+	--wp--preset--color--heading: #1b1b1b;
+	--wp--preset--color--surface: #faf3e8;
+	--omega-photo-card-tint: rgba(27, 27, 27, 0.45);
+}
+
+/**
+ * Page-specific styling for pattern/landing-restaurant.php - only auto-
+ * enqueued on pages whose content contains "omega-landing--restaurant"
+ * (see includes/core/hooks.php). Shared component classes (.omega-eyebrow,
+ * .omega-photo-card, .omega-card, .omega-strong, ...) live in
+ * assets/css/landing-pages.css instead.
+ */
+
+/* Small circular "Watch Our Story" badge floating over the hero photo. */
+.omega-hero-badge {
+	position: absolute;
+	top: var(--wp--preset--spacing--l, 2rem);
+	right: var(--wp--preset--spacing--l, 2rem);
+	z-index: 2;
+	width: 110px;
+	height: 110px;
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.15);
+	border: 1px solid rgba(255, 255, 255, 0.5);
+	padding: var(--wp--preset--spacing--xs, 0.5rem);
+	text-align: center;
+	gap: 0.15rem !important;
+}
+
+@media (max-width: 600px) {
+	.omega-hero-badge {
+		display: none;
+	}
+}
+
+/* Testimonial card on the dark "What Our Guests Say" band. */
+.omega-testimonial-card {
+	border-radius: 12px;
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	padding: var(--wp--preset--spacing--m, 1.5rem);
+}
+
+/* A "Reserve Your Table" field styled as a plain, non-interactive row. */
+.omega-form-field {
+	border-radius: 6px;
+	padding: 0.6rem 0.8rem !important;
+	margin-bottom: 0.6rem !important;
+}

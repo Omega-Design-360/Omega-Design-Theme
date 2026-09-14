@@ -1,0 +1,71 @@
+/**
+ * Brand palette override for this page only - remaps the theme's global
+ * preset colors to a clean, trustworthy clinical blue/teal identity so
+ * every block already using backgroundColor/textColor:"primary" etc.
+ * recolors automatically without touching the pattern markup.
+ */
+.omega-landing--medical-clinic {
+	--wp--preset--color--primary: #0077b6;
+	--wp--preset--color--secondary: #023047;
+	--wp--preset--color--accent: #2ec4b6;
+	--wp--preset--color--heading: #023047;
+	--wp--preset--color--surface: #f0f8fa;
+	--omega-photo-card-tint: rgba(2, 48, 71, 0.45);
+}
+
+/**
+ * Page-specific styling for pattern/landing-medical-clinic.php - only auto-
+ * enqueued on pages whose content contains "omega-landing--medical-clinic"
+ * (see includes/core/hooks.php). Shared component classes (.omega-eyebrow,
+ * .omega-round-image, .omega-card, .omega-strong, ...) live in
+ * assets/css/landing-pages.css instead.
+ */
+
+/* A photo with something overlapping one of its corners (icon badge,
+   hero note, play button). */
+.omega-photo-frame {
+	position: relative;
+}
+
+.omega-icon-badge {
+	position: absolute;
+	bottom: 12px;
+	left: 12px;
+	border-radius: 999px;
+	padding: 10px !important;
+}
+
+.omega-hero-note {
+	position: absolute;
+	top: 16px;
+	right: 16px;
+	max-width: 220px;
+	border-radius: 10px;
+	box-shadow: var(--wp--preset--shadow--medium, 0 4px 12px rgba(0, 0, 0, 0.12));
+	padding: 0.75rem 1rem !important;
+}
+
+@media (max-width: 782px) {
+	.omega-hero-note {
+		position: static;
+		max-width: none;
+		margin-top: 1rem;
+	}
+}
+
+.omega-video-play {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	border-radius: 999px;
+	background: var(--omega-photo-card-tint, rgba(2, 48, 71, 0.55));
+	padding: 14px !important;
+}
+
+/* A "Book an Appointment" field styled as a plain, non-interactive row. */
+.omega-form-field {
+	border-radius: 6px;
+	padding: 0.6rem 0.8rem !important;
+	margin-bottom: 0.6rem !important;
+}

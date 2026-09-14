@@ -39,6 +39,7 @@ class hooks {
         add_action('after_setup_theme', [$this, 'theme_setup']);
         add_filter('block_categories_all', [$this, 'register_block_categories'], 10, 2);
         add_filter('render_block', [$this, 'modify_block_render'], 10, 2);
+        add_filter('body_class', [$this, 'add_design_body_classes']);
     }
 
     private function register_hooks() {
@@ -147,7 +148,17 @@ class hooks {
             wp_add_inline_style('omega-design-style', $this->get_admin_bar_logo_css());
         }
 
-        if (function_exists('is_checkout') && is_checkout() && !is_wc_endpoint_url() && !is_user_logged_in()) {
+        wp_add_inline_style('omega-design-style', $this->get_design_defaults_css());
+
+        // The "My Login Form" plugin (if active) owns this notice now, styled
+        // to match its own login/register pages — see
+        // Includes/Integrations/Woocommerce.php::enqueue_checkout_auth_notice().
+        // Only fall back to the theme's own version when that plugin is absent,
+        // so the two never both try to restyle the same DOM node.
+        if (
+            function_exists('is_checkout') && is_checkout() && !is_wc_endpoint_url() && !is_user_logged_in()
+            && !class_exists('MyLoginForm\\Integrations\\Woocommerce')
+        ) {
             $this->enqueue_checkout_auth_notice();
         }
 
@@ -157,6 +168,69 @@ class hooks {
 
         if (function_exists('is_checkout') && is_checkout() && !is_wc_endpoint_url()) {
             $this->enqueue_checkout_page_assets();
+        }
+
+        if (is_singular() && (
+            has_block('omega-design/slider')
+            || has_block('omega-design/tabs')
+            || has_block('omega-design/newsletter-form')
+        )) {
+            $this->enqueue_landing_page_assets();
+        }
+    }
+
+    /**
+     * Each landing pattern's outermost wrapper carries a page-specific
+     * marker class ("omega-landing--{slug}") purely so its own CSS/JS file
+     * only loads on that one page - never guessed from the URL/template,
+     * just a literal string search over this page's own content.
+     */
+    const LANDING_PAGES = [
+        'fashion-store',
+        'coffee-shop',
+        'digital-agency',
+        'fitness-gym',
+        'travel-agency',
+        'gift-shop',
+        'restaurant',
+        'medical-clinic',
+    ];
+
+    /**
+     * Layout CSS shared by every landing pattern (pattern/landing-*.php) -
+     * section classes core block styles don't already cover (category row,
+     * brand strip, photo-card overlay technique, ...) - plus, for whichever
+     * specific pattern is actually on this page, that page's own CSS/JS
+     * file from assets/css/landing-{slug}.css / assets/js/landing-{slug}.js
+     * (only if those files exist - most pages need none beyond the shared
+     * stylesheet). Gated on has_block() so none of this loads on pages that
+     * don't use these patterns.
+     */
+    private function enqueue_landing_page_assets() {
+        $css_path = OMEGA_DESIGN_ASSETS . '/css/landing-pages.css';
+        if (file_exists($css_path)) {
+            wp_enqueue_style('omega-design-landing-pages', OMEGA_DESIGN_CSS_URI . '/landing-pages.css', [], filemtime($css_path));
+        }
+
+        $post = get_post();
+        if (!$post) {
+            return;
+        }
+
+        foreach (self::LANDING_PAGES as $slug) {
+            if (false === strpos($post->post_content, 'omega-landing--' . $slug)) {
+                continue;
+            }
+
+            $page_css = OMEGA_DESIGN_ASSETS . '/css/landing-' . $slug . '.css';
+            if (file_exists($page_css)) {
+                wp_enqueue_style('omega-design-landing-' . $slug, OMEGA_DESIGN_CSS_URI . '/landing-' . $slug . '.css', ['omega-design-landing-pages'], filemtime($page_css));
+            }
+
+            $page_js = OMEGA_DESIGN_ASSETS . '/js/landing-' . $slug . '.js';
+            if (file_exists($page_js)) {
+                wp_enqueue_script('omega-design-landing-' . $slug, OMEGA_DESIGN_JS_URI . '/landing-' . $slug . '.js', [], filemtime($page_js), true);
+            }
         }
     }
 
@@ -238,22 +312,112 @@ class hooks {
 
     /**
      * CSS that swaps the default WordPress logo in the admin toolbar
-     * for the theme icon at assets/icons/Omega-Design.png.
+     * for the theme icon at assets/images/theme-icon.svg.
      */
     private function get_admin_bar_logo_css() {
-        $icon_url = esc_url(omega_design_versioned_asset_url('/icons/Omega-Design.png'));
+        $icon_url = esc_url(omega_design_versioned_asset_url('/images/theme-icon.svg'));
 
+        // Core forces "background-image: none !important" directly on
+        // .ab-icon (admin-bar.css's blanket dashicon reset), which no
+        // amount of specificity on that same selector can out-rank. Its
+        // reset list stops at .ab-icon and .ab-item::before though, never
+        // .ab-icon::before - so the icon is painted on that pseudo-element
+        // instead, a selector core's rule simply never touches.
         return "
-            #wpadminbar #wp-admin-bar-wp-logo > .ab-item .ab-icon {
+            #wpadminbar #wp-admin-bar-wp-logo > .ab-item .ab-icon:before {
+                content: '';
+                display: inline-block;
+                width: 20px;
+                height: 20px;
                 background-image: url('{$icon_url}');
                 background-position: center;
                 background-repeat: no-repeat;
                 background-size: 20px 20px;
             }
-            #wpadminbar #wp-admin-bar-wp-logo > .ab-item .ab-icon:before {
-                content: '';
+            #wpadminbar .omega-topbar-icon {
+                width: 16px;
+                height: 16px;
+                margin: 8px 6px 0 0;
+                float: left;
+                vertical-align: middle;
+            }
+            /*
+             * WordPress's own \"+ New\" toolbar item renders its plus-sign
+             * via the dashicons webfont; when that font fails to load, the
+             * browser falls back to a system font that happens to map the
+             * same private-use codepoint to an unrelated wrench/tool glyph
+             * instead of a blank/missing-glyph box - hiding just the icon
+             * (not the whole item) keeps \"+ New\" usable as a plain text
+             * link while removing the broken symbol.
+             */
+            #wpadminbar #wp-admin-bar-new-content > .ab-item > .ab-icon {
+                display: none !important;
+            }
+            /*
+             * Any admin bar top-level item without its own icon still gets
+             * a default dashicon glyph reserved via .ab-item:before (a
+             * private-use-area font codepoint - reads as an empty string in
+             * script/JSON output, but the browser still renders whatever
+             * that codepoint falls back to when the dashicons font can't
+             * supply it, the same wrench/tool symbol as the \"+ New\" fix
+             * above). The omega-topbar-icon <img> already supplies our own
+             * icon, so this default glyph is just noise sitting in front
+             * of it.
+             */
+            #wpadminbar #wp-admin-bar-omega-design > .ab-item:before {
+                content: '' !important;
+                width: 0 !important;
+            }
+            /*
+             * WordPress recolors any custom SVG menu icon to a flat neutral
+             * gray to match its own icon set (it literally rewrites every
+             * fill/gradient in the SVG before embedding it) - this forces
+             * the left-hand sidebar icon back to the theme's real,
+             * unmodified file so its actual colors show.
+             */
+            #adminmenu #toplevel_page_omega-dashboard .wp-menu-image {
+                background-image: url('{$icon_url}') !important;
+                background-size: 20px auto !important;
+                opacity: 1 !important;
             }
         ";
+    }
+
+    /**
+     * Corner radius for the site-wide "Default look" set in
+     * Settings > Design (includes/customizer/menus.php) - consumed by
+     * theme.json's button element style via
+     * var(--omega-btn-radius, 6px), so a block's own explicit border
+     * radius (set directly in the block editor) still wins since it's
+     * applied as that block's own inline style, layered on top of this.
+     */
+    private function get_design_defaults_css() {
+        $radius_choices = [
+            'sharp'   => '2px',
+            'soft'    => '6px',
+            'rounded' => '14px',
+            'pill'    => '999px',
+        ];
+        $radius = get_theme_mod('omega_button_radius', 'soft');
+        if (!array_key_exists($radius, $radius_choices)) {
+            $radius = 'soft';
+        }
+
+        return ':root { --omega-btn-radius: ' . $radius_choices[$radius] . '; }';
+    }
+
+    /**
+     * Adds omega-default-btn-{look} when Settings > Design's "Default
+     * look" isn't the plain Fill style - block-style-variations.css
+     * already has the matching rule for each look, scoped to this class
+     * for any Button block that hasn't been given its own explicit Style.
+     */
+    public function add_design_body_classes($classes) {
+        $look = get_theme_mod('omega_button_look', 'fill');
+        if ('fill' !== $look && in_array($look, ['ghost', 'soft', 'pill', '3d'], true)) {
+            $classes[] = 'omega-default-btn-' . $look;
+        }
+        return $classes;
     }
 
     public function enqueue_block_assets() {
@@ -269,13 +433,29 @@ class hooks {
             $this->asset_version('/js/editor.js'),
             true
         );
+
+        // Same landing-page CSS (shared layout classes + whichever
+        // page-specific brand palette/tint file applies) the front end
+        // gets - without this the editor canvas was missing it entirely,
+        // so a landing page's real look (including things like a section
+        // actually bleeding full-width) only ever showed up after
+        // publishing, never while editing.
+        $this->enqueue_landing_page_assets();
     }
 
+    /**
+     * Prepended (not appended) so "Omega Design" is the FIRST category a
+     * user sees when browsing the block inserter by category, rather than
+     * the last - with WooCommerce active there are already 4 core
+     * categories plus 2 WooCommerce ones ahead of it, so appending left it
+     * requiring a full scroll to the bottom of a long list to ever notice
+     * the theme's own blocks existed at all.
+     */
     public function register_block_categories($categories, $post) {
-        $categories[] = [
+        array_unshift($categories, [
             'slug'  => 'omega-design',
             'title' => __('Omega Design', 'omega-design'),
-        ];
+        ]);
         return $categories;
     }
 

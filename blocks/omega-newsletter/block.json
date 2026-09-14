@@ -1,0 +1,27 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "omega-design/newsletter-form",
+	"title": "Omega Newsletter Form",
+	"category": "omega-design",
+	"icon": "email",
+	"description": "An email capture form that saves submissions as Leads in wp-admin, submitted by AJAX with no page reload.",
+	"keywords": ["newsletter", "email", "lead", "signup", "form"],
+	"textdomain": "omega-design",
+	"attributes": {
+		"placeholder": { "type": "string", "default": "Enter your email address" },
+		"buttonText": { "type": "string", "default": "Subscribe" },
+		"successMessage": { "type": "string", "default": "Thanks — you're on the list!" }
+	},
+	"supports": {
+		"html": false,
+		"align": ["wide", "full"],
+		"spacing": { "margin": true, "padding": true },
+		"color": { "background": true, "text": true, "gradients": true },
+		"border": { "radius": true, "width": true, "color": true },
+		"shadow": true
+	},
+	"editorScript": "omega-newsletter-block-editor",
+	"style": "omega-newsletter-block",
+	"viewScript": "omega-newsletter-block-view"
+}

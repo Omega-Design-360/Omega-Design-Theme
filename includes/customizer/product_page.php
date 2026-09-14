@@ -80,6 +80,16 @@ class product_page {
                 true
             );
         }
+
+        // The Related Products carousel reuses the theme's own slider engine
+        // (blocks/omega-slider/view.js + style.css) directly - registered
+        // already by includes/core/blocks.php's register_omega_slider(),
+        // just not normally enqueued outside pages that actually insert
+        // that block, so it needs enqueuing here explicitly.
+        if ((bool) get_theme_mod('omega_related_products_carousel', true)) {
+            wp_enqueue_style('omega-slider-block');
+            wp_enqueue_script('omega-slider-block-view');
+        }
     }
 
     /**
@@ -214,12 +224,101 @@ class product_page {
      * `ul.products li.product` - which product-page-layouts.css styles
      * with plain, stable WooCommerce class selectors.
      */
+    /**
+     * Default is the site's own slider engine (an admin can turn this back
+     * into WooCommerce's plain grid via Settings > WooCommerce, in case a
+     * specific store prefers the classic look) - either way this stays the
+     * single shared implementation all 5 layouts call, so the choice
+     * applies everywhere at once.
+     */
     private function related($columns = 4) {
-        ob_start();
-        woocommerce_related_products([
-            'posts_per_page' => $columns,
-            'columns'        => $columns,
+        global $product;
+        if (!$product instanceof \WC_Product) {
+            return '';
+        }
+
+        $use_carousel = (bool) get_theme_mod('omega_related_products_carousel', true);
+        $related_ids  = wc_get_related_products($product->get_id(), $use_carousel ? 8 : $columns);
+
+        if (empty($related_ids)) {
+            return '';
+        }
+
+        if (!$use_carousel) {
+            ob_start();
+            woocommerce_related_products([
+                'posts_per_page' => $columns,
+                'columns'        => $columns,
+            ]);
+            return (string) ob_get_clean();
+        }
+
+        return $this->related_carousel($related_ids, $columns);
+    }
+
+    /**
+     * Builds the SAME runtime markup blocks/omega-slider/view.js already
+     * knows how to drive (a .omega-slider wrapper + data-* attributes, any
+     * direct children treated as "the slides") by hand, rather than trying
+     * to reconstruct omega-design/slider's own save() output - that block
+     * is static (InnerBlocks-based, no render.php), so it has no PHP
+     * render path meant to be called outside the block editor. The engine
+     * itself doesn't care how its markup was produced, only that the
+     * shape matches, so this is a legitimate, low-risk reuse rather than a
+     * workaround. Each "slide" is WooCommerce's own real <li class="product">
+     * from content-product.php - the exact same partial the rest of the
+     * site's product loops use - so ratings, sale badges, variable-product
+     * price ranges etc. all keep working with zero duplicated logic.
+     */
+    private function related_carousel($related_ids, $columns) {
+        $query = new \WP_Query([
+            'post_type'           => 'product',
+            'post__in'            => $related_ids,
+            'posts_per_page'      => count($related_ids),
+            'orderby'             => 'post__in',
+            'no_found_rows'       => true,
+            'ignore_sticky_posts' => true,
         ]);
+
+        if (!$query->have_posts()) {
+            wp_reset_postdata();
+            return '';
+        }
+
+        ob_start();
+        ?>
+        <div class="omega-related-products">
+            <h2 class="omega-related-products__heading"><?php esc_html_e('You May Also Like', 'omega-design'); ?></h2>
+            <ul
+                class="omega-slider omega-related-products-slider"
+                data-autoplay="0"
+                data-autoplay-speed="6000"
+                data-loop="0"
+                data-arrows="1"
+                data-dots="0"
+                data-spv="<?php echo esc_attr($columns); ?>"
+                data-spv-tablet="2"
+                data-spv-mobile="1"
+                data-gap="20px"
+                data-prev-label="<?php esc_attr_e('Previous related products', 'omega-design'); ?>"
+                data-next-label="<?php esc_attr_e('Next related products', 'omega-design'); ?>"
+                data-dots-label="<?php esc_attr_e('Related products', 'omega-design'); ?>"
+                data-effect="slide"
+                data-thumbnails="0"
+                data-progress-bar="0"
+                data-peek="0"
+            >
+                <?php
+                while ($query->have_posts()) {
+                    $query->the_post();
+                    wc_get_template_part('content', 'product');
+                }
+                ?>
+            </ul>
+        </div>
+        <?php
+        wp_reset_postdata();
+
         return (string) ob_get_clean();
     }
 

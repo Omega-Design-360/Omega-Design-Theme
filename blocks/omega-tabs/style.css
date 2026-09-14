@@ -1,0 +1,55 @@
+.omega-tabs__list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--wp--preset--spacing--s, 1rem);
+	margin-bottom: var(--wp--preset--spacing--m, 1.5rem);
+}
+
+.omega-tabs__tab {
+	background: none;
+	border: none;
+	border-bottom: 2px solid transparent;
+	padding: 0.4rem 0.1rem;
+	font-weight: 600;
+	font-size: var(--wp--preset--font-size--medium, 1rem);
+	color: var(--wp--preset--color--body-text, #2a2a2a);
+	cursor: pointer;
+	transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.omega-tabs__tab:hover {
+	color: var(--wp--preset--color--primary, #1fbb00);
+}
+
+.omega-tabs__tab.is-active {
+	color: var(--wp--preset--color--heading, #041200);
+	border-bottom-color: var(--wp--preset--color--primary, #1fbb00);
+}
+
+.omega-tabs__panel {
+	display: none;
+}
+
+.omega-tabs__panel.is-active {
+	display: block;
+	animation: omega-tabs-fade-in 0.25s ease;
+}
+
+@keyframes omega-tabs-fade-in {
+	from { opacity: 0; transform: translateY(6px); }
+	to { opacity: 1; transform: translateY(0); }
+}
+
+/* Editor: show every panel stacked (no click-to-switch while editing). */
+.omega-tabs--editing .omega-tabs__panel {
+	display: block;
+	border: 1px dashed var(--wp--preset--color--border, #d0d0d0);
+	border-radius: 6px;
+	padding: 1rem;
+	margin-bottom: 1rem;
+}
+
+.omega-tabs__item-label-edit {
+	font-weight: 600;
+	margin-bottom: 0.5rem;
+}

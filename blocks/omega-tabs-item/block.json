@@ -1,0 +1,21 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "omega-design/tabs-item",
+	"title": "Tab",
+	"category": "omega-design",
+	"icon": "editor-table",
+	"description": "One tab of an Omega Tabs block - its label becomes the tab button, its content becomes the panel.",
+	"parent": ["omega-design/tabs"],
+	"textdomain": "omega-design",
+	"attributes": {
+		"label": { "type": "string", "default": "Tab" }
+	},
+	"supports": {
+		"html": false,
+		"spacing": { "margin": true, "padding": true },
+		"color": { "background": true, "text": true, "gradients": true },
+		"border": { "radius": true, "width": true, "color": true }
+	},
+	"editorScript": "omega-tabs-item-block-editor"
+}

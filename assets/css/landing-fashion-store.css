@@ -1,0 +1,275 @@
+/**
+ * This page used to hard-code its own "Violet Glass" brand palette here
+ * (primary/secondary/accent/surface/button colors + a violet-to-cyan
+ * gradient button treatment), overriding the theme's global preset colors
+ * just for this page. Removed in favor of the site-wide Color Scheme
+ * picker (Customize > Omega Design > Color Scheme, see
+ * includes/customizer/color_scheme.php) - this page now simply inherits
+ * whichever of the 5 schemes is active globally, the same as every other
+ * page, instead of always showing violet regardless of that setting.
+ */
+
+/*
+ * "Latest from Our Blog" heading + "View All Posts" link share one row on
+ * desktop; stacked (link below heading) is friendlier than forcing them
+ * onto one cramped line once the viewport gets narrow.
+ */
+.omega-section-heading-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
+	flex-wrap: wrap;
+}
+
+.omega-section-heading-row h2 {
+	margin: 0;
+}
+
+.omega-section-heading-row a {
+	white-space: nowrap;
+	font-weight: 600;
+	text-decoration: none;
+}
+
+.omega-section-heading-row a:hover {
+	text-decoration: underline;
+}
+
+/* Blog post cards: fixed-ratio image, clamped title, muted date. */
+.omega-blog-list .wp-block-post-featured-image {
+	margin: 0 0 0.75rem;
+	border-radius: 12px;
+	overflow: hidden;
+}
+
+.omega-blog-list .wp-block-post-featured-image img {
+	aspect-ratio: 4 / 3;
+	object-fit: cover;
+	width: 100%;
+}
+
+.omega-blog-list .wp-block-post-title {
+	margin: 0 0 0.35rem;
+	font-size: 1.05rem;
+	line-height: 1.35;
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+
+.omega-blog-list .wp-block-post-date {
+	color: var(--wp--preset--color--body-text);
+	opacity: 0.65;
+}
+
+/**
+ * Page-specific styling for pattern/landing-fashion-store.php - only auto-
+ * enqueued on pages whose content contains "omega-landing--fashion-store"
+ * (see includes/core/hooks.php). Shared component classes (.omega-eyebrow,
+ * .omega-photo-card, .omega-card, .omega-strong, ...) live in
+ * assets/css/landing-pages.css instead.
+ */
+
+/*
+ * Small circular "-40% / Limited Time" badge floating over the top-right
+ * corner of the first promo banner's photo card.
+ *
+ * flex-wrap: nowrap is deliberate, not the default: this is a "vertical"
+ * (flex-direction: column) flex group, and WP's own is-layout-flex styles
+ * set flex-wrap: wrap by default. For a COLUMN-direction flex container,
+ * wrapping doesn't add rows below - it opens a new COLUMN beside the first
+ * once the content's height exceeds the box, which is exactly what
+ * happened at the 76px mobile size: the two-line "Limited Time" eyebrow
+ * left too little vertical room for "-40%", which wrapped out to the right
+ * of the circle instead of clipping or shrinking. nowrap forces it to
+ * overflow in place (invisible here since the two lines fit comfortably at
+ * the default 100px size, and now fit the 76px mobile size too - see
+ * below) rather than visibly escaping the badge shape.
+ */
+.omega-sale-badge {
+	position: absolute;
+	top: var(--wp--preset--spacing--l, 2rem);
+	right: var(--wp--preset--spacing--l, 2rem);
+	z-index: 2;
+	width: 100px;
+	height: 100px;
+	border-radius: 999px;
+	background: var(--wp--preset--color--accent, #b35b00);
+	padding: var(--wp--preset--spacing--xs, 0.5rem);
+	text-align: center;
+	gap: 0.15rem !important;
+	flex-wrap: nowrap;
+}
+
+@media (max-width: 600px) {
+	.omega-sale-badge {
+		width: 84px;
+		height: 84px;
+	}
+
+	.omega-sale-badge .omega-eyebrow {
+		font-size: 0.65rem;
+	}
+
+	.omega-sale-badge p:not(.omega-eyebrow) {
+		font-size: 0.85rem;
+	}
+}
+
+/* Hero: the "up to 50% off" circular badge floats over the hero photo's
+   top-right corner, on the first slide only. */
+.omega-hero-visual {
+	position: relative;
+}
+
+.omega-hero-badge {
+	position: absolute;
+	top: var(--wp--preset--spacing--m, 1.5rem);
+	right: var(--wp--preset--spacing--m, 1.5rem);
+	width: 100px;
+	margin: 0;
+	z-index: 2;
+	filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.25));
+	animation: omega-hero-badge-pulse 2.4s ease-in-out infinite;
+}
+
+/* A gentle continuous pulse on the "50% off" badge - the one bit of motion
+   on the page that's alive even before anyone touches anything. Subtle on
+   purpose: past ~6% scale or a faster cycle it stops reading as
+   "promotional" and starts reading as a system alert. */
+@keyframes omega-hero-badge-pulse {
+	0%, 100% { transform: scale(1); }
+	50% { transform: scale(1.06); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.omega-hero-badge {
+		animation: none;
+	}
+}
+
+@media (max-width: 600px) {
+	.omega-hero-badge {
+		width: 72px;
+	}
+}
+
+/*
+ * The prev/next arrows sit at left/right: 32px (see .omega-slider__arrow in
+ * blocks/omega-slider/style.css), a 44px circle spanning roughly x=32 to
+ * x=76 - the same 32px inset the slide's own padding-left already put the
+ * text column's content at, so the arrow floated directly on top of the
+ * first ~44px of every line of text. Floating over the PHOTO side is normal
+ * slider UX (nothing to read under it), but floating over readable text
+ * reads as broken. Pushing the text column in further clears the arrow
+ * with room to spare; only needed above 600px, since the arrows themselves
+ * are hidden below that (see the arrows media query in style.css).
+ */
+@media (min-width: 601px) {
+	.omega-hero-slider .wp-block-column:not(.omega-hero-visual) {
+		padding-left: 3.5rem;
+	}
+}
+
+/*
+ * Promo banners: a solid-color text panel beside a photo (see
+ * omega_pattern_split_promo() in includes/patterns/pattern-helpers.php).
+ * Core's own columns CSS stretches columns to match height by default,
+ * but the image itself still needs to fill that stretched column instead
+ * of sitting at its own natural (often much shorter) intrinsic height.
+ *
+ * gap: 0 overrides wp:columns' default ~24px blockGap between the text
+ * column and the image column - with that default gap in place the page's
+ * own white background showed straight through it, so the text panel read
+ * as its own separate floating box next to (not part of) the photo despite
+ * both sharing this same rounded, clipped outer container.
+ */
+.omega-split-promo {
+	overflow: hidden;
+	gap: 0;
+}
+
+/*
+ * Each banner is itself a 2-column split nested inside one of the outer
+ * row's 3 columns, so its own text panel only ever gets roughly a third
+ * of a third of the page - the theme's normal heading size (meant for a
+ * full-width heading) doesn't fit that at all and was breaking mid-word.
+ * Sized down specifically for this narrow context instead of changing the
+ * heading level/size globally.
+ */
+.omega-split-promo h3 {
+	font-size: 1.15rem;
+	line-height: 1.25;
+}
+
+.omega-split-promo .wp-block-column:first-child {
+	padding: var(--wp--preset--spacing--s) !important;
+}
+
+.omega-split-promo .wp-block-button__link {
+	font-size: 0.8rem;
+	padding-top: 0.5rem;
+	padding-bottom: 0.5rem;
+	padding-left: 0.85rem;
+	padding-right: 0.85rem;
+}
+
+.omega-split-promo {
+	transition: box-shadow 0.25s ease;
+}
+
+.omega-split-promo:hover {
+	box-shadow: var(--wp--preset--shadow--medium);
+}
+
+.omega-split-promo__image {
+	height: 100%;
+	margin: 0;
+	overflow: hidden;
+}
+
+.omega-split-promo__image img {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	transition: transform 0.35s ease;
+}
+
+.omega-split-promo:hover .omega-split-promo__image img {
+	transform: scale(1.08);
+}
+
+@media (max-width: 780px) {
+	.omega-split-promo__image {
+		height: 160px;
+	}
+}
+
+/* App promo: phone mockup sitting above the card's own heading. */
+.omega-app-phone-image {
+	max-width: 320px;
+	margin: 0 0 var(--wp--preset--spacing--m, 1rem);
+	transition: transform 0.3s ease;
+}
+
+.omega-card:has(.omega-app-phone-image):hover .omega-app-phone-image {
+	transform: translateY(-6px) rotate(-2deg);
+}
+
+/*
+ * Newsletter: a moody model photo behind the (already dark "secondary")
+ * background color, tinted to match so the white/button-text copy stays
+ * readable - assets/css/ -> ../images/ resolves to assets/images/.
+ * color-mix() derives the tint from --wp--preset--color--secondary at
+ * render time instead of a hard-coded hex, so it automatically follows
+ * whichever of the 5 site-wide color schemes is active (Customize >
+ * Omega Design > Color Scheme) rather than staying stuck on one.
+ */
+.omega-newsletter-section {
+	background-image: linear-gradient(color-mix(in srgb, var(--wp--preset--color--secondary) 78%, transparent), color-mix(in srgb, var(--wp--preset--color--secondary) 78%, transparent)), url('../images/fashion-store-template-assets/newsletter/newsletter-model.png');
+	background-size: cover;
+	background-position: center;
+}

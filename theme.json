@@ -535,7 +535,7 @@
           "background": "var(--wp--preset--color--button-background)"
         },
         "border": {
-          "radius": "6px"
+          "radius": "var(--omega-btn-radius, 6px)"
         },
         "spacing": {
           "padding": {
@@ -576,6 +576,11 @@
       "area": "sidebar",
       "name": "sidebar",
       "title": "Sidebar"
+    },
+    {
+      "area": "sidebar",
+      "name": "sidebar-shop",
+      "title": "Sidebar (Shop)"
     },
     {
       "area": "megamenu",

@@ -69,6 +69,14 @@ class patterns {
                 'description' => __('General layout patterns provided by the Omega Design theme.', 'omega-design'),
             ]
         );
+
+        register_block_pattern_category(
+            'omega-design-sections',
+            [
+                'label'       => __('Omega Design - Sections', 'omega-design'),
+                'description' => __('Individual sections split out of the full landing pages, so any one of them can be inserted on its own, on any page.', 'omega-design'),
+            ]
+        );
     }
 
     /**

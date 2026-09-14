@@ -1,0 +1,198 @@
+/**
+ * Visual styling for omega-design/content-slider's own slide markup
+ * (render.php). The carousel MECHANICS (positioning, effects, arrows,
+ * dots, autoplay) come entirely from blocks/omega-slider/style.css +
+ * view.js, shared via this block's own .omega-slider wrapper class and
+ * data-* attributes - this file only styles what's INSIDE one slide.
+ */
+.omega-content-slider__slide {
+	position: relative;
+	display: flex;
+	align-items: center;
+	gap: var(--wp--preset--spacing--l, 2rem);
+	width: 100%;
+	height: var(--omega-content-slider-height, 480px);
+	padding: var(--wp--preset--spacing--l, 2rem);
+	box-sizing: border-box;
+	overflow: hidden;
+}
+
+/*
+ * For "slide"/"vertical" (native scroll) this stays position:relative (the
+ * base rule above) so the background-image/overlay layers inside it can
+ * anchor to it. Stacked effects (fade/zoom/coverflow/cards) need it to be
+ * position:absolute instead, from blocks/omega-slider/style.css's generic
+ * ".omega-slider__track--stacked > *" rule - that rule and the base rule
+ * above are both single-class selectors of EQUAL specificity, so whichever
+ * stylesheet loads second silently wins the cascade regardless of which
+ * one is "correct" for the current effect. This two-class selector always
+ * outranks both, so it wins on purpose instead of by loading order: only
+ * the second slide onward exposed this (a slide with no prior flow
+ * siblings still happens to land in the right spot even confined to
+ * normal flow, so it went unnoticed until actually navigating).
+ */
+.omega-slider__track--stacked > .omega-content-slider__slide {
+	position: absolute;
+}
+
+/*
+ * The slide's own background - a solid color (omega-content-slider__slide's
+ * own background-color, set inline by render.php) and/or an image layer on
+ * top of it, both BEHIND the image/text panels. Positioned (not just DOM
+ * order) so it needs an explicit z-index: positioned elements always paint
+ * above normal-flow siblings regardless of source order, so without this
+ * the background would cover the (non-positioned) media/content panels.
+ */
+.omega-content-slider__slide-bg {
+	position: absolute;
+	inset: 0;
+	background-position: center;
+	background-repeat: no-repeat;
+	z-index: 0;
+}
+
+.omega-content-slider__slide-overlay {
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	pointer-events: none;
+}
+
+.omega-content-slider__media {
+	position: relative;
+	z-index: 2;
+	flex: 1 1 50%;
+	min-width: 0;
+	display: flex;
+}
+
+.omega-content-slider__media img {
+	display: block;
+	max-width: 100%;
+}
+
+.omega-content-slider__content {
+	position: relative;
+	z-index: 2;
+	flex: 1 1 50%;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 0.75rem;
+}
+
+.omega-content-slider__content--right {
+	order: -1;
+}
+
+.omega-content-slider__heading {
+	margin: 0;
+	font-size: clamp(1.5rem, 3vw, 2.5rem);
+	line-height: 1.15;
+}
+
+.omega-content-slider__body {
+	margin: 0;
+}
+
+.omega-content-slider__button {
+	display: inline-block;
+	padding: 0.75em 1.5em;
+	text-decoration: none;
+	font-weight: 600;
+	transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.omega-content-slider__button:hover {
+	opacity: 0.88;
+	transform: translateY(-1px);
+}
+
+/*
+ * Per-slide entrance animation for the text/button panel - only "armed"
+ * (starts hidden/offset) when view.js has confirmed a data-slide-animation
+ * value AND that JS is actually running, so a slide's content is never
+ * stuck invisible if JS fails to load. Replays every time the slide it
+ * belongs to becomes active (see playSlideAnimation() in
+ * blocks/omega-slider/view.js), not just once like the site-wide
+ * scroll-reveal (.omega-animate) it borrows its transform vocabulary from.
+ */
+.omega-content-slider__content.omega-content-slider--armed {
+	opacity: 0;
+	transition: opacity 600ms ease, transform 600ms ease;
+}
+
+.omega-content-slider__content.omega-content-slider--armed[data-slide-animation="fade-up"] { transform: translateY(24px); }
+.omega-content-slider__content.omega-content-slider--armed[data-slide-animation="fade-down"] { transform: translateY(-24px); }
+.omega-content-slider__content.omega-content-slider--armed[data-slide-animation="slide-left"] { transform: translateX(-40px); }
+.omega-content-slider__content.omega-content-slider--armed[data-slide-animation="slide-right"] { transform: translateX(40px); }
+.omega-content-slider__content.omega-content-slider--armed[data-slide-animation="zoom-in"] { transform: scale(0.92); }
+.omega-content-slider__content.omega-content-slider--armed[data-slide-animation="fade-in"] { transform: none; }
+
+.omega-content-slider__content.omega-content-slider--armed.omega-content-slider--play {
+	opacity: 1;
+	transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.omega-content-slider__content.omega-content-slider--armed {
+		opacity: 1;
+		transform: none;
+		transition: none;
+	}
+}
+
+@media (max-width: 700px) {
+	.omega-content-slider__slide {
+		flex-direction: column;
+		height: auto;
+		min-height: var(--omega-content-slider-height, 480px);
+	}
+
+	.omega-content-slider__content--right {
+		order: 0;
+	}
+}
+
+/*
+ * The editor canvas renders a single static slide preview (see index.js) -
+ * never the runtime carousel chrome - so it needs its own simple sizing
+ * rather than relying on .omega-slider__track's JS-driven layout.
+ */
+.omega-content-slider--editor-preview {
+	position: relative;
+}
+
+.omega-content-slider--editor-preview .omega-content-slider__slide {
+	border-radius: inherit;
+	cursor: pointer;
+}
+
+/*
+ * Three independently clickable/editable regions in the editor preview -
+ * the slide itself (background), its image, and its text/button panel.
+ * Clicking one opens (and scrolls to) that region's own Inspector panel -
+ * see focusRegion() in index.js. Hover/active outlines are editor-only,
+ * never shipped to the front end (these classes only exist inside
+ * .omega-content-slider--editor-preview).
+ */
+.omega-content-slider--editor-preview .omega-content-slider__region {
+	outline: 2px dashed transparent;
+	outline-offset: -2px;
+	transition: outline-color 0.15s ease;
+}
+
+.omega-content-slider--editor-preview .omega-content-slider__region:hover {
+	outline-color: rgba(31, 187, 0, 0.45);
+}
+
+.omega-content-slider--editor-preview .omega-content-slider__region--active {
+	outline: 2px solid #1fbb00;
+	outline-offset: -2px;
+}
+
+.omega-content-slider--editor-preview .omega-content-slider__media,
+.omega-content-slider--editor-preview .omega-content-slider__content {
+	cursor: pointer;
+}

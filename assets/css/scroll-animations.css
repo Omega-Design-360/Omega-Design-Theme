@@ -1,0 +1,34 @@
+/**
+ * Front-end states for the site-wide "Scroll Animation" block control. The
+ * starting (hidden/offset) state is scoped to [data-omega-animate] so it
+ * only ever applies once assets/js/scroll-animations.js has actually
+ * stamped a variant onto the element - never loaded in the editor, so
+ * blocks are always fully visible while being edited.
+ */
+.omega-animate {
+	--omega-animate-duration: 600ms;
+	--omega-animate-delay: 0ms;
+	opacity: 0;
+	transition: opacity var(--omega-animate-duration) ease var(--omega-animate-delay),
+		transform var(--omega-animate-duration) ease var(--omega-animate-delay);
+}
+
+.omega-animate[data-omega-animate="fade-up"] { transform: translateY(24px); }
+.omega-animate[data-omega-animate="fade-down"] { transform: translateY(-24px); }
+.omega-animate[data-omega-animate="slide-left"] { transform: translateX(-40px); }
+.omega-animate[data-omega-animate="slide-right"] { transform: translateX(40px); }
+.omega-animate[data-omega-animate="zoom-in"] { transform: scale(0.92); }
+.omega-animate[data-omega-animate="fade-in"] { transform: none; }
+
+.omega-animate.omega-animate--in {
+	opacity: 1;
+	transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.omega-animate {
+		opacity: 1;
+		transform: none;
+		transition: none;
+	}
+}
