@@ -25,6 +25,7 @@ class sidebar {
 
     private function __construct() {
         add_action('customize_register', [$this, 'register_sidebar_settings']);
+        add_action('customize_controls_enqueue_scripts', [$this, 'enqueue_control_assets']);
         add_filter('default_wp_template_part_areas', [$this, 'register_sidebar_area']);
         add_action('widgets_init', [$this, 'register_widget_area']);
         add_shortcode('omega_sidebar', [$this, 'render_widget_area']);
@@ -380,16 +381,18 @@ class sidebar {
             'sanitize_callback' => [$this, 'sanitize_position'],
         ]);
 
-        $wp_customize->add_control('omega_sidebar_position', [
+        // WP_Customize_Control only exists once the Customizer's own class
+        // files have loaded, right before 'customize_register' fires - see
+        // omega_define_sidebar_position_control()'s own comment for why
+        // this is called here rather than the class being declared at this
+        // file's top level.
+        omega_define_sidebar_position_control();
+
+        $wp_customize->add_control(new omega_sidebar_position_control($wp_customize, 'omega_sidebar_position', [
             'label'       => __('Sidebar Position', 'omega-design'),
             'description' => __('Which side of the content the sidebar appears on, everywhere it shows.', 'omega-design'),
             'section'     => 'omega_sidebar_settings',
-            'type'        => 'select',
-            'choices'     => [
-                'left'  => __('Left', 'omega-design'),
-                'right' => __('Right', 'omega-design'),
-            ],
-        ]);
+        ]));
 
         // Sidebar Width
         $wp_customize->add_setting('omega_sidebar_width', [
@@ -497,6 +500,106 @@ class sidebar {
      */
     public function is_sidebar_enabled() {
         return get_theme_mod('omega_enable_sidebar', true);
+    }
+
+    /**
+     * The theme's own Settings page (menus.php) draws the same preview
+     * cards with this same markup/CSS (.omega-sidebar-pos-grid, admin-
+     * pages.css) - this reuses that exact CSS in the Customizer's controls
+     * panel too, so the native "select" control (a bare dropdown, no
+     * layout preview at all) isn't the only place this setting can be
+     * changed from.
+     */
+    public function enqueue_control_assets() {
+        $css_path = OMEGA_DESIGN_ASSETS . '/css/admin-pages.css';
+        wp_enqueue_style(
+            'omega-design-admin-pages',
+            OMEGA_DESIGN_CSS_URI . '/admin-pages.css',
+            [],
+            file_exists($css_path) ? filemtime($css_path) : OMEGA_DESIGN_ASSET_VERSION
+        );
+    }
+
+    /**
+     * Shared markup for both the Settings page (menus.php) and the native
+     * Customizer control below - a small layout diagram (a tinted "aside"
+     * block beside a few content lines, in the actual chosen order) per
+     * side, instead of a bare <select>. $link_callback receives each
+     * position's key and must echo whatever attributes bind that <input>
+     * to its context - a plain name="omega_sidebar_position" for the POST
+     * form, or the Customizer's own name + $this->link() for two-way JS
+     * binding.
+     */
+    public static function render_position_cards($current, $link_callback) {
+        $positions = [
+            'left'  => __('Sidebar Left', 'omega-design'),
+            'right' => __('Sidebar Right', 'omega-design'),
+        ];
+        ?>
+        <div class="omega-sidebar-pos-grid">
+            <?php foreach ($positions as $key => $label) : ?>
+                <label class="omega-sidebar-pos-card">
+                    <input
+                        type="radio"
+                        <?php call_user_func($link_callback, $key); ?>
+                        value="<?php echo esc_attr($key); ?>"
+                        <?php checked($current, $key); ?>
+                        class="omega-sidebar-pos-card__input"
+                    />
+                    <span class="omega-sidebar-pos-card__radio"></span>
+                    <span class="omega-sidebar-pos-card__preview omega-sidebar-pos-card__preview--<?php echo esc_attr($key); ?>">
+                        <span class="omega-sidebar-pos-card__aside"></span>
+                        <span class="omega-sidebar-pos-card__main">
+                            <span class="omega-sidebar-pos-card__line"></span>
+                            <span class="omega-sidebar-pos-card__line omega-sidebar-pos-card__line--short"></span>
+                            <span class="omega-sidebar-pos-card__line omega-sidebar-pos-card__line--short"></span>
+                        </span>
+                    </span>
+                    <span class="omega-sidebar-pos-card__title"><?php echo esc_html($label); ?></span>
+                </label>
+            <?php endforeach; ?>
+        </div>
+        <?php
+    }
+}
+
+/**
+ * Declared lazily (called from register_sidebar_settings(), which only
+ * ever runs on 'customize_register') rather than at this file's top level,
+ * since WP_Customize_Control doesn't exist yet when this file is first
+ * required during theme bootstrap - the same fatal-error trap the
+ * color_scheme control hit before this pattern was established (see
+ * includes/customizer/color_scheme.php's own version of this function).
+ */
+function omega_define_sidebar_position_control() {
+    if (class_exists(__NAMESPACE__ . '\\omega_sidebar_position_control')) {
+        return;
+    }
+
+    class omega_sidebar_position_control extends \WP_Customize_Control {
+        public $type = 'omega_sidebar_position';
+
+        public function render_content() {
+            ?>
+            <?php if ($this->label) : ?>
+                <span class="customize-control-title"><?php echo esc_html($this->label); ?></span>
+            <?php endif; ?>
+            <?php if ($this->description) : ?>
+                <span class="description customize-control-description"><?php echo esc_html($this->description); ?></span>
+            <?php endif; ?>
+            <?php
+            $name = '_customize-radio-' . $this->id;
+            $control = $this;
+            sidebar::render_position_cards(
+                $this->value(),
+                function ($key) use ($name, $control) {
+                    printf('name="%s" ', esc_attr($name));
+                    $control->link();
+                }
+            );
+            ?>
+            <?php
+        }
     }
 }
 

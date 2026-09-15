@@ -255,6 +255,50 @@ class menus {
                 file_exists($tabs_js_path) ? filemtime($tabs_js_path) : OMEGA_DESIGN_VERSION,
                 true
             );
+
+            // The real front-end announcement-bar stylesheet, reused as-is
+            // so the Announcement Bar form's live preview strip renders
+            // pixel-identical to what actually shows on the front end -
+            // see render_announcement_form() and admin-announcement-
+            // preview.js.
+            $announcement_css_path = OMEGA_DESIGN_ASSETS . '/css/announcement-bar.css';
+            wp_enqueue_style(
+                'omega-design-announcement-bar',
+                OMEGA_DESIGN_CSS_URI . '/announcement-bar.css',
+                ['omega-design-admin-pages'],
+                file_exists($announcement_css_path) ? filemtime($announcement_css_path) : OMEGA_DESIGN_VERSION
+            );
+
+            $announcement_preview_js_path = OMEGA_DESIGN_ASSETS . '/js/admin-announcement-preview.js';
+            wp_enqueue_script(
+                'omega-design-admin-announcement-preview',
+                OMEGA_DESIGN_JS_URI . '/admin-announcement-preview.js',
+                [],
+                file_exists($announcement_preview_js_path) ? filemtime($announcement_preview_js_path) : OMEGA_DESIGN_VERSION,
+                true
+            );
+
+            // Header Navigation form's own live preview - see
+            // render_header_nav_form() and admin-header-nav-preview.js.
+            $header_nav_preview_js_path = OMEGA_DESIGN_ASSETS . '/js/admin-header-nav-preview.js';
+            wp_enqueue_script(
+                'omega-design-admin-header-nav-preview',
+                OMEGA_DESIGN_JS_URI . '/admin-header-nav-preview.js',
+                [],
+                file_exists($header_nav_preview_js_path) ? filemtime($header_nav_preview_js_path) : OMEGA_DESIGN_VERSION,
+                true
+            );
+
+            // Typography form's dropdown + single preview card - see
+            // render_typography_form() and admin-typography-preview.js.
+            $typography_preview_js_path = OMEGA_DESIGN_ASSETS . '/js/admin-typography-preview.js';
+            wp_enqueue_script(
+                'omega-design-admin-typography-preview',
+                OMEGA_DESIGN_JS_URI . '/admin-typography-preview.js',
+                [],
+                file_exists($typography_preview_js_path) ? filemtime($typography_preview_js_path) : OMEGA_DESIGN_VERSION,
+                true
+            );
         }
     }
 
@@ -287,6 +331,8 @@ class menus {
             $nonce_field = 'omega_nonce_color_scheme';
         } elseif (isset($_POST['omega_section_sidebar'])) {
             $nonce_field = 'omega_nonce_sidebar';
+        } elseif (isset($_POST['omega_section_typography'])) {
+            $nonce_field = 'omega_nonce_typography';
         } elseif (isset($_POST['omega_section_design'])) {
             $nonce_field = 'omega_nonce_design';
         } elseif (isset($_POST['omega_section_logo'])) {
@@ -329,6 +375,14 @@ class menus {
             foreach (sidebar::get_instance()->get_sidebar_locations_map() as $option_name) {
                 set_theme_mod($option_name, !empty($_POST[$option_name]));
             }
+        }
+
+        if (isset($_POST['omega_section_typography'])) {
+            $heading_font = isset($_POST['omega_heading_font']) ? wp_unslash($_POST['omega_heading_font']) : '';
+            set_theme_mod(typography::HEADING_MOD, typography::get_instance()->sanitize_font($heading_font));
+
+            $body_font = isset($_POST['omega_body_font']) ? wp_unslash($_POST['omega_body_font']) : '';
+            set_theme_mod(typography::BODY_MOD, typography::get_instance()->sanitize_font($body_font));
         }
 
         if (isset($_POST['omega_section_design'])) {
@@ -549,21 +603,14 @@ class menus {
                 </div>
             </div>
 
-            <div class="omega-segmented" role="radiogroup" aria-label="<?php esc_attr_e('Site Color Mode', 'omega-design'); ?>">
-                <?php
-                $choices = [
-                    'auto'  => __('Automatic', 'omega-design'),
-                    'light' => __('Light', 'omega-design'),
-                    'dark'  => __('Dark', 'omega-design'),
-                ];
-                foreach ($choices as $value => $label) :
-                    $id = 'omega-color-mode-' . $value;
-                    ?>
-                    <input type="radio" name="omega_color_mode" id="<?php echo esc_attr($id); ?>" value="<?php echo esc_attr($value); ?>" <?php checked($mode, $value); ?> />
-                    <label for="<?php echo esc_attr($id); ?>"><?php echo esc_html($label); ?></label>
-                <?php endforeach; ?>
-            </div>
-            <p class="description"><?php esc_html_e("Automatic follows each visitor's device.", 'omega-design'); ?></p>
+            <?php
+            color_mode::render_mode_cards(
+                $mode,
+                function ($key) {
+                    echo 'name="omega_color_mode"';
+                }
+            );
+            ?>
 
             <?php submit_button(__('Save Mode', 'omega-design'), 'omega-btn omega-btn--primary', 'omega_submit_mode', false); ?>
         </form>
@@ -735,13 +782,45 @@ class menus {
         $mode          = classic_header::normalize_mode(get_theme_mod('omega_nav_mode', 'block'));
         $classic_id    = (int) get_theme_mod('omega_classic_menu_id', 0);
         $classic_menus = wp_get_nav_menus();
-        $choices       = classic_header::style_choices();
         $sticky        = (bool) get_theme_mod('omega_header_sticky', false);
         $bg_color      = get_theme_mod('omega_header_bg_color', '');
         $text_color    = get_theme_mod('omega_header_text_color', '');
         $font_family   = get_theme_mod('omega_header_font_family', '');
         $font_size     = get_theme_mod('omega_header_font_size', 'default');
         $height        = get_theme_mod('omega_header_height', 'default');
+
+        // Top-level item titles per classic menu, keyed by term_id, so the
+        // preview below can swap its mocked nav items live as the admin
+        // changes the "Classic menu to use" select - without an AJAX round
+        // trip for what's already a handful of short strings.
+        $menu_items_map = [];
+        foreach ($classic_menus as $menu) {
+            $items     = wp_get_nav_menu_items($menu->term_id);
+            $top_level = [];
+            if ($items) {
+                foreach ($items as $item) {
+                    if (0 === (int) $item->menu_item_parent) {
+                        $top_level[] = wp_strip_all_tags($item->title);
+                    }
+                }
+            }
+            $menu_items_map[$menu->term_id] = array_slice($top_level, 0, 6);
+        }
+
+        // Same maps custom_style_css() uses to build the real front-end
+        // !important overrides, reused here so the preview's font-size/
+        // height steps land on the exact same values as the live site.
+        $font_size_map = [
+            'small'   => '0.875rem',
+            'medium'  => '1rem',
+            'large'   => '1.25rem',
+            'x-large' => '1.75rem',
+        ];
+        $height_map = [
+            'compact'  => '0.55rem',
+            'regular'  => '1rem',
+            'spacious' => '1.6rem',
+        ];
         ?>
         <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" class="omega-card">
             <input type="hidden" name="action" value="omega_save_settings" />
@@ -757,12 +836,45 @@ class menus {
             </div>
 
             <div class="omega-field">
-                <label for="omega_nav_mode"><?php esc_html_e('Header style', 'omega-design'); ?></label>
-                <select name="omega_nav_mode" id="omega_nav_mode">
-                    <?php foreach ($choices as $value => $label) : ?>
-                        <option value="<?php echo esc_attr($value); ?>" <?php selected($mode, $value); ?>><?php echo esc_html($label); ?></option>
-                    <?php endforeach; ?>
-                </select>
+                <label><?php esc_html_e('Header style', 'omega-design'); ?></label>
+                <?php
+                classic_header::render_style_cards(
+                    $mode,
+                    function ($key) {
+                        echo 'name="omega_nav_mode"';
+                    }
+                );
+                ?>
+            </div>
+
+            <div class="omega-field">
+                <label><?php esc_html_e('Preview', 'omega-design'); ?></label>
+                <div class="omega-header-nav-preview">
+                    <div
+                        id="omega-header-preview-bar"
+                        class="omega-header-preview__bar"
+                        style="<?php
+                            echo $bg_color ? 'background:' . esc_attr($bg_color) . ';' : '';
+                            echo $text_color ? 'color:' . esc_attr($text_color) . ';' : '';
+                            echo $font_family ? 'font-family:' . esc_attr($font_family) . ';' : '';
+                        ?>"
+                    >
+                        <div
+                            id="omega-header-preview-inner"
+                            class="omega-header-preview__inner"
+                            style="<?php echo isset($height_map[$height]) ? 'padding-top:' . esc_attr($height_map[$height]) . ';padding-bottom:' . esc_attr($height_map[$height]) . ';' : ''; ?>"
+                        >
+                            <span class="omega-header-preview__logo"><?php echo esc_html(get_bloginfo('name') ?: 'LOGO'); ?></span>
+                            <nav
+                                id="omega-header-preview-nav"
+                                class="omega-header-preview__nav"
+                                style="<?php echo isset($font_size_map[$font_size]) ? 'font-size:' . esc_attr($font_size_map[$font_size]) . ';' : ''; ?>"
+                            ></nav>
+                        </div>
+                    </div>
+                </div>
+                <p class="description"><?php esc_html_e('Reflects the classic menu and appearance overrides below. Applies to Classic styles only.', 'omega-design'); ?></p>
+                <script type="application/json" id="omega-header-preview-menus-data"><?php echo wp_json_encode($menu_items_map); ?></script>
             </div>
 
             <div class="omega-field">
@@ -863,6 +975,23 @@ class menus {
                 <span class="omega-toggle__track"><span class="omega-toggle__thumb"></span></span>
                 <span class="omega-toggle__label"><?php esc_html_e('Show announcement bar', 'omega-design'); ?></span>
             </label>
+
+            <div class="omega-field">
+                <label><?php esc_html_e('Preview', 'omega-design'); ?></label>
+                <div class="omega-announcement-preview">
+                    <div
+                        id="omega-announcement-preview-bar"
+                        class="omega-announcement-bar"
+                        style="<?php echo $bg ? 'background-color:' . esc_attr($bg) . ';' : ''; ?><?php echo $text_color ? 'color:' . esc_attr($text_color) . ';' : ''; ?>"
+                    >
+                        <div class="omega-announcement-bar__inner">
+                            <span id="omega-announcement-preview-content"><?php echo '' !== trim(wp_strip_all_tags($content)) ? $content : esc_html__('Your announcement text appears here…', 'omega-design'); ?></span>
+                            <button type="button" class="omega-announcement-bar__dismiss" id="omega-announcement-preview-dismiss" style="<?php echo $dismissible ? '' : 'display:none;'; ?>">&times;</button>
+                        </div>
+                    </div>
+                </div>
+                <p class="description"><?php esc_html_e('Updates live as you edit the fields below.', 'omega-design'); ?></p>
+            </div>
 
             <div class="omega-field">
                 <label for="omega_announcement_content"><?php esc_html_e('Content (HTML)', 'omega-design'); ?></label>
@@ -1031,7 +1160,6 @@ class menus {
         $mode          = get_theme_mod('omega_footer_mode', 'block');
         $classic_id    = (int) get_theme_mod('omega_classic_footer_menu_id', 0);
         $classic_menus = wp_get_nav_menus();
-        $choices       = classic_footer::style_choices();
         $tagline       = get_theme_mod('omega_footer_tagline', '');
         $copyright     = get_theme_mod('omega_footer_copyright', '');
         $cta_label     = get_theme_mod('omega_footer_cta_label', '');
@@ -1052,12 +1180,15 @@ class menus {
             </div>
 
             <div class="omega-field">
-                <label for="omega_footer_mode"><?php esc_html_e('Footer style', 'omega-design'); ?></label>
-                <select name="omega_footer_mode" id="omega_footer_mode">
-                    <?php foreach ($choices as $value => $label) : ?>
-                        <option value="<?php echo esc_attr($value); ?>" <?php selected($mode, $value); ?>><?php echo esc_html($label); ?></option>
-                    <?php endforeach; ?>
-                </select>
+                <label><?php esc_html_e('Footer style', 'omega-design'); ?></label>
+                <?php
+                classic_footer::render_style_cards(
+                    $mode,
+                    function ($key) {
+                        echo 'name="omega_footer_mode"';
+                    }
+                );
+                ?>
             </div>
 
             <div class="omega-field">
@@ -1164,6 +1295,65 @@ class menus {
         <?php
     }
 
+    /**
+     * Site-wide heading/body font override - see typography.php, which
+     * owns the theme mods, sanitization, front-end CSS output and the
+     * matching Customizer section; this form just POSTs the same two
+     * theme mods through the Settings page's own admin-post.php flow.
+     */
+    private function render_typography_form($redirect_to) {
+        $heading_font = get_theme_mod(typography::HEADING_MOD, '');
+        $body_font    = get_theme_mod(typography::BODY_MOD, '');
+        ?>
+        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" class="omega-card">
+            <input type="hidden" name="action" value="omega_save_settings" />
+            <input type="hidden" name="omega_section_typography" value="1" />
+            <input type="hidden" name="omega_redirect_to" value="<?php echo esc_url($redirect_to); ?>" />
+            <?php wp_nonce_field('omega_save_settings', 'omega_nonce_typography'); ?>
+
+            <div class="omega-card__head">
+                <span class="dashicons dashicons-editor-textcolor"></span>
+                <div>
+                    <h2><?php esc_html_e('Typography', 'omega-design'); ?></h2>
+                    <p><?php esc_html_e('Applies to any heading or body text that hasn\'t been given its own explicit font in the block editor - an explicit per-block choice always overrides this.', 'omega-design'); ?></p>
+                </div>
+            </div>
+
+            <div class="omega-field">
+                <label for="omega_heading_font"><?php esc_html_e('Heading font', 'omega-design'); ?></label>
+                <?php
+                typography::render_font_picker(
+                    $heading_font,
+                    function () {
+                        echo 'name="omega_heading_font"';
+                    },
+                    __('Build Your Dream', 'omega-design'),
+                    'heading',
+                    'omega_heading_font'
+                );
+                ?>
+            </div>
+
+            <div class="omega-field">
+                <label for="omega_body_font"><?php esc_html_e('Body font', 'omega-design'); ?></label>
+                <?php
+                typography::render_font_picker(
+                    $body_font,
+                    function () {
+                        echo 'name="omega_body_font"';
+                    },
+                    __('The quick brown fox jumps over the lazy dog.', 'omega-design'),
+                    'body',
+                    'omega_body_font'
+                );
+                ?>
+            </div>
+
+            <?php submit_button(__('Save Typography', 'omega-design'), 'omega-btn omega-btn--primary', 'omega_submit_typography', false); ?>
+        </form>
+        <?php
+    }
+
     private function render_design_form($redirect_to) {
         $radius       = get_theme_mod('omega_button_radius', 'soft');
         if (!array_key_exists($radius, self::BUTTON_RADIUS_CHOICES)) {
@@ -1190,22 +1380,27 @@ class menus {
             </div>
 
             <div class="omega-field">
-                <label for="omega_button_radius"><?php esc_html_e('Corner style', 'omega-design'); ?></label>
-                <select name="omega_button_radius" id="omega_button_radius">
-                    <option value="sharp" <?php selected($radius, 'sharp'); ?>><?php esc_html_e('Sharp', 'omega-design'); ?></option>
-                    <option value="soft" <?php selected($radius, 'soft'); ?>><?php esc_html_e('Soft (default)', 'omega-design'); ?></option>
-                    <option value="rounded" <?php selected($radius, 'rounded'); ?>><?php esc_html_e('Rounded', 'omega-design'); ?></option>
-                    <option value="pill" <?php selected($radius, 'pill'); ?>><?php esc_html_e('Pill', 'omega-design'); ?></option>
-                </select>
+                <label><?php esc_html_e('Corner style', 'omega-design'); ?></label>
+                <?php
+                buttons::render_radius_cards(
+                    $radius,
+                    function ($key) {
+                        echo 'name="omega_button_radius"';
+                    }
+                );
+                ?>
             </div>
 
             <div class="omega-field">
-                <label for="omega_button_look"><?php esc_html_e('Default look', 'omega-design'); ?></label>
-                <select name="omega_button_look" id="omega_button_look">
-                    <?php foreach (self::BUTTON_LOOK_CHOICES as $value => $label) : ?>
-                        <option value="<?php echo esc_attr($value); ?>" <?php selected($look, $value); ?>><?php echo esc_html($label); ?></option>
-                    <?php endforeach; ?>
-                </select>
+                <label><?php esc_html_e('Default look', 'omega-design'); ?></label>
+                <?php
+                buttons::render_look_cards(
+                    $look,
+                    function ($key) {
+                        echo 'name="omega_button_look"';
+                    }
+                );
+                ?>
                 <p class="description"><?php esc_html_e('The same looks available per-button under Styles in the block editor.', 'omega-design'); ?></p>
             </div>
 
@@ -1301,11 +1496,15 @@ class menus {
                                 <p class="description"><?php esc_html_e('Master switch for every page type below. A single post or page can still override this from its own Page Settings panel in the editor.', 'omega-design'); ?></p>
 
                                 <div class="omega-field">
-                                    <label for="omega_sidebar_position"><?php esc_html_e('Position', 'omega-design'); ?></label>
-                                    <select name="omega_sidebar_position" id="omega_sidebar_position">
-                                        <option value="left" <?php selected($sidebar_position, 'left'); ?>><?php esc_html_e('Left', 'omega-design'); ?></option>
-                                        <option value="right" <?php selected($sidebar_position, 'right'); ?>><?php esc_html_e('Right', 'omega-design'); ?></option>
-                                    </select>
+                                    <label><?php esc_html_e('Position', 'omega-design'); ?></label>
+                                    <?php
+                                    sidebar::render_position_cards(
+                                        $sidebar_position,
+                                        function ($key) {
+                                            echo 'name="omega_sidebar_position"';
+                                        }
+                                    );
+                                    ?>
                                 </div>
 
                                 <div class="omega-field">
@@ -1343,6 +1542,7 @@ class menus {
                     <section class="omega-settings-panel" data-panel="design">
                         <div class="omega-grid omega-grid--2">
                             <?php $this->render_color_scheme_form($tab_url('design')); ?>
+                            <?php $this->render_typography_form($tab_url('design')); ?>
                             <?php $this->render_design_form($tab_url('design')); ?>
                         </div>
                     </section>

@@ -104,6 +104,35 @@ class patterns {
             return;
         }
 
+        foreach ($this->get_patterns_data($pattern_dir, $files) as $slug => $properties) {
+            register_block_pattern($slug, $properties);
+        }
+    }
+
+    /**
+     * Building every pattern's content means running ~30 PHP files (some of
+     * them full multi-section landing pages) through ob_start()/include on
+     * EVERY single admin request - including, critically, the REST request
+     * the core "start this new page from a pattern" popup itself makes to
+     * fetch the list it renders previews from, which is exactly the
+     * request that popup is waiting on. Caching the built result (as a
+     * transient, so it survives across requests with no object-cache
+     * plugin required) turns that into a single fast DB read instead.
+     *
+     * The cache key bakes in every pattern file's own mtime, so editing,
+     * adding, or removing a pattern file automatically invalidates it and
+     * the very next request rebuilds fresh - nothing to manually bust.
+     */
+    private function get_patterns_data($pattern_dir, $files) {
+        $cache_key = 'omega_patterns_' . md5(implode('|', array_map(function ($file) {
+            return $file . ':' . filemtime($file);
+        }, $files)));
+
+        $cached = get_transient($cache_key);
+        if (is_array($cached)) {
+            return $cached;
+        }
+
         $default_headers = [
             'title'         => 'Title',
             'slug'          => 'Slug',
@@ -114,6 +143,8 @@ class patterns {
             'viewportWidth' => 'Viewport Width',
             'inserter'      => 'Inserter',
         ];
+
+        $patterns_data = [];
 
         foreach ($files as $file) {
             $headers = get_file_data($file, $default_headers);
@@ -164,8 +195,15 @@ class patterns {
                 );
             }
 
-            register_block_pattern($headers['slug'], $properties);
+            $patterns_data[$headers['slug']] = $properties;
         }
+
+        // A day is generous purely as a safety net (in case a pattern file
+        // is somehow touched without its mtime changing) - the mtime-based
+        // key above is what actually keeps this fresh in the normal case.
+        set_transient($cache_key, $patterns_data, DAY_IN_SECONDS);
+
+        return $patterns_data;
     }
 }
 

@@ -59,8 +59,8 @@ foreach ($hero_slides as $i => $slide) :
 <!-- wp:columns {"align":"wide","verticalAlignment":"center"} -->
 <div class="wp-block-columns alignwide are-vertically-aligned-center">
 
-<!-- wp:column {"verticalAlignment":"center","width":"50%"} -->
-<div class="wp-block-column is-vertically-aligned-center" data-slide-animation="fade-up" style="flex-basis:50%">
+<!-- wp:column {"verticalAlignment":"center","width":"50%","className":"omega-slide-animate"} -->
+<div class="wp-block-column is-vertically-aligned-center omega-slide-animate" style="flex-basis:50%">
 <?php echo $eyebrow($slide['eyebrow']); ?>
 <!-- wp:heading {"level":1} --><h1 class="wp-block-heading"><?php echo esc_html($slide['heading']); ?></h1><!-- /wp:heading -->
 <!-- wp:paragraph --><p><?php echo esc_html($slide['body']); ?></p><!-- /wp:paragraph -->

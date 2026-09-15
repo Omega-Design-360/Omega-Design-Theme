@@ -1091,3 +1091,1230 @@ body.omega-admin-page-body #wpcontent {
 .omega-quicklinks .dashicons {
 	color: var(--wp--preset--color--primary);
 }
+
+/*
+ * Color Mode picker: a card per mode (Light/Dark/Auto) with a small fake-
+ * browser mockup (nav + heading + button + a decorative shape) styled in
+ * that mode's own colors, rather than the plain radio-button-plus-label
+ * WP_Customize_Control's native "radio" type renders. Used identically on
+ * the Settings page and inside the native Customizer control.
+ */
+.omega-mode-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+	gap: 16px;
+	margin-bottom: 18px;
+}
+
+.omega-mode-card {
+	position: relative;
+	display: block;
+	cursor: pointer;
+	border-radius: 12px;
+	padding: 12px 12px 16px;
+	background: #fff;
+	border: 2px solid #E2E5DE;
+	transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.omega-mode-card:hover {
+	border-color: #C7CCC0;
+}
+
+.omega-mode-card:has(.omega-mode-card__input:checked) {
+	border-color: var(--wp--preset--color--primary);
+	box-shadow: 0 0 0 3px color-mix(in srgb, var(--wp--preset--color--primary) 20%, transparent);
+}
+
+.omega-mode-card__input {
+	position: absolute;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.omega-mode-card__radio {
+	position: absolute;
+	top: 10px;
+	right: 10px;
+	width: 20px;
+	height: 20px;
+	border-radius: 50%;
+	background: rgba(255, 255, 255, 0.9);
+	border: 2px solid #C7CCC0;
+	z-index: 2;
+}
+
+.omega-mode-card:has(.omega-mode-card__input:checked) .omega-mode-card__radio {
+	border-color: var(--wp--preset--color--primary);
+	background: var(--wp--preset--color--primary);
+}
+
+.omega-mode-card:has(.omega-mode-card__input:checked) .omega-mode-card__radio::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	margin: auto;
+	width: 9px;
+	height: 5px;
+	border-left: 2px solid #fff;
+	border-bottom: 2px solid #fff;
+	transform: translateY(-1px) rotate(-45deg);
+}
+
+/*
+ * The browser-window mockup. display:block is required, not cosmetic -
+ * these are all <span>s (inline by default), and an inline element with
+ * block-level children (the heading/text/decor below) fragments into one
+ * separate line-box PER LINE instead of forming a single container box.
+ * overflow:hidden and position:relative on a fragmented inline element
+ * don't behave as one cohesive clipping/positioning context the way they
+ * do on a block box - the container's own bounding rect still measures
+ * correctly (spanning every fragment), but overflow only actually clips
+ * within whichever single fragment a child paints into, letting an
+ * absolutely positioned child (the decor circle) escape into whatever
+ * comes after in the page instead of being contained.
+ */
+.omega-mode-card__browser {
+	display: block;
+	position: relative;
+	border-radius: 8px;
+	overflow: hidden;
+	border: 1px solid rgba(0, 0, 0, 0.08);
+	margin-bottom: 12px;
+}
+
+.omega-mode-card__browser-dots {
+	display: flex;
+	gap: 4px;
+	padding: 7px 8px;
+}
+
+.omega-mode-card__browser-dots span {
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: rgba(0, 0, 0, 0.15);
+}
+
+.omega-mode-card__browser--dark .omega-mode-card__browser-dots span {
+	background: rgba(255, 255, 255, 0.2);
+}
+
+.omega-mode-card__browser-body {
+	display: block;
+	position: relative;
+	padding: 6px 10px 14px;
+	overflow: hidden;
+}
+
+.omega-mode-card__nav {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 6px;
+	margin-bottom: 10px;
+}
+
+.omega-mode-card__logo {
+	font-size: 8px;
+	font-weight: 700;
+	letter-spacing: 0.05em;
+}
+
+.omega-mode-card__nav-links {
+	display: flex;
+	gap: 6px;
+	font-size: 6px;
+}
+
+.omega-mode-card__nav-links span:first-child {
+	color: #2563eb;
+	font-weight: 600;
+}
+
+.omega-mode-card__heading {
+	display: block;
+	font-size: 13px;
+	font-weight: 800;
+	line-height: 1.15;
+	margin: 0 0 4px;
+}
+
+.omega-mode-card__text {
+	display: block;
+	font-size: 7px;
+	line-height: 1.4;
+	max-width: 65%;
+	margin: 0 0 8px;
+}
+
+.omega-mode-card__btn {
+	display: inline-block;
+	font-size: 7px;
+	font-weight: 600;
+	color: #fff;
+	background: #2563eb;
+	padding: 4px 9px;
+	border-radius: 5px;
+}
+
+.omega-mode-card__decor {
+	position: absolute;
+	right: -16px;
+	bottom: -20px;
+	width: 52px;
+	height: 52px;
+	border-radius: 40%;
+	transform: rotate(-8deg);
+}
+
+.omega-mode-card__browser--light {
+	background: #F5F7FA;
+}
+.omega-mode-card__browser--light .omega-mode-card__logo,
+.omega-mode-card__browser--light .omega-mode-card__heading {
+	color: #0F172A;
+}
+.omega-mode-card__browser--light .omega-mode-card__nav-links span:not(:first-child) {
+	color: #64748B;
+}
+.omega-mode-card__browser--light .omega-mode-card__text {
+	color: #475569;
+}
+.omega-mode-card__browser--light .omega-mode-card__decor {
+	background: #DCE7F5;
+}
+
+.omega-mode-card__browser--dark {
+	background: #0B1220;
+}
+.omega-mode-card__browser--dark .omega-mode-card__logo,
+.omega-mode-card__browser--dark .omega-mode-card__heading {
+	color: #F8FAFC;
+}
+.omega-mode-card__browser--dark .omega-mode-card__nav-links span:not(:first-child) {
+	color: #94A3B8;
+}
+.omega-mode-card__browser--dark .omega-mode-card__text {
+	color: #CBD5E1;
+}
+.omega-mode-card__browser--dark .omega-mode-card__decor {
+	background: #16233B;
+}
+
+/* Auto: the same mockup split down the middle, light half + dark half. */
+.omega-mode-card__browser--auto .omega-mode-card__browser-body {
+	display: flex;
+	padding: 0;
+}
+.omega-mode-card__browser--auto .omega-mode-card__browser-half {
+	flex: 1 1 50%;
+	position: relative;
+	overflow: hidden;
+	padding: 6px 8px 14px;
+}
+.omega-mode-card__browser--auto .omega-mode-card__browser-half--light {
+	background: #F5F7FA;
+}
+.omega-mode-card__browser--auto .omega-mode-card__browser-half--dark {
+	background: #0B1220;
+}
+.omega-mode-card__browser--auto .omega-mode-card__browser-half--light .omega-mode-card__heading,
+.omega-mode-card__browser--auto .omega-mode-card__browser-half--light .omega-mode-card__logo {
+	color: #0F172A;
+}
+.omega-mode-card__browser--auto .omega-mode-card__browser-half--dark .omega-mode-card__heading,
+.omega-mode-card__browser--auto .omega-mode-card__browser-half--dark .omega-mode-card__logo {
+	color: #F8FAFC;
+}
+.omega-mode-card__browser--auto .omega-mode-card__browser-half--light .omega-mode-card__text {
+	color: #475569;
+}
+.omega-mode-card__browser--auto .omega-mode-card__browser-half--dark .omega-mode-card__text {
+	color: #CBD5E1;
+}
+.omega-mode-card__browser--auto .omega-mode-card__browser-half .omega-mode-card__text {
+	max-width: 100%;
+}
+.omega-mode-card__browser--auto .omega-mode-card__browser-half--light .omega-mode-card__decor {
+	background: #DCE7F5;
+}
+.omega-mode-card__browser--auto .omega-mode-card__browser-half--dark .omega-mode-card__decor {
+	background: #16233B;
+}
+
+.omega-mode-card__meta {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 0 2px;
+}
+
+.omega-mode-card__icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	width: 32px;
+	height: 32px;
+	border-radius: 50%;
+	background: #EEF2FF;
+	color: #2563eb;
+}
+
+.omega-mode-card__icon svg {
+	width: 16px;
+	height: 16px;
+}
+
+.omega-mode-card__icon--split {
+	background: linear-gradient(90deg, #EEF2FF 50%, #0B1220 50%);
+	position: relative;
+	overflow: hidden;
+}
+
+.omega-mode-card__icon--split svg:first-child {
+	position: absolute;
+	left: 5px;
+	color: #2563eb;
+}
+
+.omega-mode-card__icon--split svg:last-child {
+	position: absolute;
+	right: 5px;
+	color: #fff;
+}
+
+.omega-mode-card__title {
+	font-size: 13px;
+	font-weight: 700;
+	color: var(--wp--preset--color--heading);
+	margin: 0 0 1px;
+}
+
+.omega-mode-card__desc {
+	font-size: 11px;
+	line-height: 1.35;
+	color: #6B7280;
+	margin: 0;
+}
+
+/*
+ * Sidebar Position picker: a card per side (Left/Right) with a small
+ * layout diagram (a tinted "aside" block beside a few content lines,
+ * arranged in the actual chosen order) instead of a plain <select>.
+ * Used identically on the Settings page and inside the native Customizer
+ * control (see omega_sidebar_position_control in
+ * includes/customizer/sidebar.php).
+ */
+.omega-sidebar-pos-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+	gap: 14px;
+	margin-bottom: 14px;
+}
+
+.omega-sidebar-pos-card {
+	position: relative;
+	display: block;
+	cursor: pointer;
+	text-align: center;
+}
+
+.omega-sidebar-pos-card__input {
+	position: absolute;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.omega-sidebar-pos-card__radio {
+	position: absolute;
+	top: 8px;
+	right: 8px;
+	width: 18px;
+	height: 18px;
+	border-radius: 50%;
+	background: rgba(255, 255, 255, 0.9);
+	border: 2px solid #C7CCC0;
+	z-index: 2;
+}
+
+.omega-sidebar-pos-card:has(.omega-sidebar-pos-card__input:checked) .omega-sidebar-pos-card__radio {
+	border-color: var(--wp--preset--color--primary);
+	background: var(--wp--preset--color--primary);
+}
+
+.omega-sidebar-pos-card:has(.omega-sidebar-pos-card__input:checked) .omega-sidebar-pos-card__radio::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	margin: auto;
+	width: 8px;
+	height: 4px;
+	border-left: 2px solid #fff;
+	border-bottom: 2px solid #fff;
+	transform: translateY(-1px) rotate(-45deg);
+}
+
+.omega-sidebar-pos-card__preview {
+	display: flex;
+	gap: 6px;
+	height: 70px;
+	padding: 10px;
+	border-radius: 8px;
+	background: #F5F7FA;
+	border: 2px solid #E2E5DE;
+	margin-bottom: 8px;
+	transition: border-color 0.15s ease;
+}
+
+.omega-sidebar-pos-card:hover .omega-sidebar-pos-card__preview {
+	border-color: #C7CCC0;
+}
+
+.omega-sidebar-pos-card:has(.omega-sidebar-pos-card__input:checked) .omega-sidebar-pos-card__preview {
+	border-color: var(--wp--preset--color--primary);
+}
+
+.omega-sidebar-pos-card__preview--right {
+	flex-direction: row-reverse;
+}
+
+.omega-sidebar-pos-card__aside {
+	display: block;
+	flex: 0 0 28%;
+	border-radius: 4px;
+	background: color-mix(in srgb, var(--wp--preset--color--primary, #1fbb00) 25%, transparent);
+}
+
+.omega-sidebar-pos-card__main {
+	display: flex;
+	flex: 1 1 auto;
+	flex-direction: column;
+	justify-content: center;
+	gap: 6px;
+	min-width: 0;
+	padding: 0 4px;
+}
+
+.omega-sidebar-pos-card__line {
+	display: block;
+	height: 6px;
+	border-radius: 2px;
+	background: #D7DBD3;
+}
+
+.omega-sidebar-pos-card__line--short {
+	width: 65%;
+	height: 4px;
+}
+
+.omega-sidebar-pos-card__title {
+	display: block;
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--wp--preset--color--heading);
+}
+
+/*
+ * Header Style picker: a card per header layout (Block Navigation + the 5
+ * Classic styles) with a small mockup of that header's actual arrangement,
+ * instead of a plain <select> full of plain-text option labels an admin
+ * can't visually tell apart. Settings page only (Header Navigation isn't a
+ * native Customizer section) - see render_header_nav_form() in menus.php.
+ */
+.omega-header-style-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+	gap: 14px;
+	margin-bottom: 14px;
+}
+
+.omega-header-style-card {
+	position: relative;
+	display: block;
+	cursor: pointer;
+	text-align: center;
+}
+
+.omega-header-style-card__input {
+	position: absolute;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.omega-header-style-card__radio {
+	position: absolute;
+	top: 8px;
+	right: 8px;
+	width: 18px;
+	height: 18px;
+	border-radius: 50%;
+	background: rgba(255, 255, 255, 0.9);
+	border: 2px solid #C7CCC0;
+	z-index: 2;
+}
+
+.omega-header-style-card:has(.omega-header-style-card__input:checked) .omega-header-style-card__radio {
+	border-color: var(--wp--preset--color--primary);
+	background: var(--wp--preset--color--primary);
+}
+
+.omega-header-style-card:has(.omega-header-style-card__input:checked) .omega-header-style-card__radio::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	margin: auto;
+	width: 8px;
+	height: 4px;
+	border-left: 2px solid #fff;
+	border-bottom: 2px solid #fff;
+	transform: translateY(-1px) rotate(-45deg);
+}
+
+.omega-header-style-card__preview {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	gap: 6px;
+	height: 62px;
+	padding: 10px 12px;
+	border-radius: 8px;
+	background: #F5F7FA;
+	border: 2px solid #E2E5DE;
+	margin-bottom: 8px;
+	overflow: hidden;
+	transition: border-color 0.15s ease;
+}
+
+.omega-header-style-card:hover .omega-header-style-card__preview {
+	border-color: #C7CCC0;
+}
+
+.omega-header-style-card:has(.omega-header-style-card__input:checked) .omega-header-style-card__preview {
+	border-color: var(--wp--preset--color--primary);
+}
+
+.omega-header-style-card__title {
+	display: block;
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--wp--preset--color--heading);
+}
+
+/* Shared mockup pieces reused across every style's preview. */
+.omega-header-style-card__logo {
+	display: block;
+	width: 22px;
+	height: 8px;
+	border-radius: 2px;
+	background: var(--wp--preset--color--primary, #1fbb00);
+	flex-shrink: 0;
+}
+
+.omega-header-style-card__nav {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+}
+
+.omega-header-style-card__nav-item {
+	display: block;
+	width: 14px;
+	height: 4px;
+	border-radius: 2px;
+	background: #C7CCC0;
+}
+
+/* The base logo-left / nav-right row every style except Centered uses. */
+.omega-header-style-card__row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+}
+
+/* Block Navigation: no concrete layout to mock up (it defers entirely to
+   the Site Editor's own header template part), so a generic "blocks" glyph
+   stands in for a real preview instead. */
+.omega-header-style-card__blocks-icon {
+	display: grid;
+	grid-template-columns: repeat(3, 6px);
+	grid-template-rows: repeat(2, 6px);
+	gap: 3px;
+	margin: 0 auto;
+}
+
+.omega-header-style-card__blocks-icon span {
+	border-radius: 1px;
+	background: #C7CCC0;
+}
+
+/* Centered: logo on its own row, a hairline divider, nav centered below. */
+.omega-header-style-card__preview--centered {
+	gap: 5px;
+}
+
+.omega-header-style-card__preview--centered .omega-header-style-card__logo {
+	margin: 0 auto;
+}
+
+.omega-header-style-card__divider {
+	display: block;
+	height: 1px;
+	background: rgba(0, 0, 0, 0.1);
+}
+
+.omega-header-style-card__preview--centered .omega-header-style-card__nav {
+	justify-content: center;
+}
+
+/* Split: the last nav item is a filled CTA pill, not a plain text line. */
+.omega-header-style-card__nav-item--btn {
+	width: 20px;
+	height: 8px;
+	border-radius: 5px;
+	background: var(--wp--preset--color--primary, #1fbb00);
+}
+
+/* Boxed Nav: the whole nav sits in a rounded capsule, one item filled solid
+   as the "current page" state. */
+.omega-header-style-card__nav--boxed {
+	background: #E9ECE7;
+	border-radius: 999px;
+	padding: 4px 6px;
+	gap: 4px;
+}
+
+.omega-header-style-card__nav--boxed .omega-header-style-card__nav-item {
+	border-radius: 999px;
+}
+
+.omega-header-style-card__nav-item--active {
+	background: var(--wp--preset--color--primary, #1fbb00);
+}
+
+/* Bold Accent: a dark bar, logo rendered in the accent color, nav items
+   light instead of the usual muted gray. */
+.omega-header-style-card__preview--dark {
+	background: #1C1C1C;
+	border-color: #1C1C1C;
+}
+
+.omega-header-style-card:hover .omega-header-style-card__preview--dark,
+.omega-header-style-card:has(.omega-header-style-card__input:checked) .omega-header-style-card__preview--dark {
+	border-color: var(--wp--preset--color--primary);
+}
+
+.omega-header-style-card__preview--dark .omega-header-style-card__logo {
+	background: var(--wp--preset--color--accent, #b35b00);
+}
+
+.omega-header-style-card__preview--dark .omega-header-style-card__nav-item {
+	background: rgba(255, 255, 255, 0.35);
+}
+
+/*
+ * Announcement Bar live preview: unlike the pickers above, there's no
+ * fixed set of choices here (background/text color and content are free-
+ * form), so instead of preview cards this is one strip that re-renders
+ * live as the admin edits the fields below it (see admin-announcement-
+ * preview.js) - reusing the real .omega-announcement-bar/__inner/__dismiss
+ * classes (assets/css/announcement-bar.css, enqueued alongside this file
+ * only on the Settings screen) so what's shown here is pixel-identical to
+ * what actually renders on the front end, not a re-approximation of it.
+ */
+.omega-announcement-preview {
+	border-radius: 8px;
+	overflow: hidden;
+	border: 1px solid var(--omega-border, #E2E5DE);
+}
+
+.omega-announcement-preview .omega-announcement-bar {
+	position: relative;
+}
+
+.omega-announcement-preview .omega-announcement-bar__inner {
+	max-width: none;
+}
+
+/*
+ * Header Navigation live preview: a self-contained mockup bar (not the
+ * real .omega-classic-header markup, which forks into 5 very different
+ * templates under template-parts/classic-header/) that re-renders live as
+ * the admin picks a classic menu and edits the appearance overrides below
+ * it - see render_header_nav_form() in menus.php and admin-header-nav-
+ * preview.js. Its font-size/height steps intentionally mirror
+ * classic_header::custom_style_css()'s own maps so what's previewed here
+ * lands on the same values the front end actually ships.
+ */
+.omega-header-nav-preview {
+	border-radius: 8px;
+	overflow: hidden;
+	border: 1px solid var(--omega-border, #E2E5DE);
+}
+
+.omega-header-preview__bar {
+	background: #fff;
+	color: #1F2937;
+	transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.omega-header-preview__inner {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: 16px;
+	padding: 14px 20px;
+}
+
+.omega-header-preview__logo {
+	font-weight: 700;
+	font-size: 1rem;
+	white-space: nowrap;
+}
+
+.omega-header-preview__nav {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 18px;
+}
+
+.omega-header-preview__nav-item {
+	white-space: nowrap;
+	opacity: 0.8;
+}
+
+/*
+ * Button Defaults picker: two independent grids (see
+ * buttons::render_radius_cards()/render_look_cards()) so each isolates one
+ * variable at a time - Corner Style always previews the "Fill" look at
+ * that corner's actual px radius, Default Look always previews at a fixed
+ * 6px corner (except Pill, which - like the real CSS - always forces
+ * 999px regardless of Corner Style). Same radio+checkmark language as
+ * every other picker on this page.
+ */
+.omega-btn-radius-grid,
+.omega-btn-look-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+	gap: 14px;
+	margin-bottom: 14px;
+}
+
+.omega-btn-radius-card,
+.omega-btn-look-card {
+	position: relative;
+	display: block;
+	cursor: pointer;
+	text-align: center;
+}
+
+.omega-btn-radius-card__input,
+.omega-btn-look-card__input {
+	position: absolute;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.omega-btn-radius-card__radio,
+.omega-btn-look-card__radio {
+	position: absolute;
+	top: 8px;
+	right: 8px;
+	width: 18px;
+	height: 18px;
+	border-radius: 50%;
+	background: rgba(255, 255, 255, 0.9);
+	border: 2px solid #C7CCC0;
+	z-index: 2;
+}
+
+.omega-btn-radius-card:has(.omega-btn-radius-card__input:checked) .omega-btn-radius-card__radio,
+.omega-btn-look-card:has(.omega-btn-look-card__input:checked) .omega-btn-look-card__radio {
+	border-color: var(--wp--preset--color--primary);
+	background: var(--wp--preset--color--primary);
+}
+
+.omega-btn-radius-card:has(.omega-btn-radius-card__input:checked) .omega-btn-radius-card__radio::after,
+.omega-btn-look-card:has(.omega-btn-look-card__input:checked) .omega-btn-look-card__radio::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	margin: auto;
+	width: 8px;
+	height: 4px;
+	border-left: 2px solid #fff;
+	border-bottom: 2px solid #fff;
+	transform: translateY(-1px) rotate(-45deg);
+}
+
+.omega-btn-radius-card__preview,
+.omega-btn-look-card__preview {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 70px;
+	padding: 10px;
+	border-radius: 8px;
+	background: #F5F7FA;
+	border: 2px solid #E2E5DE;
+	margin-bottom: 8px;
+	transition: border-color 0.15s ease;
+}
+
+.omega-btn-radius-card:hover .omega-btn-radius-card__preview,
+.omega-btn-look-card:hover .omega-btn-look-card__preview {
+	border-color: #C7CCC0;
+}
+
+.omega-btn-radius-card:has(.omega-btn-radius-card__input:checked) .omega-btn-radius-card__preview,
+.omega-btn-look-card:has(.omega-btn-look-card__input:checked) .omega-btn-look-card__preview {
+	border-color: var(--wp--preset--color--primary);
+}
+
+.omega-btn-radius-card__name,
+.omega-btn-look-card__name {
+	display: block;
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--wp--preset--color--heading);
+}
+
+.omega-btn-radius-card__swatch {
+	display: inline-block;
+	padding: 8px 18px;
+	font-size: 12px;
+	font-weight: 600;
+	background: var(--wp--preset--color--button-background, var(--wp--preset--color--primary, #1fbb00));
+	color: var(--wp--preset--color--button-text, #fff);
+}
+
+/* Matches the real is-style-omega-* rules in block-style-variations.css. */
+.omega-btn-look-card__swatch {
+	display: inline-block;
+	padding: 8px 18px;
+	font-size: 12px;
+	font-weight: 600;
+	border-radius: 6px;
+	background: var(--wp--preset--color--button-background, var(--wp--preset--color--primary, #1fbb00));
+	color: var(--wp--preset--color--button-text, #fff);
+}
+
+.omega-btn-look-card__swatch--ghost {
+	background: transparent;
+	color: var(--wp--preset--color--primary, #1fbb00);
+	border: 2px solid var(--wp--preset--color--primary, #1fbb00);
+	padding: 6px 16px;
+}
+
+.omega-btn-look-card__swatch--soft {
+	background: color-mix(in srgb, var(--wp--preset--color--primary, #1fbb00) 14%, transparent);
+	color: var(--wp--preset--color--primary, #1fbb00);
+}
+
+.omega-btn-look-card__swatch--pill {
+	border-radius: 999px;
+}
+
+.omega-btn-look-card__swatch--3d {
+	box-shadow: 0 4px 0 0 color-mix(in srgb, var(--wp--preset--color--primary, #1fbb00) 60%, black);
+}
+
+/*
+ * Typography picker: a plain <select> (see
+ * typography::render_font_picker(), called once for Heading Font and once
+ * for Body Font) - every registered font as its own preview card would be
+ * a lot of scanning for what's really a single choice - plus one preview
+ * card that always reflects whichever option is currently selected,
+ * re-fonted live by admin-typography-preview.js reading the chosen
+ * <option>'s own data-font-family.
+ */
+.omega-font-select {
+	width: 100%;
+	max-width: 320px;
+	margin-bottom: 10px;
+}
+
+.omega-font-preview-card {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 10px;
+	border-radius: 8px;
+	background: #F5F7FA;
+	border: 2px solid #E2E5DE;
+	overflow: hidden;
+}
+
+.omega-font-preview-card__sample {
+	color: #1F2937;
+}
+
+.omega-font-preview-card__sample--heading {
+	font-size: 20px;
+	font-weight: 700;
+}
+
+.omega-font-preview-card__sample--body {
+	font-size: 14px;
+	line-height: 1.5;
+}
+
+/*
+ * Footer Style picker: a card per footer layout (Block Footer + the 5
+ * Classic styles) with a small mockup of that footer's actual arrangement,
+ * instead of a plain <select> full of plain-text option labels an admin
+ * can't visually tell apart - mirrors the Header Style picker exactly (see
+ * classic_header.php's own version of this comment). Shared by both the
+ * Settings page (menus.php) and the native Customizer control
+ * (classic_footer.php).
+ */
+.omega-footer-style-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+	gap: 14px;
+	margin-bottom: 14px;
+}
+
+.omega-footer-style-card {
+	position: relative;
+	display: block;
+	cursor: pointer;
+	text-align: center;
+}
+
+.omega-footer-style-card__input {
+	position: absolute;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.omega-footer-style-card__radio {
+	position: absolute;
+	top: 8px;
+	right: 8px;
+	width: 18px;
+	height: 18px;
+	border-radius: 50%;
+	background: rgba(255, 255, 255, 0.9);
+	border: 2px solid #C7CCC0;
+	z-index: 2;
+}
+
+.omega-footer-style-card:has(.omega-footer-style-card__input:checked) .omega-footer-style-card__radio {
+	border-color: var(--wp--preset--color--primary);
+	background: var(--wp--preset--color--primary);
+}
+
+.omega-footer-style-card:has(.omega-footer-style-card__input:checked) .omega-footer-style-card__radio::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	margin: auto;
+	width: 8px;
+	height: 4px;
+	border-left: 2px solid #fff;
+	border-bottom: 2px solid #fff;
+	transform: translateY(-1px) rotate(-45deg);
+}
+
+.omega-footer-style-card__preview {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	gap: 6px;
+	min-height: 62px;
+	padding: 10px 12px;
+	border-radius: 8px;
+	background: #F5F7FA;
+	border: 2px solid #E2E5DE;
+	margin-bottom: 8px;
+	overflow: hidden;
+	transition: border-color 0.15s ease;
+}
+
+.omega-footer-style-card:hover .omega-footer-style-card__preview {
+	border-color: #C7CCC0;
+}
+
+.omega-footer-style-card:has(.omega-footer-style-card__input:checked) .omega-footer-style-card__preview {
+	border-color: var(--wp--preset--color--primary);
+}
+
+.omega-footer-style-card__title {
+	display: block;
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--wp--preset--color--heading);
+}
+
+/* Shared mockup pieces reused across every style's preview. */
+.omega-footer-style-card__logo {
+	display: block;
+	width: 26px;
+	height: 8px;
+	border-radius: 2px;
+	background: var(--wp--preset--color--primary, #1fbb00);
+	flex-shrink: 0;
+}
+
+.omega-footer-style-card__nav {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 5px;
+}
+
+.omega-footer-style-card__nav-item {
+	display: block;
+	width: 14px;
+	height: 4px;
+	border-radius: 2px;
+	background: #C7CCC0;
+}
+
+.omega-footer-style-card__row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+}
+
+.omega-footer-style-card__tagline {
+	display: block;
+	width: 60%;
+	height: 4px;
+	margin: 0 auto;
+	border-radius: 2px;
+	background: #D7DBD3;
+}
+
+.omega-footer-style-card__copyright {
+	display: block;
+	width: 45%;
+	height: 4px;
+	margin: 4px auto 0;
+	border-radius: 2px;
+	background: #D7DBD3;
+}
+
+/* Block Footer: no concrete layout to mock up (it defers entirely to the
+   Site Editor's own footer template part), so a generic "blocks" glyph
+   stands in for a real preview instead. */
+.omega-footer-style-card__blocks-icon {
+	display: grid;
+	grid-template-columns: repeat(3, 6px);
+	grid-template-rows: repeat(2, 6px);
+	gap: 3px;
+	margin: 0 auto;
+}
+
+.omega-footer-style-card__blocks-icon span {
+	border-radius: 1px;
+	background: #C7CCC0;
+}
+
+/* Columns / Bold: a brand logo above N columns, each its own heading +
+   link line - Bold reuses this exact layout, just dark-styled below. */
+.omega-footer-style-card__preview--columns .omega-footer-style-card__logo {
+	margin: 0 auto;
+}
+
+.omega-footer-style-card__columns {
+	display: flex;
+	justify-content: center;
+	gap: 10px;
+}
+
+.omega-footer-style-card__col {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 3px;
+}
+
+.omega-footer-style-card__col-head {
+	display: block;
+	width: 16px;
+	height: 4px;
+	border-radius: 2px;
+	background: var(--wp--preset--color--primary, #1fbb00);
+}
+
+.omega-footer-style-card__col-line {
+	display: block;
+	width: 14px;
+	height: 3px;
+	border-radius: 2px;
+	background: #C7CCC0;
+}
+
+/* Centered: logo/tagline/nav all centered on their own rows. */
+.omega-footer-style-card__preview--centered .omega-footer-style-card__logo {
+	margin: 0 auto;
+}
+
+/* Newsletter CTA: a tinted accent band (tagline + filled CTA pill) sits
+   above the usual logo/nav row. */
+.omega-footer-style-card__cta-band {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	padding: 6px;
+	border-radius: 4px;
+	background: color-mix(in srgb, var(--wp--preset--color--primary, #1fbb00) 14%, transparent);
+}
+
+.omega-footer-style-card__tagline--light {
+	width: 40%;
+	margin: 0;
+	background: color-mix(in srgb, var(--wp--preset--color--primary, #1fbb00) 45%, transparent);
+}
+
+.omega-footer-style-card__cta-btn {
+	display: block;
+	width: 26px;
+	height: 8px;
+	border-radius: 4px;
+	background: var(--wp--preset--color--primary, #1fbb00);
+	flex-shrink: 0;
+}
+
+/* Bold: dark background variant of the Columns layout. */
+.omega-footer-style-card__preview--dark {
+	background: #1C1C1C;
+	border-color: #1C1C1C;
+}
+
+.omega-footer-style-card:hover .omega-footer-style-card__preview--dark,
+.omega-footer-style-card:has(.omega-footer-style-card__input:checked) .omega-footer-style-card__preview--dark {
+	border-color: var(--wp--preset--color--primary);
+}
+
+.omega-footer-style-card__preview--dark .omega-footer-style-card__col-line {
+	background: rgba(255, 255, 255, 0.35);
+}
+
+/*
+ * Customizer accordion icons: the native Customizer has no icon param for
+ * add_panel()/add_section(), so every "Omega Design" panel/section gets a
+ * dashicon glyph injected before its title via ::before on the header
+ * button (<li id="accordion-panel-{id}"|"accordion-section-{id}"> >
+ * h3.accordion-section-title > button.accordion-trigger - confirmed
+ * against the Customizer's actual rendered markup, not guessed). Icons are
+ * matched to the same dashicon each section already uses for its card
+ * head on the Settings page (menus.php), so an admin sees the same glyph
+ * in both places. This file is already enqueued on the Customizer's
+ * controls pane by every section below (each one's own
+ * enqueue_control_assets()), so one shared block here reaches all of
+ * them.
+ *
+ * Also covers every OTHER top-level Customizer entry visible on this
+ * site - WordPress core's own (Site Identity, Colors, Menus, Homepage
+ * Settings, Additional CSS) and the WooCommerce plugin's own panel - none
+ * of which carry an icon by default either. "Header Options"/"Footer
+ * Options"/"Typography & Buttons" (all mysite-editor) are deliberately
+ * left out here since classic_header.php/classic_footer.php/
+ * typography.php remove those sections entirely now, in favor of this
+ * theme's own Header Style/Footer Style/Typography/Buttons sections.
+ */
+#accordion-panel-omega_design_panel > h3.accordion-section-title > button.accordion-trigger:before,
+#accordion-section-omega_color_mode_settings > h3.accordion-section-title > button.accordion-trigger:before,
+#accordion-section-omega_color_scheme_settings > h3.accordion-section-title > button.accordion-trigger:before,
+#accordion-section-omega_header_style_settings > h3.accordion-section-title > button.accordion-trigger:before,
+#accordion-section-omega_footer_style_settings > h3.accordion-section-title > button.accordion-trigger:before,
+#accordion-section-omega_sidebar_settings > h3.accordion-section-title > button.accordion-trigger:before,
+#accordion-section-omega_typography_settings > h3.accordion-section-title > button.accordion-trigger:before,
+#accordion-section-omega_button_settings > h3.accordion-section-title > button.accordion-trigger:before,
+#accordion-section-title_tagline > h3.accordion-section-title > button.accordion-trigger:before,
+#accordion-section-colors > h3.accordion-section-title > button.accordion-trigger:before,
+#accordion-panel-nav_menus > h3.accordion-section-title > button.accordion-trigger:before,
+#accordion-section-static_front_page > h3.accordion-section-title > button.accordion-trigger:before,
+#accordion-panel-woocommerce > h3.accordion-section-title > button.accordion-trigger:before,
+#accordion-section-custom_css > h3.accordion-section-title > button.accordion-trigger:before {
+	font-family: dashicons;
+	display: inline-block;
+	margin-right: 6px;
+	line-height: 1;
+	font-size: 17px;
+	font-weight: 400;
+	font-style: normal;
+	vertical-align: -3px;
+	text-decoration: inherit;
+	speak: none;
+	-webkit-font-smoothing: antialiased;
+}
+
+/* Omega Design (panel) - dashicons-layout, same glyph the theme uses for its own site-wide "design" identity. */
+#accordion-panel-omega_design_panel > h3.accordion-section-title > button.accordion-trigger:before {
+	content: "\f538";
+}
+
+/* Color Mode - dashicons-admin-appearance, matches its Settings page card head. */
+#accordion-section-omega_color_mode_settings > h3.accordion-section-title > button.accordion-trigger:before {
+	content: "\f100";
+}
+
+/* Color Scheme - dashicons-admin-customizer, matches its Settings page card head. */
+#accordion-section-omega_color_scheme_settings > h3.accordion-section-title > button.accordion-trigger:before {
+	content: "\f540";
+}
+
+/* Header Style - dashicons-menu-alt2, matches Header Navigation's card head. */
+#accordion-section-omega_header_style_settings > h3.accordion-section-title > button.accordion-trigger:before {
+	content: "\f329";
+}
+
+/* Footer Style - dashicons-align-center, matches the Footer card head. */
+#accordion-section-omega_footer_style_settings > h3.accordion-section-title > button.accordion-trigger:before {
+	content: "\f134";
+}
+
+/* Sidebar - dashicons-align-right, matches the Sidebar card head. */
+#accordion-section-omega_sidebar_settings > h3.accordion-section-title > button.accordion-trigger:before {
+	content: "\f136";
+}
+
+/* Typography - dashicons-editor-textcolor, matches its Settings page card head. */
+#accordion-section-omega_typography_settings > h3.accordion-section-title > button.accordion-trigger:before {
+	content: "\f215";
+}
+
+/* Buttons - dashicons-art, matches the Design/Buttons card head. */
+#accordion-section-omega_button_settings > h3.accordion-section-title > button.accordion-trigger:before {
+	content: "\f309";
+}
+
+/* Site Identity (core) - dashicons-admin-home. */
+#accordion-section-title_tagline > h3.accordion-section-title > button.accordion-trigger:before {
+	content: "\f102";
+}
+
+/* Colors (core) - dashicons-color-picker. */
+#accordion-section-colors > h3.accordion-section-title > button.accordion-trigger:before {
+	content: "\f131";
+}
+
+/* Menus (core panel) - dashicons-menu. */
+#accordion-panel-nav_menus > h3.accordion-section-title > button.accordion-trigger:before {
+	content: "\f333";
+}
+
+/* Homepage Settings (core) - dashicons-welcome-view-site. */
+#accordion-section-static_front_page > h3.accordion-section-title > button.accordion-trigger:before {
+	content: "\f115";
+}
+
+/* WooCommerce (plugin panel) - dashicons-cart, matches this theme's own WooCommerce icon elsewhere on the Settings page. */
+#accordion-panel-woocommerce > h3.accordion-section-title > button.accordion-trigger:before {
+	content: "\f174";
+}
+
+/* Additional CSS (core) - dashicons-editor-code. */
+#accordion-section-custom_css > h3.accordion-section-title > button.accordion-trigger:before {
+	content: "\f475";
+}

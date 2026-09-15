@@ -182,6 +182,20 @@ class loader {
             'deps'     => ['hooks'],
             'enabled'  => true,
         ],
+        'typography' => [
+            'class'    => 'OmegaDesign\\customizer\\typography',
+            'priority' => 20,
+            'required' => false,
+            'deps'     => ['hooks'],
+            'enabled'  => true,
+        ],
+        'buttons' => [
+            'class'    => 'OmegaDesign\\customizer\\buttons',
+            'priority' => 21,
+            'required' => false,
+            'deps'     => ['hooks', 'top_bar_menu'],
+            'enabled'  => true,
+        ],
         'responsive_styles' => [
             'class'    => 'OmegaDesign\\core\\responsive_styles',
             'priority' => 20,
@@ -233,6 +247,13 @@ class loader {
         ],
         'loading_bar' => [
             'class'    => 'OmegaDesign\\core\\loading_bar',
+            'priority' => 20,
+            'required' => false,
+            'deps'     => ['hooks'],
+            'enabled'  => true,
+        ],
+        'github_updater' => [
+            'class'    => 'OmegaDesign\\core\\github_updater',
             'priority' => 20,
             'required' => false,
             'deps'     => ['hooks'],

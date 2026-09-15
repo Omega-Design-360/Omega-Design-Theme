@@ -1,10 +1,9 @@
 <?php
 /**
- * Site-wide page-load progress bar - a slim, animated bar at the very top
- * of every front-end page (the same idea as YouTube/GitHub's own), so a
- * page that's slow to finish loading (a heavy hero image, a third-party
- * script, a slow connection) gives the visitor something moving to look at
- * instead of a static screen with no feedback at all.
+ * Site-wide page-load indicator - three small pulsing dots centered on the
+ * screen while a page finishes loading, so a page that's slow (a heavy hero
+ * image, a third-party script, a slow connection) gives the visitor
+ * something moving to look at instead of a static screen with no feedback.
  *
  * Deliberately just a visual indicator, not a content gate: the page
  * renders normally underneath it the whole time (nothing is hidden or
@@ -12,10 +11,10 @@
  * blank page, and doesn't affect how fast real content is visible to a
  * visitor or a search engine.
  *
- * The bar's own CSS and starter script are both inlined (wp_head/
- * wp_body_open) rather than enqueued as separate files - the whole point
- * is that it's visible from the very first paint, before any external
- * stylesheet has even started downloading.
+ * The markup/CSS/starter script are all inlined (wp_head/wp_body_open)
+ * rather than enqueued as separate files - the whole point is that it's
+ * visible from the very first paint, before any external stylesheet has
+ * even started downloading.
  *
  * @package OmegaDesign\core
  */
@@ -57,18 +56,33 @@ class loading_bar {
         <style id="omega-loading-bar-style">
             #omega-loading-bar {
                 position: fixed;
-                top: 0;
-                left: 0;
-                width: 0%;
-                height: 3px;
-                background: var(--wp--preset--color--primary, #1fbb00);
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                display: flex;
+                align-items: center;
+                gap: 10px;
                 z-index: 999999;
-                transition: width 0.25s ease, opacity 0.3s ease 0.1s;
+                transition: opacity 0.35s ease;
                 pointer-events: none;
             }
+            #omega-loading-bar span {
+                width: 12px;
+                height: 12px;
+                border-radius: 50%;
+                background: var(--wp--preset--color--primary, #1fbb00);
+                animation: omega-loading-dot-pulse 1s ease-in-out infinite;
+            }
+            #omega-loading-bar span:nth-child(2) { animation-delay: 0.15s; }
+            #omega-loading-bar span:nth-child(3) { animation-delay: 0.3s; }
+            @keyframes omega-loading-dot-pulse {
+                0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+                40% { transform: scale(1); opacity: 1; }
+            }
             @media (prefers-reduced-motion: reduce) {
-                #omega-loading-bar {
-                    transition: opacity 0.3s ease;
+                #omega-loading-bar span {
+                    animation: none;
+                    opacity: 0.8;
                 }
             }
         </style>
@@ -80,30 +94,32 @@ class loading_bar {
             return;
         }
         ?>
-        <div id="omega-loading-bar"></div>
+        <div id="omega-loading-bar"><span></span><span></span><span></span></div>
         <script>
         (function () {
             var bar = document.getElementById('omega-loading-bar');
             if (!bar) { return; }
 
-            var progress = 0;
-            var eased = window.setInterval(function () {
-                // Eases toward 90% and stalls there - it only ever reaches
-                // 100% once the page has actually finished loading (below),
-                // so it never lies about being done early on a slow page.
-                progress += (90 - progress) * 0.1;
-                bar.style.width = progress + '%';
-            }, 200);
+            /*
+             * A page that finishes loading almost instantly (the common case
+             * on localhost, or any fast connection) would otherwise show
+             * this for only a handful of milliseconds - technically present,
+             * but too brief to actually register as "a loading indicator"
+             * to a real person watching the screen. Holding it for at least
+             * this long regardless of how fast the page actually loads is
+             * what makes it reliably visible rather than a rare flash.
+             */
+            var MIN_VISIBLE_MS = 500;
+            var shownAt = Date.now();
 
             function finish() {
-                window.clearInterval(eased);
-                bar.style.width = '100%';
+                var wait = Math.max(0, MIN_VISIBLE_MS - (Date.now() - shownAt));
                 window.setTimeout(function () {
                     bar.style.opacity = '0';
                     window.setTimeout(function () {
                         if (bar.parentNode) { bar.parentNode.removeChild(bar); }
                     }, 400);
-                }, 200);
+                }, wait);
             }
 
             if (document.readyState === 'complete') {

@@ -38,6 +38,54 @@ class color_scheme {
         add_action('customize_controls_enqueue_scripts', [$this, 'enqueue_control_assets']);
         add_action('wp_head', [$this, 'output_styles']);
         add_action('admin_head', [$this, 'output_styles']);
+
+        // admin_head never reaches the block editor canvas - since WP 5.9 it
+        // renders inside its own <iframe> document, which only ever gets
+        // styles/scripts registered via enqueue_block_editor_assets. Without
+        // this, the editor iframe keeps showing theme.json's default "green"
+        // palette no matter which scheme is picked (same reason color_mode.php
+        // and the theme's other Customizer settings each register their own
+        // enqueue_block_editor_assets callback).
+        add_action('enqueue_block_editor_assets', [$this, 'enqueue_editor_assets']);
+
+        // The above only overrides rendered colors on the page/canvas - it
+        // does nothing for the Site Editor's own "Styles > Edit palette"
+        // swatch picker, which reads theme.json's registered palette
+        // directly (via wp_get_global_settings()) rather than any actual
+        // computed CSS. This filter rewrites that data at request time so
+        // the swatches themselves (and WP's own natively-generated global
+        // styles CSS, front end and editor alike) reflect the active
+        // scheme's colors, not just elements that already consume
+        // var(--wp--preset--color--*).
+        add_filter('wp_theme_json_data_theme', [$this, 'filter_theme_json']);
+    }
+
+    /**
+     * Overrides theme.json's registered palette colors (not the whole
+     * array - only the color value for slugs the active scheme actually
+     * defines, per get_schemes()'s own note that neutral/semantic slugs
+     * like background/border/success/danger deliberately stay identical
+     * across every scheme) with the current scheme's light-mode values.
+     * Dark mode still can't be expressed here - theme.json has no
+     * conditional values - so that stays handled by output_styles()'s
+     * prefers-color-scheme / .omega-color-mode-dark CSS instead.
+     */
+    public function filter_theme_json($theme_json) {
+        $scheme = $this->get_schemes()[$this->get_scheme_key()];
+        $data = $theme_json->get_data();
+
+        if (empty($data['settings']['color']['palette']['theme']) || !is_array($data['settings']['color']['palette']['theme'])) {
+            return $theme_json;
+        }
+
+        foreach ($data['settings']['color']['palette']['theme'] as &$entry) {
+            if (isset($entry['slug']) && isset($scheme['light'][$entry['slug']])) {
+                $entry['color'] = $scheme['light'][$entry['slug']];
+            }
+        }
+        unset($entry);
+
+        return $theme_json->update_with($data);
     }
 
     /**
@@ -207,17 +255,38 @@ class color_scheme {
      * color_mode.php).
      */
     public function output_styles() {
+        echo '<style id="omega-color-scheme">' . $this->get_scheme_css() . '</style>' . "\n";
+    }
+
+    /**
+     * Builds the active scheme's CSS custom-property overrides, shared by
+     * output_styles() (front end + wp-admin <head>) and
+     * enqueue_editor_assets() (the block editor's iframed canvas, which
+     * neither of those head hooks ever reaches).
+     *
+     * $important: the editor iframe's own global-styles <style> tag (same
+     * ':root' selector, so equal specificity) gets silently regenerated and
+     * re-appended by Gutenberg after nearly every editor state change,
+     * landing it later in <head> than ours and winning the cascade on
+     * source order alone - regardless of how recently we re-injected our
+     * own tag. '!important' is the only thing that reliably beats that,
+     * since it wins over a normal-priority declaration no matter which one
+     * is later in the DOM (same trick background-color.js's own iframe
+     * preview already relies on for the same reason).
+     */
+    private function get_scheme_css($important = false) {
+        $bang = $important ? ' !important' : '';
         $scheme = $this->get_schemes()[$this->get_scheme_key()];
         $css = ':root{';
         foreach ($scheme['light'] as $slug => $hex) {
-            $css .= '--wp--preset--color--' . $slug . ':' . $hex . ';';
+            $css .= '--wp--preset--color--' . $slug . ':' . $hex . $bang . ';';
         }
         $css .= '}';
 
         if (!empty($scheme['dark'])) {
             $dark_vars = '';
             foreach ($scheme['dark'] as $slug => $hex) {
-                $dark_vars .= '--wp--preset--color--' . $slug . ':' . $hex . ';';
+                $dark_vars .= '--wp--preset--color--' . $slug . ':' . $hex . $bang . ';';
             }
             // CSS custom properties inherit through descendants regardless
             // of which element sets them, so setting these on body (like
@@ -228,7 +297,36 @@ class color_scheme {
             $css .= 'body.omega-color-mode-dark{' . $dark_vars . '}';
         }
 
-        echo '<style id="omega-color-scheme">' . $css . '</style>' . "\n";
+        return $css;
+    }
+
+    /**
+     * Injects the same overrides directly into the block editor's iframed
+     * canvas document. WP does NOT automatically copy arbitrary styles
+     * enqueued via enqueue_block_editor_assets into that iframe (only a
+     * fixed set of core/theme.json styles get copied there) - every other
+     * live-preview feature in this theme (color_mode.php, background_color.php,
+     * etc.) works around this the same way: a small script that finds
+     * iframe[name="editor-canvas"] and writes a <style> tag straight into
+     * its own document, retrying briefly since the iframe may not have
+     * mounted yet on first load.
+     */
+    public function enqueue_editor_assets() {
+        $js_path = OMEGA_DESIGN_ASSETS . '/js/color-scheme-editor.js';
+
+        wp_enqueue_script(
+            'omega-design-color-scheme-editor',
+            OMEGA_DESIGN_JS_URI . '/color-scheme-editor.js',
+            [],
+            file_exists($js_path) ? filemtime($js_path) : OMEGA_DESIGN_ASSET_VERSION,
+            true
+        );
+
+        wp_add_inline_script(
+            'omega-design-color-scheme-editor',
+            'window.omegaColorSchemeCSS = ' . wp_json_encode($this->get_scheme_css(true)) . ';',
+            'before'
+        );
     }
 
     /**

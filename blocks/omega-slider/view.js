@@ -100,9 +100,27 @@
 	 * hiding it by default in CSS) means a slide's content is never stuck
 	 * invisible if this script fails to load. Ordinary omega-design/slider
 	 * instances have no such elements, so this is a no-op for them.
+	 *
+	 * A plain core block (core/column, used by e.g. the Fashion Store hero's
+	 * text column) can't carry that data-slide-animation attribute in its
+	 * OWN saved HTML, though - core/column's save() only ever emits the
+	 * attributes it explicitly knows about, so a hand-added data-* one would
+	 * never round-trip through the block editor and would flag that block
+	 * for "attempt recovery" (confirmed: this is exactly what was
+	 * happening). A plain className IS part of every block's normal,
+	 * editor-supported schema, so `.omega-slide-animate` is safe to hand-
+	 * author in a pattern's saved markup - this fills in the same
+	 * data-slide-animation attribute purely at runtime instead, so
+	 * everything below (the armed/play classes, the CSS keyed on the
+	 * attribute) treats it exactly like a "real" one.
 	 */
 	function armSlideAnimations(slides) {
 		for (var i = 0; i < slides.length; i++) {
+			var classBased = slides[i].querySelectorAll('.omega-slide-animate:not([data-slide-animation])');
+			for (var c = 0; c < classBased.length; c++) {
+				classBased[c].setAttribute('data-slide-animation', 'fade-up');
+			}
+
 			var els = slides[i].querySelectorAll('[data-slide-animation]');
 			for (var j = 0; j < els.length; j++) {
 				els[j].classList.add('omega-content-slider--armed');
