@@ -150,27 +150,27 @@
       ],
       "gradients": [
         {
-          "gradient": "linear-gradient(135deg, #1FBB00 0%, #0F5900 100%)",
+          "gradient": "linear-gradient(135deg, var(--wp--preset--color--primary) 0%, var(--wp--preset--color--button-background) 100%)",
           "name": "Primary Gradient",
           "slug": "primary-gradient"
         },
         {
-          "gradient": "linear-gradient(135deg, #051A00 0%, #1FBB00 100%)",
+          "gradient": "linear-gradient(135deg, var(--wp--preset--color--secondary) 0%, var(--wp--preset--color--primary) 100%)",
           "name": "Secondary Gradient",
           "slug": "secondary-gradient"
         },
         {
-          "gradient": "linear-gradient(135deg, #051A00 0%, #093400 100%)",
+          "gradient": "linear-gradient(135deg, var(--wp--preset--color--secondary) 0%, var(--wp--preset--color--surface) 100%)",
           "name": "Surface Gradient",
           "slug": "surface-gradient"
         },
         {
-          "gradient": "linear-gradient(135deg, #1FBB00 0%, #0F5900 100%)",
+          "gradient": "linear-gradient(135deg, var(--wp--preset--color--primary) 0%, var(--wp--preset--color--button-background) 100%)",
           "name": "Most Used Gradient",
           "slug": "most-used-gradient"
         },
         {
-          "gradient": "linear-gradient(135deg, #1FBB00 0%, #B35B00 100%)",
+          "gradient": "linear-gradient(135deg, var(--wp--preset--color--primary) 0%, var(--wp--preset--color--accent) 100%)",
           "name": "Accent Gradient",
           "slug": "accent-gradient"
         }

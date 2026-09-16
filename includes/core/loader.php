@@ -259,6 +259,13 @@ class loader {
             'deps'     => ['hooks'],
             'enabled'  => true,
         ],
+        'license' => [
+            'class'    => 'OmegaDesign\\core\\license',
+            'priority' => 5,
+            'required' => false,
+            'deps'     => [],
+            'enabled'  => true,
+        ],
     ];
 }
 

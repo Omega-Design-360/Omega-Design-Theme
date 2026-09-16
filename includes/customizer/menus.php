@@ -692,8 +692,10 @@ class menus {
     }
 
     public function dashboard_page() {
-        $status       = $this->get_status_data();
-        $current_url  = admin_url('admin.php?page=omega-dashboard');
+        $status        = $this->get_status_data();
+        $current_url   = admin_url('admin.php?page=omega-dashboard');
+        $license       = \OmegaDesign\core\license::get_instance();
+        $license_state = $license->get_state();
         ?>
         <div class="wrap omega-admin-page <?php echo esc_attr($this->color_mode_class()); ?>">
             <?php $this->render_header(__('Overview of your theme setup, at a glance.', 'omega-design')); ?>
@@ -762,6 +764,30 @@ class menus {
                         <span class="omega-badge omega-badge--warning"><?php esc_html_e('Needs attention', 'omega-design'); ?></span>
                     <?php endif; ?>
                     <p class="omega-status-card__meta">PHP <?php echo esc_html($status['php_version']); ?> &middot; WP <?php echo esc_html($status['wp_version']); ?></p>
+                </div>
+
+                <div class="omega-status-card">
+                    <span class="dashicons dashicons-admin-network"></span>
+                    <h3><?php esc_html_e('License', 'omega-design'); ?></h3>
+                    <?php if ('valid' === $license_state['status']) : ?>
+                        <span class="omega-badge omega-badge--success"><?php esc_html_e('Active', 'omega-design'); ?></span>
+                        <p class="omega-status-card__meta">
+                            <?php if (!empty($license_state['expires_at'])) : ?>
+                                <?php printf(esc_html__('Renews/expires %s', 'omega-design'), esc_html(date_i18n(get_option('date_format'), strtotime($license_state['expires_at'])))); ?>
+                            <?php else : ?>
+                                <?php esc_html_e('Lifetime license', 'omega-design'); ?>
+                            <?php endif; ?>
+                        </p>
+                        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                            <input type="hidden" name="action" value="omega_design_deactivate_license" />
+                            <input type="hidden" name="omega_license_redirect" value="<?php echo esc_url($current_url); ?>" />
+                            <?php wp_nonce_field(\OmegaDesign\core\license::NONCE_ACTION, 'omega_nonce_license'); ?>
+                            <button type="submit" class="omega-status-card__link omega-status-card__link--button"><?php esc_html_e('Deactivate on this site', 'omega-design'); ?></button>
+                        </form>
+                    <?php else : ?>
+                        <span class="omega-badge omega-badge--warning"><?php esc_html_e('Not licensed', 'omega-design'); ?></span>
+                        <a class="omega-status-card__link" href="#" data-omega-license-open><?php esc_html_e('Activate now', 'omega-design'); ?></a>
+                    <?php endif; ?>
                 </div>
 
             </div>
@@ -1433,6 +1459,7 @@ class menus {
             'menus'       => [__('Menus & Pages', 'omega-design'), 'admin-page'],
             'footer'      => [__('Footer', 'omega-design'), 'align-center'],
             'woocommerce' => [__('WooCommerce', 'omega-design'), 'cart'],
+            'license'     => [__('License', 'omega-design'), 'admin-network'],
         ];
     }
 
@@ -1587,6 +1614,12 @@ class menus {
                         <div class="omega-grid omega-grid--2">
                             <?php $this->render_product_page_form($tab_url('woocommerce')); ?>
                             <?php $this->render_woocommerce_pages_card(); ?>
+                        </div>
+                    </section>
+
+                    <section class="omega-settings-panel" data-panel="license">
+                        <div class="omega-grid omega-grid--1">
+                            <?php \OmegaDesign\core\license::get_instance()->render_settings_panel($tab_url('license')); ?>
                         </div>
                     </section>
 
