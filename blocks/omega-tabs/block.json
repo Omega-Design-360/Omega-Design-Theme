@@ -1,0 +1,22 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "omega-design/tabs",
+	"title": "Omega Tabs",
+	"category": "omega-design",
+	"icon": "editor-table",
+	"description": "Click-to-switch tabs. Add \"Tab\" blocks inside - each one becomes a tab button plus its panel content.",
+	"keywords": ["tabs", "toggle", "accordion", "pricing"],
+	"textdomain": "omega-design",
+	"supports": {
+		"html": false,
+		"align": ["wide", "full"],
+		"spacing": { "margin": true, "padding": true },
+		"color": { "background": true, "text": true, "gradients": true },
+		"border": { "radius": true, "width": true, "color": true },
+		"shadow": true
+	},
+	"editorScript": "omega-tabs-block-editor",
+	"style": "omega-tabs-block",
+	"viewScript": "omega-tabs-block-view"
+}

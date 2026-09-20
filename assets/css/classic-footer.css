@@ -1,0 +1,293 @@
+/**
+ * Omega Design - Classic Footer (5 layouts)
+ * CSS-only: no toggle buttons, no JS - columns stack cleanly on mobile
+ * via plain flex-wrap. Custom properties mirror classic-header.css so
+ * both share one consistent design language.
+ */
+
+.omega-classic-footer {
+    --omega-cf-radius: 10px;
+    --omega-cf-ease: cubic-bezier(0.4, 0, 0.2, 1);
+    padding: 2.5rem 1.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .omega-classic-footer,
+    .omega-classic-footer * {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+    }
+}
+
+.omega-classic-footer__inner {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.omega-classic-footer__title {
+    display: inline-block;
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    text-decoration: none;
+    color: inherit;
+    transition: opacity 0.2s var(--omega-cf-ease);
+}
+.omega-classic-footer__title:hover,
+.omega-classic-footer__title:focus-visible {
+    opacity: 0.75;
+}
+
+.omega-classic-footer__tagline {
+    margin: 0.5rem 0 0;
+    opacity: 0.75;
+    max-width: 40ch;
+}
+
+.omega-classic-footer__copyright {
+    margin: 0;
+    font-size: 0.85rem;
+    opacity: 0.7;
+}
+
+.omega-classic-footer a {
+    color: inherit;
+}
+
+.omega-classic-footer :focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 3px;
+    border-radius: 2px;
+}
+
+/* ── Inline nav (Simple, Centered, Newsletter) ──────────────────── */
+.omega-classic-footer__nav--inline ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
+    list-style: none;
+    margin: 1rem 0;
+    padding: 0;
+}
+.omega-classic-footer__nav--inline a {
+    text-decoration: none;
+    opacity: 0.85;
+    transition: opacity 0.2s var(--omega-cf-ease);
+}
+.omega-classic-footer__nav--inline a:hover,
+.omega-classic-footer__nav--inline a:focus-visible {
+    opacity: 1;
+}
+/* nested sub-menus fold into the same flat row - a footer link list
+   isn't a dropdown, it's just more links */
+.omega-classic-footer__nav--inline .sub-menu {
+    display: contents;
+}
+
+/* ── Column nav (Columns, Bold) ──────────────────────────────────
+   Top-level item = column heading, its children = the column's own
+   link list - all from the exact same wp_nav_menu() output the other
+   styles use, no special menu structure required. */
+.omega-classic-footer__nav--columns > ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.omega-classic-footer__nav--columns > ul > li {
+    flex: 1 1 160px;
+    min-width: 140px;
+}
+.omega-classic-footer__nav--columns > ul > li > a {
+    display: block;
+    margin-bottom: 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    text-decoration: none;
+    opacity: 0.85;
+}
+.omega-classic-footer__nav--columns .sub-menu {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.omega-classic-footer__nav--columns .sub-menu li {
+    margin-bottom: 0.5rem;
+}
+.omega-classic-footer__nav--columns .sub-menu a {
+    text-decoration: none;
+    opacity: 0.75;
+    transition: opacity 0.2s var(--omega-cf-ease);
+}
+.omega-classic-footer__nav--columns .sub-menu a:hover,
+.omega-classic-footer__nav--columns .sub-menu a:focus-visible {
+    opacity: 1;
+}
+/* a top-level item with no children is still just a single link */
+.omega-classic-footer__nav--columns > ul > li:not(.menu-item-has-children) > a {
+    text-transform: none;
+    font-weight: 500;
+    letter-spacing: normal;
+}
+
+/* ── Style 1: Simple ─────────────────────────────────────────────── */
+.omega-classic-footer--1 {
+    background: var(--wp--preset--color--secondary, #051a00);
+    color: var(--wp--preset--color--button-text, #fff);
+    text-align: center;
+}
+.omega-classic-footer--1 .omega-classic-footer__nav--inline ul {
+    justify-content: center;
+}
+.omega-classic-footer--1 .omega-classic-footer__copyright {
+    margin-top: 1rem;
+}
+
+/* ── Style 2: Columns ────────────────────────────────────────────── */
+.omega-classic-footer--2 {
+    background: var(--wp--preset--color--secondary, #051a00);
+    color: var(--wp--preset--color--button-text, #fff);
+}
+.omega-classic-footer--2 .omega-classic-footer__inner {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2.5rem;
+    justify-content: space-between;
+    padding-bottom: 2rem;
+}
+.omega-classic-footer--2 .omega-classic-footer__brand {
+    flex: 1 1 240px;
+    max-width: 320px;
+}
+.omega-classic-footer--2 .omega-classic-footer__nav--columns {
+    flex: 2 1 400px;
+}
+.omega-classic-footer--2 .omega-classic-footer__bottom {
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    padding-top: 1.25rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* ── Style 3: Centered ───────────────────────────────────────────── */
+.omega-classic-footer--3 {
+    background: var(--wp--preset--color--surface, #f5f7f2);
+    text-align: center;
+}
+.omega-classic-footer--3 .omega-classic-footer__nav--inline ul {
+    justify-content: center;
+}
+.omega-classic-footer--3 .omega-classic-footer__tagline {
+    margin-left: auto;
+    margin-right: auto;
+}
+.omega-classic-footer--3 .omega-classic-footer__copyright {
+    margin-top: 1.25rem;
+}
+
+/* ── Style 4: Newsletter CTA ─────────────────────────────────────── */
+.omega-classic-footer--4 {
+    padding: 0;
+    background: var(--wp--preset--color--background, #fff);
+}
+.omega-classic-footer--4 .omega-classic-footer__cta {
+    background: var(--wp--preset--color--primary, #1fbb00);
+    color: var(--wp--preset--color--button-text, #fff);
+    padding: 2.25rem 1.5rem;
+}
+.omega-classic-footer--4 .omega-classic-footer__cta-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+.omega-classic-footer--4 .omega-classic-footer__cta .omega-classic-footer__tagline {
+    margin: 0;
+    opacity: 1;
+    font-size: 1.1rem;
+    font-weight: 600;
+    max-width: 60ch;
+}
+.omega-classic-footer__cta-button {
+    display: inline-block;
+    flex-shrink: 0;
+    padding: 0.65rem 1.5rem;
+    border-radius: var(--omega-cf-radius);
+    background: var(--wp--preset--color--background, #fff);
+    color: var(--wp--preset--color--secondary, #051a00);
+    font-weight: 600;
+    text-decoration: none;
+    transition: transform 0.2s var(--omega-cf-ease), opacity 0.2s var(--omega-cf-ease);
+}
+.omega-classic-footer__cta-button:hover,
+.omega-classic-footer__cta-button:focus-visible {
+    opacity: 0.85;
+    transform: translateY(-1px);
+}
+.omega-classic-footer--4 .omega-classic-footer__inner {
+    padding: 2rem 1.5rem;
+}
+.omega-classic-footer--4 .omega-classic-footer__nav--inline ul {
+    margin-top: 0.75rem;
+}
+
+/* ── Style 5: Bold ───────────────────────────────────────────────── */
+.omega-classic-footer--5 {
+    background: #0b0f0b;
+    color: #fff;
+}
+.omega-classic-footer--5 .omega-classic-footer__title {
+    color: var(--wp--preset--color--primary, #1fbb00);
+}
+.omega-classic-footer--5 .omega-classic-footer__inner {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2.5rem;
+    justify-content: space-between;
+    padding-bottom: 2rem;
+}
+.omega-classic-footer--5 .omega-classic-footer__brand {
+    flex: 1 1 240px;
+    max-width: 320px;
+}
+.omega-classic-footer--5 .omega-classic-footer__nav--columns {
+    flex: 2 1 400px;
+}
+.omega-classic-footer--5 .omega-classic-footer__nav--columns > ul > li > a {
+    color: var(--wp--preset--color--primary, #1fbb00);
+    opacity: 1;
+}
+.omega-classic-footer--5 .omega-classic-footer__bottom {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 1.25rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* ── Mobile: everything stacks, no JS required ──────────────────── */
+@media (max-width: 700px) {
+    .omega-classic-footer {
+        padding: 2rem 1.25rem;
+        text-align: center;
+    }
+    .omega-classic-footer--2 .omega-classic-footer__inner,
+    .omega-classic-footer--5 .omega-classic-footer__inner {
+        flex-direction: column;
+        text-align: left;
+    }
+    .omega-classic-footer__nav--columns > ul {
+        gap: 1.75rem;
+    }
+    .omega-classic-footer--4 .omega-classic-footer__cta-inner {
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left;
+    }
+}

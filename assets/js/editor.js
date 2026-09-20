@@ -1,0 +1,1543 @@
+/**
+ * Adds a "Width" control to the block Inspector (Styles tab) for the
+ * Group, Row, Grid (all core/group) and Columns (core/columns) blocks,
+ * so editors can switch between Standard (content), Wide and Full page
+ * layout widths without hunting for the toolbar alignment control.
+ *
+ * Uses the block's native `align` attribute, so it renders with the
+ * `contentSize` / `wideSize` already defined in theme.json - no extra
+ * CSS required.
+ */
+(function (wp) {
+	'use strict';
+
+	if (!wp || !wp.hooks || !wp.blockEditor || !wp.components || !wp.element || !wp.compose || !wp.data) {
+		return;
+	}
+
+	var addFilter = wp.hooks.addFilter;
+	var createHigherOrderComponent = wp.compose.createHigherOrderComponent;
+	var createElement = wp.element.createElement;
+	var Fragment = wp.element.Fragment;
+	var InspectorControls = wp.blockEditor.InspectorControls;
+	var ColorPalette = wp.blockEditor.ColorPalette;
+	var PanelBody = wp.components.PanelBody;
+	var Button = wp.components.Button;
+	var ButtonGroup = wp.components.ButtonGroup;
+	var RangeControl = wp.components.RangeControl;
+	var TabPanel = wp.components.TabPanel;
+	var BaseControl = wp.components.BaseControl;
+	var __ = wp.i18n.__;
+
+	var TARGET_BLOCKS = ['core/group', 'core/columns'];
+
+	/**
+	 * Shared Desktop/Tablet/Mobile plumbing for the responsive controls
+	 * further down (Custom Size, Hover Colors & Shadow). A "device" value is
+	 * always one of 'desktop' | 'tablet' | 'mobile'; per-field attribute
+	 * keys for tablet/mobile are the desktop key prefixed with the device
+	 * name (e.g. 'width' -> 'tabletWidth' -> 'mobileWidth'), so the same
+	 * getters/setters work for all three without a nested object shape.
+	 *
+	 * Tablet/mobile values are resolved with the same cascade the CSS
+	 * `max-width` media queries produce on the front end (see
+	 * includes/core/responsive_styles.php): mobile falls back to tablet,
+	 * which falls back to desktop, matching a narrower-wins-if-set rule.
+	 */
+	var DEVICE_TABS = [
+		{ name: 'desktop', title: __('Desktop', 'omega-design') },
+		{ name: 'tablet', title: __('Tablet', 'omega-design') },
+		{ name: 'mobile', title: __('Mobile', 'omega-design') }
+	];
+
+	function capitalize(value) {
+		return value.charAt(0).toUpperCase() + value.slice(1);
+	}
+
+	function fieldKeyForDevice(baseKey, device) {
+		return device === 'desktop' ? baseKey : device + capitalize(baseKey);
+	}
+
+	function resolveResponsiveValue(data, baseKey, device) {
+		if (device === 'mobile' && data[fieldKeyForDevice(baseKey, 'mobile')] !== undefined) {
+			return data[fieldKeyForDevice(baseKey, 'mobile')];
+		}
+		if (device !== 'desktop' && data[fieldKeyForDevice(baseKey, 'tablet')] !== undefined) {
+			return data[fieldKeyForDevice(baseKey, 'tablet')];
+		}
+		return data[baseKey];
+	}
+
+	/**
+	 * The Post/Site Editor's Desktop/Tablet/Mobile preview toggle lives in
+	 * different data stores across WordPress versions, so all three are
+	 * checked. Only used for the editor canvas live preview below - the
+	 * front end always gets its tablet/mobile values from real `@media`
+	 * rules (see includes/core/responsive_styles.php), not from this.
+	 */
+	function getCurrentDeviceType() {
+		var stores = ['core/editor', 'core/edit-site', 'core/edit-post'];
+
+		for (var i = 0; i < stores.length; i++) {
+			var store = wp.data.select(stores[i]);
+			if (store && typeof store.getDeviceType === 'function') {
+				var type = store.getDeviceType();
+				if (type) {
+					return type.toLowerCase();
+				}
+			}
+		}
+
+		return 'desktop';
+	}
+
+	var WIDTH_OPTIONS = [
+		{ label: __('Standard', 'omega-design'), value: undefined },
+		{ label: __('Wide', 'omega-design'), value: 'wide' },
+		{ label: __('Full', 'omega-design'), value: 'full' }
+	];
+
+	var withLayoutWidthControl = createHigherOrderComponent(function (BlockEdit) {
+		return function (props) {
+			if (TARGET_BLOCKS.indexOf(props.name) === -1 || !props.isSelected) {
+				return createElement(BlockEdit, props);
+			}
+
+			var currentAlign = props.attributes.align;
+
+			var buttons = WIDTH_OPTIONS.map(function (option) {
+				var isActive = currentAlign === option.value;
+				return createElement(
+					Button,
+					{
+						key: option.label,
+						variant: isActive ? 'primary' : 'secondary',
+						isPressed: isActive,
+						onClick: function () {
+							props.setAttributes({ align: option.value });
+						}
+					},
+					option.label
+				);
+			});
+
+			return createElement(
+				Fragment,
+				{},
+				createElement(BlockEdit, props),
+				createElement(
+					InspectorControls,
+					{ group: 'styles' },
+					createElement(
+						PanelBody,
+						{ title: __('Width', 'omega-design'), initialOpen: true },
+						createElement(ButtonGroup, {}, buttons)
+					)
+				)
+			);
+		};
+	}, 'withLayoutWidthControl');
+
+	addFilter('editor.BlockEdit', 'omega-design/layout-width-control', withLayoutWidthControl);
+
+	/**
+	 * Adds custom "Width" and "Height" number+unit inputs, with Desktop/
+	 * Tablet/Mobile variants, to the same Inspector Styles panel, for the
+	 * same Group/Row/Stack/Columns blocks. Stored under
+	 * attributes.style.dimensions.{width,height,tabletWidth,mobileHeight,...}
+	 * - the same attribute core already uses for minHeight/aspectRatio - so
+	 * it needs no new attribute registration and won't collide with the
+	 * preset Standard/Wide/Full align buttons above.
+	 *
+	 * Tablet/mobile values only take effect on the front end via the
+	 * `@media` rules generated in includes/core/responsive_styles.php -
+	 * the desktop value here is the only one baked into the saved markup
+	 * directly, since a plain inline style can't vary by viewport.
+	 */
+	var UnitControl = wp.components.__experimentalUnitControl || wp.components.UnitControl;
+
+	var SIZE_UNITS = [
+		{ value: 'px', label: 'px', default: '' },
+		{ value: '%', label: '%', default: '' },
+		{ value: 'em', label: 'em', default: '' },
+		{ value: 'rem', label: 'rem', default: '' },
+		{ value: 'vw', label: 'vw', default: '' },
+		{ value: 'vh', label: 'vh', default: '' }
+	];
+
+	function getCustomSize(attributes) {
+		return (attributes.style && attributes.style.dimensions) || {};
+	}
+
+	function setCustomSize(props, key, value) {
+		var style = props.attributes.style || {};
+		var dimensions = Object.assign({}, style.dimensions);
+
+		if (value) {
+			dimensions[key] = value;
+		} else {
+			delete dimensions[key];
+		}
+
+		var nextStyle = Object.assign({}, style);
+		if (Object.keys(dimensions).length) {
+			nextStyle.dimensions = dimensions;
+		} else {
+			delete nextStyle.dimensions;
+		}
+
+		props.setAttributes({ style: nextStyle });
+	}
+
+	function getResponsiveSizeStyle(attributes, device) {
+		var size = getCustomSize(attributes);
+		var width = resolveResponsiveValue(size, 'width', device);
+		var height = resolveResponsiveValue(size, 'height', device);
+		var style = {};
+
+		if (width) { style.width = width; }
+		if (height) { style.height = height; }
+
+		return style;
+	}
+
+	var withCustomSizeControl = createHigherOrderComponent(function (BlockEdit) {
+		return function (props) {
+			if (TARGET_BLOCKS.indexOf(props.name) === -1 || !props.isSelected) {
+				return createElement(BlockEdit, props);
+			}
+
+			var size = getCustomSize(props.attributes);
+
+			function renderDeviceFields(device) {
+				var widthKey = fieldKeyForDevice('width', device);
+				var heightKey = fieldKeyForDevice('height', device);
+
+				return createElement(
+					Fragment,
+					{ key: device },
+					createElement(UnitControl, {
+						key: widthKey,
+						label: __('Width', 'omega-design'),
+						units: SIZE_UNITS,
+						value: size[widthKey] || '',
+						onChange: function (value) {
+							setCustomSize(props, widthKey, value);
+						}
+					}),
+					createElement(UnitControl, {
+						key: heightKey,
+						label: __('Height', 'omega-design'),
+						units: SIZE_UNITS,
+						value: size[heightKey] || '',
+						onChange: function (value) {
+							setCustomSize(props, heightKey, value);
+						}
+					})
+				);
+			}
+
+			return createElement(
+				Fragment,
+				{},
+				createElement(BlockEdit, props),
+				createElement(
+					InspectorControls,
+					{ group: 'styles' },
+					createElement(
+						PanelBody,
+						{ title: __('Custom Size', 'omega-design'), initialOpen: false },
+						createElement(TabPanel, { tabs: DEVICE_TABS }, function (tab) {
+							return renderDeviceFields(tab.name);
+						})
+					)
+				)
+			);
+		};
+	}, 'withCustomSizeControl');
+
+	if (UnitControl && TabPanel) {
+		addFilter('editor.BlockEdit', 'omega-design/custom-size-control', withCustomSizeControl);
+	}
+
+	/**
+	 * Mirrors the width/height for the currently active device preview
+	 * (Desktop/Tablet/Mobile, from the editor's own preview toggle) onto
+	 * the block's wrapper element in the editor canvas, so switching device
+	 * previews in the editor matches what the front end's `@media` rules
+	 * will actually render.
+	 */
+	var withCustomSizeStyleEditor = createHigherOrderComponent(function (BlockListBlock) {
+		return function (props) {
+			if (TARGET_BLOCKS.indexOf(props.name) === -1) {
+				return createElement(BlockListBlock, props);
+			}
+
+			var style = getResponsiveSizeStyle(props.attributes, getCurrentDeviceType());
+
+			if (!Object.keys(style).length) {
+				return createElement(BlockListBlock, props);
+			}
+
+			var wrapperProps = Object.assign({}, props.wrapperProps, {
+				style: Object.assign({}, props.wrapperProps && props.wrapperProps.style, style)
+			});
+
+			return createElement(BlockListBlock, Object.assign({}, props, { wrapperProps: wrapperProps }));
+		};
+	}, 'withCustomSizeStyleEditor');
+
+	addFilter('editor.BlockListBlock', 'omega-design/custom-size-style-editor', withCustomSizeStyleEditor);
+
+	/**
+	 * Bakes the same width/height into the saved block markup, so it
+	 * renders on the front end without needing a render_block PHP filter.
+	 */
+	addFilter('blocks.getSaveContent.extraProps', 'omega-design/custom-size-style-save', function (extraProps, blockType, attributes) {
+		if (TARGET_BLOCKS.indexOf(blockType.name) === -1) {
+			return extraProps;
+		}
+
+		var size = getCustomSize(attributes);
+		if (!size.width && !size.height) {
+			return extraProps;
+		}
+
+		var style = Object.assign({}, extraProps.style);
+		if (size.width) { style.width = size.width; }
+		if (size.height) { style.height = size.height; }
+		extraProps.style = style;
+
+		return extraProps;
+	});
+
+	/**
+	 * Adds a "Hover Colors & Shadow" panel (text, background, border, shadow
+	 * color/size/offsets), with Desktop/Tablet/Mobile variants, to the same
+	 * Inspector Styles group, for Group/Row/Stack/Grid, Columns and Column
+	 * blocks. Stored under attributes.style.omegaHover - a custom key
+	 * nested in the same "style" attribute core already auto-registers for
+	 * these blocks' color/border supports, so no new attribute registration
+	 * is needed. Tablet/mobile fields use the same device-prefixed key
+	 * convention as Custom Size above (e.g. 'text' -> 'tabletText').
+	 *
+	 * The shadow itself is composed client-side from shadowColor + shadowSize
+	 * (a blur radius in px, with the vertical offset derived as a third of
+	 * that) rather than stored as a single CSS string, so both are exposed as
+	 * independently editable controls.
+	 *
+	 * The desktop values' `:hover` rule lives in assets/css/style.css
+	 * (enqueued on both the front end and the editor canvas via
+	 * `enqueue_block_assets`), reading the CSS custom properties set inline
+	 * below, falling back to the theme-wide default color/shadow in
+	 * theme.json (settings.custom.hover) when a given field is left unset.
+	 * Tablet/mobile overrides only take effect on the front end via the
+	 * `@media` rules generated in includes/core/responsive_styles.php,
+	 * since a plain inline style/custom property can't vary by viewport.
+	 */
+	var HOVER_BLOCKS = ['core/group', 'core/columns', 'core/column'];
+
+	/**
+	 * core/icon gets the same Hover Colors & Shadow panel as the blocks
+	 * above, but kept in its own array rather than pushed into HOVER_BLOCKS -
+	 * that array is also reused below as ALIGN_BLOCKS for Text Alignment,
+	 * which doesn't apply to a single icon. isHoverEligible() below is the
+	 * one place both arrays are checked together.
+	 *
+	 * core/icon is a dynamic block (PHP render_callback, see
+	 * includes/core/hooks.php's render_block_core_icon() handling) - unlike
+	 * Group/Columns/Column, the front end never uses this block's save()
+	 * output, so the 'blocks.getSaveContent.extraProps' filter below can't
+	 * put the hover class/vars on the rendered markup the way it does for
+	 * those blocks. The PHP side re-derives the same class/vars from
+	 * attributes.style.omegaHover independently for the actual front-end
+	 * output; this filter still runs for core/icon anyway so the editor's
+	 * own validation copy of the saved markup stays consistent.
+	 */
+	var ICON_HOVER_BLOCKS = ['core/icon'];
+
+	function isHoverEligible(name) {
+		return HOVER_BLOCKS.indexOf(name) !== -1 || ICON_HOVER_BLOCKS.indexOf(name) !== -1;
+	}
+
+	var HOVER_FIELDS = [
+		{ key: 'text', cssVar: '--omega-hover-text-color', label: __('Hover Text Color', 'omega-design') },
+		{ key: 'background', cssVar: '--omega-hover-bg-color', label: __('Hover Background Color', 'omega-design') },
+		{ key: 'border', cssVar: '--omega-hover-border-color', label: __('Hover Border Color', 'omega-design') }
+	];
+
+	function getHoverColors(attributes) {
+		return (attributes.style && attributes.style.omegaHover) || {};
+	}
+
+	function setHoverColor(props, key, value) {
+		var style = props.attributes.style || {};
+		var hover = Object.assign({}, style.omegaHover);
+
+		if (value !== undefined && value !== null && value !== '') {
+			hover[key] = value;
+		} else {
+			delete hover[key];
+		}
+
+		var nextStyle = Object.assign({}, style);
+		if (Object.keys(hover).length) {
+			nextStyle.omegaHover = hover;
+		} else {
+			delete nextStyle.omegaHover;
+		}
+
+		props.setAttributes({ style: nextStyle });
+	}
+
+	var DEFAULT_HOVER_SHADOW_COLOR = 'rgba(0, 0, 0, 0.35)';
+
+	function getHoverWrapperProps(attributes) {
+		var hover = getHoverColors(attributes);
+		var style = {};
+
+		HOVER_FIELDS.forEach(function (field) {
+			if (hover[field.key]) {
+				style[field.cssVar] = hover[field.key];
+			}
+		});
+
+		if (hover.shadowSize) {
+			var offsetX = hover.shadowOffsetX || 0;
+			var offsetY = hover.shadowOffsetY !== undefined ? hover.shadowOffsetY : Math.round(hover.shadowSize / 3);
+			style['--omega-hover-shadow'] = offsetX + 'px ' + offsetY + 'px ' + hover.shadowSize + 'px ' + (hover.shadowColor || DEFAULT_HOVER_SHADOW_COLOR);
+		}
+
+		if (!Object.keys(style).length) {
+			return null;
+		}
+
+		return { className: 'has-omega-hover-color', style: style };
+	}
+
+	function getResponsiveHoverStyle(attributes, device) {
+		var hover = getHoverColors(attributes);
+		var style = {};
+
+		HOVER_FIELDS.forEach(function (field) {
+			var value = resolveResponsiveValue(hover, field.key, device);
+			if (value) { style[field.cssVar] = value; }
+		});
+
+		var shadowSize = resolveResponsiveValue(hover, 'shadowSize', device);
+		if (shadowSize) {
+			var offsetX = resolveResponsiveValue(hover, 'shadowOffsetX', device) || 0;
+			var offsetYValue = resolveResponsiveValue(hover, 'shadowOffsetY', device);
+			var offsetY = offsetYValue !== undefined ? offsetYValue : Math.round(shadowSize / 3);
+			var shadowColor = resolveResponsiveValue(hover, 'shadowColor', device) || DEFAULT_HOVER_SHADOW_COLOR;
+			style['--omega-hover-shadow'] = offsetX + 'px ' + offsetY + 'px ' + shadowSize + 'px ' + shadowColor;
+		}
+
+		return style;
+	}
+
+	var withHoverColorControls = createHigherOrderComponent(function (BlockEdit) {
+		return function (props) {
+			if (!isHoverEligible(props.name) || !props.isSelected) {
+				return createElement(BlockEdit, props);
+			}
+
+			var hover = getHoverColors(props.attributes);
+
+			function renderDeviceFields(device) {
+				var colorFields = HOVER_FIELDS.concat([
+					{ key: 'shadowColor', label: __('Hover Shadow Color', 'omega-design') }
+				]);
+
+				var colorControls = colorFields.map(function (field) {
+					var key = fieldKeyForDevice(field.key, device);
+					return createElement(
+						BaseControl,
+						{ key: key, label: field.label },
+						createElement(ColorPalette, {
+							value: hover[key],
+							onChange: function (value) {
+								setHoverColor(props, key, value);
+							}
+						})
+					);
+				});
+
+				var sizeKey = fieldKeyForDevice('shadowSize', device);
+				var offsetXKey = fieldKeyForDevice('shadowOffsetX', device);
+				var offsetYKey = fieldKeyForDevice('shadowOffsetY', device);
+				var defaultOffsetY = Math.round((hover[sizeKey] || 0) / 3);
+
+				var shadowControls = [
+					createElement(RangeControl, {
+						key: sizeKey,
+						label: __('Shadow Size', 'omega-design'),
+						help: __('Blur radius in pixels. Set to 0 to disable the hover shadow.', 'omega-design'),
+						value: hover[sizeKey] || 0,
+						min: 0,
+						max: 60,
+						step: 2,
+						allowReset: true,
+						onChange: function (value) {
+							setHoverColor(props, sizeKey, value);
+						}
+					}),
+					createElement(RangeControl, {
+						key: offsetXKey,
+						label: __('Shadow Horizontal Offset', 'omega-design'),
+						help: __('Shifts the shadow left (negative) or right (positive) in pixels.', 'omega-design'),
+						value: hover[offsetXKey] || 0,
+						min: -60,
+						max: 60,
+						step: 2,
+						allowReset: true,
+						onChange: function (value) {
+							setHoverColor(props, offsetXKey, value);
+						}
+					}),
+					createElement(RangeControl, {
+						key: offsetYKey,
+						label: __('Shadow Vertical Offset', 'omega-design'),
+						help: __('Shifts the shadow up (negative) or down (positive) in pixels. Defaults to a third of the shadow size.', 'omega-design'),
+						value: hover[offsetYKey] !== undefined ? hover[offsetYKey] : defaultOffsetY,
+						min: -60,
+						max: 60,
+						step: 2,
+						allowReset: true,
+						onChange: function (value) {
+							setHoverColor(props, offsetYKey, value);
+						}
+					})
+				];
+
+				return createElement(Fragment, { key: device }, colorControls.concat(shadowControls));
+			}
+
+			return createElement(
+				Fragment,
+				{},
+				createElement(BlockEdit, props),
+				createElement(
+					InspectorControls,
+					{ group: 'styles' },
+					createElement(
+						PanelBody,
+						{ title: __('Hover Colors & Shadow', 'omega-design'), initialOpen: false },
+						createElement(TabPanel, { tabs: DEVICE_TABS }, function (tab) {
+							return renderDeviceFields(tab.name);
+						})
+					)
+				)
+			);
+		};
+	}, 'withHoverColorControls');
+
+	if (ColorPalette && TabPanel) {
+		addFilter('editor.BlockEdit', 'omega-design/hover-color-controls', withHoverColorControls);
+	}
+
+	/**
+	 * Mirrors the hover colors for the currently active device preview
+	 * (Desktop/Tablet/Mobile, from the editor's own preview toggle) onto
+	 * the block's wrapper element in the editor canvas (as CSS custom
+	 * properties + a class), so hovering the block in the editor previews
+	 * the same effect the front end will render at that device size.
+	 */
+	var withHoverColorStyleEditor = createHigherOrderComponent(function (BlockListBlock) {
+		return function (props) {
+			if (!isHoverEligible(props.name)) {
+				return createElement(BlockListBlock, props);
+			}
+
+			var style = getResponsiveHoverStyle(props.attributes, getCurrentDeviceType());
+
+			if (!Object.keys(style).length) {
+				return createElement(BlockListBlock, props);
+			}
+
+			var existingStyle = (props.wrapperProps && props.wrapperProps.style) || {};
+			var existingClassName = (props.wrapperProps && props.wrapperProps.className) || '';
+
+			var wrapperProps = Object.assign({}, props.wrapperProps, {
+				style: Object.assign({}, existingStyle, style),
+				className: (existingClassName + ' has-omega-hover-color').trim()
+			});
+
+			return createElement(BlockListBlock, Object.assign({}, props, { wrapperProps: wrapperProps }));
+		};
+	}, 'withHoverColorStyleEditor');
+
+	addFilter('editor.BlockListBlock', 'omega-design/hover-color-style-editor', withHoverColorStyleEditor);
+
+	/**
+	 * Bakes the same hover colors into the saved block markup, so they
+	 * render on the front end without needing a render_block PHP filter.
+	 */
+	addFilter('blocks.getSaveContent.extraProps', 'omega-design/hover-color-style-save', function (extraProps, blockType, attributes) {
+		if (!isHoverEligible(blockType.name)) {
+			return extraProps;
+		}
+
+		var hoverProps = getHoverWrapperProps(attributes);
+		if (!hoverProps) {
+			return extraProps;
+		}
+
+		extraProps.style = Object.assign({}, extraProps.style, hoverProps.style);
+		extraProps.className = ((extraProps.className || '') + ' ' + hoverProps.className).trim();
+
+		return extraProps;
+	});
+
+	/**
+	 * Adds a "Text Alignment" panel (Left/Center/Right/Justify), with
+	 * Desktop/Tablet/Mobile variants, to the same Inspector Styles group,
+	 * for Group/Row/Stack/Grid, Columns and Column blocks. Stored under
+	 * attributes.style.omegaAlign - a custom key nested in the same "style"
+	 * attribute core already auto-registers for these blocks, following the
+	 * same device-prefixed key convention as Hover Colors and Custom Size
+	 * (e.g. 'textAlign' -> 'tabletTextAlign' -> 'mobileTextAlign').
+	 *
+	 * Unlike Hover Colors, this has no `:hover` involved - the desktop value
+	 * is a plain inline `text-align` style, baked into the saved markup the
+	 * same way Custom Size's width/height are. Tablet/mobile overrides are
+	 * generated in includes/core/responsive_styles.php as real `@media`
+	 * rules, again since a plain inline style can't vary by viewport.
+	 */
+	var ALIGN_BLOCKS = HOVER_BLOCKS;
+
+	var ALIGN_OPTIONS = [
+		{ label: __('Left', 'omega-design'), value: 'left' },
+		{ label: __('Center', 'omega-design'), value: 'center' },
+		{ label: __('Right', 'omega-design'), value: 'right' },
+		{ label: __('Justify', 'omega-design'), value: 'justify' }
+	];
+
+	function getTextAlign(attributes) {
+		return (attributes.style && attributes.style.omegaAlign) || {};
+	}
+
+	function setTextAlign(props, key, value) {
+		var style = props.attributes.style || {};
+		var align = Object.assign({}, style.omegaAlign);
+
+		if (value) {
+			align[key] = value;
+		} else {
+			delete align[key];
+		}
+
+		var nextStyle = Object.assign({}, style);
+		if (Object.keys(align).length) {
+			nextStyle.omegaAlign = align;
+		} else {
+			delete nextStyle.omegaAlign;
+		}
+
+		props.setAttributes({ style: nextStyle });
+	}
+
+	function getResponsiveAlignStyle(attributes, device) {
+		var align = getTextAlign(attributes);
+		var value = resolveResponsiveValue(align, 'textAlign', device);
+
+		return value ? { textAlign: value } : {};
+	}
+
+	var withTextAlignControl = createHigherOrderComponent(function (BlockEdit) {
+		return function (props) {
+			if (ALIGN_BLOCKS.indexOf(props.name) === -1 || !props.isSelected) {
+				return createElement(BlockEdit, props);
+			}
+
+			var align = getTextAlign(props.attributes);
+
+			function renderDeviceFields(device) {
+				var key = fieldKeyForDevice('textAlign', device);
+				var current = align[key];
+
+				var buttons = ALIGN_OPTIONS.map(function (option) {
+					var isActive = current === option.value;
+					return createElement(
+						Button,
+						{
+							key: option.value,
+							variant: isActive ? 'primary' : 'secondary',
+							isPressed: isActive,
+							onClick: function () {
+								setTextAlign(props, key, isActive ? undefined : option.value);
+							}
+						},
+						option.label
+					);
+				});
+
+				return createElement(ButtonGroup, { key: device }, buttons);
+			}
+
+			return createElement(
+				Fragment,
+				{},
+				createElement(BlockEdit, props),
+				createElement(
+					InspectorControls,
+					{ group: 'styles' },
+					createElement(
+						PanelBody,
+						{ title: __('Text Alignment', 'omega-design'), initialOpen: false },
+						createElement(TabPanel, { tabs: DEVICE_TABS }, function (tab) {
+							return renderDeviceFields(tab.name);
+						})
+					)
+				)
+			);
+		};
+	}, 'withTextAlignControl');
+
+	if (TabPanel) {
+		addFilter('editor.BlockEdit', 'omega-design/text-align-control', withTextAlignControl);
+	}
+
+	/**
+	 * Mirrors the text alignment for the currently active device preview
+	 * onto the block's wrapper element in the editor canvas.
+	 */
+	var withTextAlignStyleEditor = createHigherOrderComponent(function (BlockListBlock) {
+		return function (props) {
+			if (ALIGN_BLOCKS.indexOf(props.name) === -1) {
+				return createElement(BlockListBlock, props);
+			}
+
+			var style = getResponsiveAlignStyle(props.attributes, getCurrentDeviceType());
+
+			if (!Object.keys(style).length) {
+				return createElement(BlockListBlock, props);
+			}
+
+			var wrapperProps = Object.assign({}, props.wrapperProps, {
+				style: Object.assign({}, props.wrapperProps && props.wrapperProps.style, style)
+			});
+
+			return createElement(BlockListBlock, Object.assign({}, props, { wrapperProps: wrapperProps }));
+		};
+	}, 'withTextAlignStyleEditor');
+
+	addFilter('editor.BlockListBlock', 'omega-design/text-align-style-editor', withTextAlignStyleEditor);
+
+	/**
+	 * Bakes the desktop text alignment into the saved block markup, so it
+	 * renders on the front end without needing a render_block PHP filter.
+	 */
+	addFilter('blocks.getSaveContent.extraProps', 'omega-design/text-align-style-save', function (extraProps, blockType, attributes) {
+		if (ALIGN_BLOCKS.indexOf(blockType.name) === -1) {
+			return extraProps;
+		}
+
+		var align = getTextAlign(attributes);
+		if (!align.textAlign) {
+			return extraProps;
+		}
+
+		extraProps.style = Object.assign({}, extraProps.style, { textAlign: align.textAlign });
+
+		return extraProps;
+	});
+
+	/**
+	 * Adds a "Mega Menu" panel to the Inspector for Navigation Link and
+	 * Navigation Submenu blocks, letting an editor attach one of the site's
+	 * "Mega Menu" posts (Omega Design > Mega Menus in wp-admin - its own
+	 * title + block-editor content + Custom CSS, not a generic Pattern) as
+	 * a hover/click panel for that nav item - no label-matching, no PHP
+	 * editing. "Mega Menu" is also registered as its own insertable item
+	 * type, so it can be added directly from the Navigation block's own
+	 * "+" inserter, the same way core's "Custom Link" is.
+	 *
+	 * The choice is stored as a plain `megaMenuPattern` attribute (format
+	 * "mega_menu:{post_id}"). These blocks are dynamic (rendered via PHP on
+	 * every request, no save() markup), so - exactly like the
+	 * `omegaHover`/`dimensions` keys responsive_styles.php already reads off
+	 * Group/Columns without any server-side attribute registration -
+	 * includes/customizer/megamenu.php reads this straight off
+	 * $block['attrs']['megaMenuPattern'] with no schema wiring needed there.
+	 */
+	var MEGAMENU_BLOCKS = ['core/navigation-link', 'core/navigation-submenu'];
+
+	addFilter('blocks.registerBlockType', 'omega-design/megamenu-attribute', function (settings, name) {
+		if (MEGAMENU_BLOCKS.indexOf(name) === -1) {
+			return settings;
+		}
+
+		settings.attributes = Object.assign({}, settings.attributes, {
+			megaMenuPattern: { type: 'string', default: '' }
+		});
+
+		return settings;
+	});
+
+	if (wp.blocks.registerBlockVariation) {
+		wp.blocks.registerBlockVariation('core/navigation-link', {
+			name: 'omega-design-mega-menu',
+			title: __('Mega Menu', 'omega-design'),
+			description: __('A navigation item that opens one of your Mega Menus.', 'omega-design'),
+			icon: 'grid-view',
+			attributes: { label: __('Mega Menu', 'omega-design') },
+			isActive: function (blockAttributes) {
+				return !!blockAttributes.megaMenuPattern;
+			},
+			scope: ['inserter']
+		});
+	}
+
+	var ComboboxControl = wp.components.ComboboxControl;
+	var TextControl = wp.components.TextControl;
+	var ToggleControl = wp.components.ToggleControl;
+	var useSelect = wp.data.useSelect;
+
+	function useMegaMenuOptions() {
+		return useSelect(function (select) {
+			var core = select('core');
+			var options = [{ label: __('None', 'omega-design'), value: '' }];
+
+			var menus = core.getEntityRecords('postType', 'mega_menu', {
+				per_page: -1,
+				status: 'publish',
+				orderby: 'title',
+				order: 'asc'
+			}) || [];
+
+			menus.forEach(function (record) {
+				options.push({
+					label: record.title && record.title.raw ? record.title.raw : record.slug,
+					value: 'mega_menu:' + record.id
+				});
+			});
+
+			return options;
+		}, []);
+	}
+
+	var withMegaMenuControl = createHigherOrderComponent(function (BlockEdit) {
+		return function (props) {
+			if (MEGAMENU_BLOCKS.indexOf(props.name) === -1 || !props.isSelected) {
+				return createElement(BlockEdit, props);
+			}
+
+			var options = useMegaMenuOptions();
+
+			return createElement(
+				Fragment,
+				{},
+				createElement(BlockEdit, props),
+				createElement(
+					InspectorControls,
+					{},
+					createElement(
+						PanelBody,
+						{ title: __('Mega Menu', 'omega-design'), initialOpen: false },
+						createElement(ComboboxControl, {
+							label: __('Mega Menu', 'omega-design'),
+							help: __('Attach one of your Mega Menus as a hover/click panel for this nav item. Manage them under Omega Design > Mega Menus in wp-admin.', 'omega-design'),
+							value: props.attributes.megaMenuPattern || '',
+							options: options,
+							onChange: function (value) {
+								props.setAttributes({ megaMenuPattern: value || '' });
+							}
+						})
+					)
+				)
+			);
+		};
+	}, 'withMegaMenuControl');
+
+	if (ComboboxControl) {
+		addFilter('editor.BlockEdit', 'omega-design/megamenu-control', withMegaMenuControl);
+	}
+
+	/**
+	 * Adds a "Link" panel to the Inspector for Group/Row/Stack/Grid, Columns
+	 * and Column blocks, letting an editor paste a URL that makes the entire
+	 * block clickable - not just a heading or button somewhere inside it
+	 * (e.g. a mega menu grid tile). Stored under attributes.style.omegaLink -
+	 * a custom key nested in the same "style" attribute core already
+	 * auto-registers for these blocks' color/border supports - the same
+	 * approach as `omegaHover`/`omegaAlign`/`dimensions` above, rather than
+	 * new top-level attributes requiring their own `blocks.registerBlockType`
+	 * registration.
+	 *
+	 * Rendered on the front end as a full-cover overlay <a> (see
+	 * includes/core/hooks.php, modify_block_render()) absolutely positioned
+	 * over the block, rather than wrapping the block's own markup in an <a>,
+	 * so a card that already has its own inner link or button never ends up
+	 * as invalid nested-<a> HTML - that inner element just needs a higher
+	 * z-index (assets/css/style.css) to stay clickable above the overlay.
+	 */
+	var LINK_BLOCKS = ['core/group', 'core/columns', 'core/column'];
+
+	function getBlockLink(attributes) {
+		return (attributes.style && attributes.style.omegaLink) || {};
+	}
+
+	function setBlockLink(props, key, value) {
+		var style = props.attributes.style || {};
+		var link = Object.assign({}, style.omegaLink);
+
+		if (value) {
+			link[key] = value;
+		} else {
+			delete link[key];
+		}
+
+		var nextStyle = Object.assign({}, style);
+		if (Object.keys(link).length) {
+			nextStyle.omegaLink = link;
+		} else {
+			delete nextStyle.omegaLink;
+		}
+
+		props.setAttributes({ style: nextStyle });
+	}
+
+	var withBlockLinkControl = createHigherOrderComponent(function (BlockEdit) {
+		return function (props) {
+			if (LINK_BLOCKS.indexOf(props.name) === -1 || !props.isSelected) {
+				return createElement(BlockEdit, props);
+			}
+
+			var link = getBlockLink(props.attributes);
+			var hasUrl = !!link.url;
+
+			var fields = [
+				createElement(TextControl, {
+					key: 'url',
+					label: __('Link URL', 'omega-design'),
+					type: 'url',
+					value: link.url || '',
+					onChange: function (value) {
+						setBlockLink(props, 'url', value);
+					}
+				})
+			];
+
+			if (hasUrl) {
+				fields.push(
+					createElement(ToggleControl, {
+						key: 'target',
+						label: __('Open in new tab', 'omega-design'),
+						checked: '_blank' === link.target,
+						onChange: function (checked) {
+							setBlockLink(props, 'target', checked ? '_blank' : '');
+						}
+					}),
+					createElement(TextControl, {
+						key: 'label',
+						label: __('Accessible label', 'omega-design'),
+						value: link.label || '',
+						onChange: function (value) {
+							setBlockLink(props, 'label', value);
+						}
+					})
+				);
+			}
+
+			return createElement(
+				Fragment,
+				{},
+				createElement(BlockEdit, props),
+				createElement(
+					InspectorControls,
+					{},
+					createElement(
+						PanelBody,
+						{ title: __('Link', 'omega-design'), initialOpen: false },
+						fields
+					)
+				)
+			);
+		};
+	}, 'withBlockLinkControl');
+
+	if (TextControl && ToggleControl) {
+		addFilter('editor.BlockEdit', 'omega-design/block-link-control', withBlockLinkControl);
+	}
+
+	/**
+	 * Editor-canvas-only visual indicator (a dashed outline, see
+	 * assets/css/style.css) that a block has a Link URL set. The actual
+	 * clickable overlay above is only rendered on the front end - Group/
+	 * Columns/Column are static blocks, so PHP's render_block filter never
+	 * runs against the editor's own live canvas the way it does for a real
+	 * page request.
+	 */
+	var withBlockLinkIndicator = createHigherOrderComponent(function (BlockListBlock) {
+		return function (props) {
+			if (LINK_BLOCKS.indexOf(props.name) === -1 || !getBlockLink(props.attributes).url) {
+				return createElement(BlockListBlock, props);
+			}
+
+			var existingClassName = (props.wrapperProps && props.wrapperProps.className) || '';
+			var wrapperProps = Object.assign({}, props.wrapperProps, {
+				className: (existingClassName + ' is-omega-linked-block').trim()
+			});
+
+			return createElement(BlockListBlock, Object.assign({}, props, { wrapperProps: wrapperProps }));
+		};
+	}, 'withBlockLinkIndicator');
+
+	addFilter('editor.BlockListBlock', 'omega-design/block-link-indicator', withBlockLinkIndicator);
+
+	/**
+	 * Adds a "Text Style" button to the block toolbar (not tucked away in
+	 * the Inspector sidebar) for every text-bearing block, opening a popover
+	 * with Bold, Italic, Size, Line Height, Letter Spacing and Opacity
+	 * controls in one place - requested as a single "everything in the
+	 * toolbar" spot rather than the several separate native Typography
+	 * sidebar panels core already splits these across.
+	 *
+	 * Stored under attributes.style.omegaTypography - a custom key nested
+	 * in the same "style" attribute core already auto-registers for every
+	 * block below (each already supports at least color or fontSize),
+	 * following the same convention as omegaHover/omegaAlign/omegaLink
+	 * above rather than a new attribute registration. Opacity has no core
+	 * equivalent at all; Bold/Italic/Size/Line Height/Letter Spacing
+	 * deliberately use this same custom key too (instead of core's own
+	 * style.typography.fontWeight/fontStyle/fontSize/lineHeight/
+	 * letterSpacing) so this one toolbar popover is a single source of
+	 * truth, rather than fighting the native sidebar over the same
+	 * attribute path.
+	 */
+	var TEXT_STYLE_BLOCKS = [
+		'core/paragraph', 'core/heading', 'core/list', 'core/list-item',
+		'core/quote', 'core/pullquote', 'core/verse', 'core/preformatted',
+		'core/code', 'core/button'
+	];
+
+	var BlockControls = wp.blockEditor.BlockControls;
+	var ToolbarGroup = wp.components.ToolbarGroup;
+	var ToolbarButton = wp.components.ToolbarButton;
+	var Dropdown = wp.components.Dropdown;
+
+	var TEXT_STYLE_UNITS = [
+		{ value: 'px', label: 'px', default: '' },
+		{ value: 'em', label: 'em', default: '' },
+		{ value: 'rem', label: 'rem', default: '' },
+		{ value: '%', label: '%', default: '' }
+	];
+
+	var BOX_WIDTH_OPTIONS = [
+		{ label: __('Text Only', 'omega-design'), value: false },
+		{ label: __('Full Width', 'omega-design'), value: true }
+	];
+
+	function getTextStyle(attributes) {
+		return (attributes.style && attributes.style.omegaTypography) || {};
+	}
+
+	function setTextStyle(props, key, value) {
+		var style = props.attributes.style || {};
+		var typography = Object.assign({}, style.omegaTypography);
+
+		if (value !== undefined && value !== null && value !== '') {
+			typography[key] = value;
+		} else {
+			delete typography[key];
+		}
+
+		var nextStyle = Object.assign({}, style);
+		if (Object.keys(typography).length) {
+			nextStyle.omegaTypography = typography;
+		} else {
+			delete nextStyle.omegaTypography;
+		}
+
+		props.setAttributes({ style: nextStyle });
+	}
+
+	/**
+	 * Text Color / Background Color / Padding / Margin (added to the same
+	 * popover below) deliberately style the block's own root element - for
+	 * every block in TEXT_STYLE_BLOCKS that element (the <p>, <h2>, <li>...)
+	 * already IS the text, with no separate wrapping div around it - rather
+	 * than adding an inner wrapping <span>. The one thing that root element
+	 * doesn't do on its own is hug the text: it's block-level, so a
+	 * background/padding on it stretches across the full column width
+	 * instead of sitting snugly behind the words. Switching it to
+	 * `inline-block` the moment a background or padding is actually set
+	 * (never otherwise, so plain text is untouched) is what makes it "only
+	 * the text content, not the whole div".
+	 *
+	 * That shrink-to-fit switch loses the normal effect of the block's own
+	 * Left/Center/Right text alignment (`attributes.align` on Paragraph/
+	 * Heading - a block-level element has room to align text within its
+	 * own full-width box; a shrink-wrapped one doesn't), so it's
+	 * recompensated here as margin: center -> auto both sides, right ->
+	 * auto on the left, so a centered/right-aligned heading doesn't
+	 * suddenly jump to the left edge the moment a background is added.
+	 *
+	 * This hug-to-fit is only the DEFAULT, not forced - the "Box Width"
+	 * choice below (typography.fullWidth) lets an admin explicitly keep
+	 * the older full-width strip look (e.g. a colored banner paragraph)
+	 * even with a background/padding set.
+	 */
+	function getTextBoxAutoMargin(attributes) {
+		if (attributes.align === 'center') { return { marginLeft: 'auto', marginRight: 'auto' }; }
+		if (attributes.align === 'right') { return { marginLeft: 'auto' }; }
+		return {};
+	}
+
+	/**
+	 * True whenever the block has ANY background set - through this custom
+	 * Text Style popover, or through core's own native "Background color"
+	 * swatch (Styles sidebar / block toolbar color picker core already
+	 * ships for these blocks), which writes to a completely different
+	 * attribute path (attributes.backgroundColor for a palette preset,
+	 * attributes.style.color.background for a custom color) that this
+	 * feature doesn't otherwise touch. Reacting to both is what actually
+	 * makes "hug the text" apply no matter which color control the admin
+	 * reaches for - most will use the familiar native swatch, not go
+	 * looking for a second one here.
+	 */
+	function blockHasBackground(typography, attributes) {
+		return !!(
+			typography.backgroundColor ||
+			attributes.backgroundColor ||
+			(attributes.style && attributes.style.color && attributes.style.color.background)
+		);
+	}
+
+	function getTextStyleCSS(typography, attributes) {
+		attributes = attributes || {};
+
+		var style = {};
+
+		if (typography.bold) { style.fontWeight = 'bold'; }
+		if (typography.italic) { style.fontStyle = 'italic'; }
+		if (typography.fontSize) { style.fontSize = typography.fontSize; }
+		if (typography.lineHeight) { style.lineHeight = typography.lineHeight; }
+		if (typography.letterSpacing) { style.letterSpacing = typography.letterSpacing; }
+		if (typography.opacity !== undefined && typography.opacity !== '') {
+			style.opacity = typography.opacity / 100;
+		}
+		if (typography.textColor) { style.color = typography.textColor; }
+		if (typography.backgroundColor) { style.backgroundColor = typography.backgroundColor; }
+		if (typography.padding) { style.padding = typography.padding; }
+
+		// Reacting to core's native background (blockHasBackground) is only
+		// safe once this block already has SOME omegaTypography value of its
+		// own - i.e. the admin has actually opened this popover for this
+		// block before. Reacting to it unconditionally would silently change
+		// the computed save() output of every OTHER pre-existing block that
+		// merely already had a native background color, with no
+		// omegaTypography attribute at all - a mismatch against what's
+		// already stored in post_content that WordPress reports as "this
+		// block contains unexpected or invalid content" the next time that
+		// page/template loads in the editor, for every such block across the
+		// whole site, not just ones this feature was ever used on.
+		var touched = Object.keys(typography).length > 0;
+		var shouldHug = touched && (blockHasBackground(typography, attributes) || typography.padding) && !typography.fullWidth;
+
+		if (shouldHug) {
+			style.display = 'inline-block';
+			Object.assign(style, getTextBoxAutoMargin(attributes));
+		}
+
+		// An explicit margin always wins over the hug's alignment compensation above.
+		if (typography.margin) { style.margin = typography.margin; }
+
+		return style;
+	}
+
+	var withTextStyleControl = createHigherOrderComponent(function (BlockEdit) {
+		return function (props) {
+			if (TEXT_STYLE_BLOCKS.indexOf(props.name) === -1 || !props.isSelected) {
+				return createElement(BlockEdit, props);
+			}
+
+			var typography = getTextStyle(props.attributes);
+
+			return createElement(
+				Fragment,
+				{},
+				createElement(BlockEdit, props),
+				createElement(
+					BlockControls,
+					{ group: 'block' },
+					createElement(
+						ToolbarGroup,
+						{},
+						createElement(Dropdown, {
+							renderToggle: function (toggleProps) {
+								return createElement(ToolbarButton, {
+									icon: 'editor-textcolor',
+									label: __('Text Style', 'omega-design'),
+									isPressed: toggleProps.isOpen || !!Object.keys(typography).length,
+									onClick: toggleProps.onToggle
+								});
+							},
+							renderContent: function () {
+								return createElement(
+									'div',
+									{ className: 'omega-toolbar-popover' },
+									createElement(
+										ButtonGroup,
+										{ className: 'omega-toolbar-popover__row' },
+										createElement(Button, {
+											variant: typography.bold ? 'primary' : 'secondary',
+											isPressed: !!typography.bold,
+											onClick: function () {
+												setTextStyle(props, 'bold', !typography.bold);
+											}
+										}, __('Bold', 'omega-design')),
+										createElement(Button, {
+											variant: typography.italic ? 'primary' : 'secondary',
+											isPressed: !!typography.italic,
+											onClick: function () {
+												setTextStyle(props, 'italic', !typography.italic);
+											}
+										}, __('Italic', 'omega-design'))
+									),
+									createElement(UnitControl, {
+										label: __('Size', 'omega-design'),
+										units: TEXT_STYLE_UNITS,
+										value: typography.fontSize || '',
+										onChange: function (value) {
+											setTextStyle(props, 'fontSize', value);
+										}
+									}),
+									createElement(RangeControl, {
+										label: __('Line Height', 'omega-design'),
+										value: typography.lineHeight ? parseFloat(typography.lineHeight) : undefined,
+										min: 0.8,
+										max: 3,
+										step: 0.05,
+										allowReset: true,
+										onChange: function (value) {
+											setTextStyle(props, 'lineHeight', value === undefined ? '' : String(value));
+										}
+									}),
+									createElement(UnitControl, {
+										label: __('Letter Spacing', 'omega-design'),
+										units: TEXT_STYLE_UNITS,
+										value: typography.letterSpacing || '',
+										onChange: function (value) {
+											setTextStyle(props, 'letterSpacing', value);
+										}
+									}),
+									createElement(RangeControl, {
+										label: __('Opacity', 'omega-design'),
+										value: typography.opacity !== undefined ? typography.opacity : 100,
+										min: 0,
+										max: 100,
+										step: 1,
+										allowReset: true,
+										onChange: function (value) {
+											setTextStyle(props, 'opacity', value === undefined ? '' : value);
+										}
+									}),
+									createElement(
+										BaseControl,
+										{ label: __('Text Color', 'omega-design') },
+										createElement(ColorPalette, {
+											value: typography.textColor,
+											onChange: function (value) {
+												setTextStyle(props, 'textColor', value);
+											}
+										})
+									),
+									createElement(
+										BaseControl,
+										{ label: __('Background Color', 'omega-design') },
+										createElement(ColorPalette, {
+											value: typography.backgroundColor,
+											onChange: function (value) {
+												setTextStyle(props, 'backgroundColor', value);
+											}
+										})
+									),
+									createElement(
+										BaseControl,
+										{
+											label: __('Box Width', 'omega-design'),
+											help: __('Applies once a background color or padding is set (from either color control above).', 'omega-design')
+										},
+										createElement(
+											ButtonGroup,
+											{},
+											BOX_WIDTH_OPTIONS.map(function (option) {
+												var isActive = !!typography.fullWidth === option.value;
+												return createElement(Button, {
+													key: String(option.value),
+													variant: isActive ? 'primary' : 'secondary',
+													isPressed: isActive,
+													onClick: function () {
+														setTextStyle(props, 'fullWidth', option.value);
+													}
+												}, option.label);
+											})
+										)
+									),
+									createElement(UnitControl, {
+										label: __('Padding', 'omega-design'),
+										units: TEXT_STYLE_UNITS,
+										value: typography.padding || '',
+										onChange: function (value) {
+											setTextStyle(props, 'padding', value);
+										}
+									}),
+									createElement(UnitControl, {
+										label: __('Margin', 'omega-design'),
+										units: TEXT_STYLE_UNITS,
+										value: typography.margin || '',
+										onChange: function (value) {
+											setTextStyle(props, 'margin', value);
+										}
+									})
+								);
+							}
+						})
+					)
+				)
+			);
+		};
+	}, 'withTextStyleControl');
+
+	if (BlockControls && Dropdown && UnitControl) {
+		addFilter('editor.BlockEdit', 'omega-design/text-style-control', withTextStyleControl);
+	}
+
+	/**
+	 * Mirrors the Text Style attributes onto the block's wrapper element in
+	 * the editor canvas, so the toolbar popover above previews live.
+	 */
+	var withTextStyleEditor = createHigherOrderComponent(function (BlockListBlock) {
+		return function (props) {
+			if (TEXT_STYLE_BLOCKS.indexOf(props.name) === -1) {
+				return createElement(BlockListBlock, props);
+			}
+
+			var style = getTextStyleCSS(getTextStyle(props.attributes), props.attributes);
+
+			if (!Object.keys(style).length) {
+				return createElement(BlockListBlock, props);
+			}
+
+			var wrapperProps = Object.assign({}, props.wrapperProps, {
+				style: Object.assign({}, props.wrapperProps && props.wrapperProps.style, style)
+			});
+
+			return createElement(BlockListBlock, Object.assign({}, props, { wrapperProps: wrapperProps }));
+		};
+	}, 'withTextStyleEditor');
+
+	addFilter('editor.BlockListBlock', 'omega-design/text-style-editor', withTextStyleEditor);
+
+	/**
+	 * Bakes the same Text Style attributes into the saved block markup, so
+	 * they render on the front end without needing a render_block PHP
+	 * filter (every block in TEXT_STYLE_BLOCKS is static, i.e. uses its own
+	 * client save() rather than a PHP render callback).
+	 */
+	addFilter('blocks.getSaveContent.extraProps', 'omega-design/text-style-save', function (extraProps, blockType, attributes) {
+		if (TEXT_STYLE_BLOCKS.indexOf(blockType.name) === -1) {
+			return extraProps;
+		}
+
+		var style = getTextStyleCSS(getTextStyle(attributes), attributes);
+		if (!Object.keys(style).length) {
+			return extraProps;
+		}
+
+		extraProps.style = Object.assign({}, extraProps.style, style);
+
+		return extraProps;
+	});
+
+	/**
+	 * Adds a "Grid Alignment" toolbar button to the Grid variation of
+	 * core/group (Group > Grid in the block variation picker) - core ships
+	 * this alignment toolbar for the Flex-based Row/Stack variations
+	 * (Left/Center/Right/Space Between + Top/Middle/Bottom) but never built
+	 * an equivalent for Grid, which otherwise only exposes column/row count
+	 * and gap. This fills that specific gap: it controls how every item
+	 * inside the grid sits within its own cell (CSS `justify-items` /
+	 * `align-items` on the grid container), matching what Row's toolbar
+	 * already does for a Flex row.
+	 *
+	 * Stored under attributes.style.omegaGridAlign - same convention as
+	 * omegaHover/omegaAlign/omegaTypography above - rather than a new
+	 * attribute registration.
+	 */
+	function isGridGroup(props) {
+		return props.name === 'core/group' && !!props.attributes.layout && props.attributes.layout.type === 'grid';
+	}
+
+	var GRID_ALIGN_UNSET = '';
+
+	var GRID_JUSTIFY_OPTIONS = [
+		{ label: __('Left', 'omega-design'), value: 'start' },
+		{ label: __('Center', 'omega-design'), value: 'center' },
+		{ label: __('Right', 'omega-design'), value: 'end' },
+		{ label: __('Stretch', 'omega-design'), value: 'stretch' }
+	];
+
+	var GRID_ALIGN_OPTIONS = [
+		{ label: __('Top', 'omega-design'), value: 'start' },
+		{ label: __('Middle', 'omega-design'), value: 'center' },
+		{ label: __('Bottom', 'omega-design'), value: 'end' },
+		{ label: __('Stretch', 'omega-design'), value: 'stretch' }
+	];
+
+	function getGridAlign(attributes) {
+		return (attributes.style && attributes.style.omegaGridAlign) || {};
+	}
+
+	function setGridAlign(props, key, value) {
+		var style = props.attributes.style || {};
+		var gridAlign = Object.assign({}, style.omegaGridAlign);
+
+		if (value && value !== GRID_ALIGN_UNSET) {
+			gridAlign[key] = value;
+		} else {
+			delete gridAlign[key];
+		}
+
+		var nextStyle = Object.assign({}, style);
+		if (Object.keys(gridAlign).length) {
+			nextStyle.omegaGridAlign = gridAlign;
+		} else {
+			delete nextStyle.omegaGridAlign;
+		}
+
+		props.setAttributes({ style: nextStyle });
+	}
+
+	function getGridAlignCSS(gridAlign) {
+		var style = {};
+
+		if (gridAlign.justifyItems) { style.justifyItems = gridAlign.justifyItems; }
+		if (gridAlign.alignItems) { style.alignItems = gridAlign.alignItems; }
+
+		return style;
+	}
+
+	var withGridAlignControl = createHigherOrderComponent(function (BlockEdit) {
+		return function (props) {
+			if (!isGridGroup(props) || !props.isSelected) {
+				return createElement(BlockEdit, props);
+			}
+
+			var gridAlign = getGridAlign(props.attributes);
+
+			function renderOptionGroup(options, key, currentValue) {
+				var buttons = options.map(function (option) {
+					var isActive = currentValue === option.value;
+					return createElement(
+						Button,
+						{
+							key: option.value,
+							variant: isActive ? 'primary' : 'secondary',
+							isPressed: isActive,
+							onClick: function () {
+								setGridAlign(props, key, isActive ? GRID_ALIGN_UNSET : option.value);
+							}
+						},
+						option.label
+					);
+				});
+
+				return createElement(ButtonGroup, {}, buttons);
+			}
+
+			return createElement(
+				Fragment,
+				{},
+				createElement(BlockEdit, props),
+				createElement(
+					BlockControls,
+					{ group: 'block' },
+					createElement(
+						ToolbarGroup,
+						{},
+						createElement(Dropdown, {
+							renderToggle: function (toggleProps) {
+								return createElement(ToolbarButton, {
+									icon: 'align-center',
+									label: __('Grid Alignment', 'omega-design'),
+									isPressed: toggleProps.isOpen || !!Object.keys(gridAlign).length,
+									onClick: toggleProps.onToggle
+								});
+							},
+							renderContent: function () {
+								return createElement(
+									'div',
+									{ className: 'omega-toolbar-popover' },
+									createElement(
+										BaseControl,
+										{ label: __('Horizontal Align', 'omega-design') },
+										renderOptionGroup(GRID_JUSTIFY_OPTIONS, 'justifyItems', gridAlign.justifyItems)
+									),
+									createElement(
+										BaseControl,
+										{ label: __('Vertical Align', 'omega-design') },
+										renderOptionGroup(GRID_ALIGN_OPTIONS, 'alignItems', gridAlign.alignItems)
+									)
+								);
+							}
+						})
+					)
+				)
+			);
+		};
+	}, 'withGridAlignControl');
+
+	if (BlockControls && Dropdown) {
+		addFilter('editor.BlockEdit', 'omega-design/grid-align-control', withGridAlignControl);
+	}
+
+	/**
+	 * Mirrors the Grid Alignment onto the block's wrapper element (the
+	 * actual `display:grid` container) in the editor canvas, so the
+	 * toolbar popover above previews live.
+	 */
+	var withGridAlignEditor = createHigherOrderComponent(function (BlockListBlock) {
+		return function (props) {
+			if (!isGridGroup(props)) {
+				return createElement(BlockListBlock, props);
+			}
+
+			var style = getGridAlignCSS(getGridAlign(props.attributes));
+
+			if (!Object.keys(style).length) {
+				return createElement(BlockListBlock, props);
+			}
+
+			var wrapperProps = Object.assign({}, props.wrapperProps, {
+				style: Object.assign({}, props.wrapperProps && props.wrapperProps.style, style)
+			});
+
+			return createElement(BlockListBlock, Object.assign({}, props, { wrapperProps: wrapperProps }));
+		};
+	}, 'withGridAlignEditor');
+
+	addFilter('editor.BlockListBlock', 'omega-design/grid-align-editor', withGridAlignEditor);
+
+	/**
+	 * Bakes the same Grid Alignment into the saved block markup - core/group
+	 * is a static block (client save()), so no render_block PHP filter is
+	 * needed.
+	 */
+	addFilter('blocks.getSaveContent.extraProps', 'omega-design/grid-align-save', function (extraProps, blockType, attributes) {
+		if (blockType.name !== 'core/group' || !attributes.layout || attributes.layout.type !== 'grid') {
+			return extraProps;
+		}
+
+		var style = getGridAlignCSS(getGridAlign(attributes));
+		if (!Object.keys(style).length) {
+			return extraProps;
+		}
+
+		extraProps.style = Object.assign({}, extraProps.style, style);
+
+		return extraProps;
+	});
+})(window.wp);

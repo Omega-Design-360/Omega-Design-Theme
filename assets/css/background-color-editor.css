@@ -1,0 +1,20 @@
+/**
+ * Editor-only styling for the "Background Color" sidebar control
+ * (assets/js/background-color.js).
+ */
+
+/**
+ * The "Page Settings" panel is pulled above WordPress's built-in Summary
+ * card via a real DOM move in assets/js/background-color.js (there is no
+ * public API to relocate the Summary card itself, and its internal class
+ * names aren't stable enough to target reliably with CSS).
+ */
+
+.omega-background-color-control {
+	margin-top: 4px;
+}
+
+.omega-background-color-control__variable input.components-text-control__input {
+	font-family: Consolas, Monaco, monospace;
+	font-size: 12px;
+}

@@ -1,0 +1,67 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "omega-design/content-slider",
+	"title": "Omega Content Slider",
+	"category": "omega-design",
+	"icon": "layout",
+	"description": "A fully custom-built slider: choose how many slides you need, then click the slide itself, its image, or its text panel to style each one - background color or image, image size/borders/radius, text/button colors and per-slide animation - all from one control panel, no other blocks nested inside.",
+	"keywords": ["slider", "carousel", "hero", "content slider"],
+	"textdomain": "omega-design",
+	"attributes": {
+		"slides": {
+			"type": "array",
+			"default": [
+				{
+					"id": "slide-1",
+					"imageUrl": "",
+					"imageId": 0,
+					"imageAlt": "",
+					"imageWidth": "100%",
+					"imageHeight": "420px",
+					"imageObjectFit": "cover",
+					"imageBorderWidth": 0,
+					"imageBorderColor": "#1c1c1c",
+					"imageBorderStyle": "solid",
+					"imageBorderRadius": 12,
+					"backgroundColor": "#f7f3f0",
+					"backgroundImageUrl": "",
+					"backgroundImageId": 0,
+					"backgroundImageSize": "cover",
+					"backgroundOverlayColor": "#000000",
+					"backgroundOverlayOpacity": 0,
+					"heading": "Slide heading",
+					"headingColor": "#1c1c1c",
+					"bodyText": "A short line of supporting copy for this slide.",
+					"bodyColor": "#1c1c1c",
+					"buttonText": "Learn More",
+					"buttonUrl": "#",
+					"buttonBackgroundColor": "#1fbb00",
+					"buttonTextColor": "#ffffff",
+					"buttonBorderRadius": 6,
+					"animation": "fade-up",
+					"contentPosition": "left",
+					"contentVerticalAlign": "center",
+					"textAlign": "left"
+				}
+			]
+		},
+		"autoplay": { "type": "boolean", "default": true },
+		"autoplaySpeed": { "type": "number", "default": 6000 },
+		"loop": { "type": "boolean", "default": true },
+		"showArrows": { "type": "boolean", "default": true },
+		"showDots": { "type": "boolean", "default": true },
+		"effect": { "type": "string", "default": "slide" },
+		"sliderHeight": { "type": "string", "default": "480px" }
+	},
+	"supports": {
+		"html": false,
+		"align": ["wide", "full"],
+		"spacing": { "margin": true },
+		"shadow": true
+	},
+	"editorScript": "omega-content-slider-block-editor",
+	"style": ["omega-slider-block", "omega-content-slider-block"],
+	"viewScript": "omega-slider-block-view",
+	"render": "file:./render.php"
+}

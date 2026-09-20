@@ -1,0 +1,48 @@
+.omega-newsletter-form__row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.75rem;
+}
+
+.omega-newsletter-form__input {
+	flex: 1 1 260px;
+	min-width: 0;
+	padding: 0.85rem 1.1rem;
+	border-radius: 6px;
+	border: 1px solid var(--wp--preset--color--border, #d0d0d0);
+	font-size: var(--wp--preset--font-size--medium, 1rem);
+	background: var(--wp--preset--color--background, #fff);
+	color: var(--wp--preset--color--body-text, #2a2a2a);
+}
+
+.omega-newsletter-form__submit {
+	flex: 0 0 auto;
+	cursor: pointer;
+	border: none;
+}
+
+.omega-newsletter-form.is-loading .omega-newsletter-form__submit {
+	opacity: 0.7;
+}
+
+.omega-newsletter-form__honeypot {
+	position: absolute !important;
+	width: 1px !important;
+	height: 1px !important;
+	overflow: hidden !important;
+	clip: rect(0 0 0 0) !important;
+	white-space: nowrap !important;
+}
+
+.omega-newsletter-form__message {
+	margin: 0.6rem 0 0;
+	font-size: var(--wp--preset--font-size--small, 0.875rem);
+}
+
+.omega-newsletter-form.is-success .omega-newsletter-form__message {
+	color: var(--wp--preset--color--success, #0f5900);
+}
+
+.omega-newsletter-form.is-error .omega-newsletter-form__message {
+	color: var(--wp--preset--color--danger, #8a0000);
+}

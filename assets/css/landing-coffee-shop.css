@@ -1,0 +1,51 @@
+/**
+ * Brand palette override for this page only - remaps the theme's global
+ * preset colors to BrewNest's warm coffee-brown/cream identity so every
+ * block already using backgroundColor/textColor:"primary" etc. recolors
+ * automatically without touching the pattern markup.
+ */
+.omega-landing--coffee-shop {
+	--wp--preset--color--primary: #6f4e37;
+	--wp--preset--color--secondary: #2c1810;
+	--wp--preset--color--accent: #c9a66b;
+	--wp--preset--color--heading: #2c1810;
+	--wp--preset--color--surface: #f5ede4;
+	--omega-photo-card-tint: rgba(44, 24, 16, 0.45);
+}
+
+/**
+ * Page-specific layout CSS for pattern/landing-coffee-shop.php - only
+ * things the shared assets/css/landing-pages.css classes don't already
+ * cover. Loaded only on pages containing the "omega-landing--coffee-shop"
+ * marker class - see enqueue_landing_page_assets() in includes/core/hooks.php.
+ */
+
+/* Small circular "Fresh Beans / Premium Quality" stamp floating over the
+   hero photo, top-right corner. */
+.omega-hero-badge {
+	position: absolute;
+	top: var(--wp--preset--spacing--l, 2rem);
+	right: var(--wp--preset--spacing--l, 2rem);
+	z-index: 2;
+	width: 120px;
+	height: 120px;
+	border-radius: 999px;
+	background: var(--wp--preset--color--primary, #1fbb00);
+	padding: var(--wp--preset--spacing--xs, 0.5rem);
+	text-align: center;
+	gap: 0.15rem !important;
+}
+
+@media (max-width: 600px) {
+	.omega-hero-badge {
+		width: 88px;
+		height: 88px;
+	}
+}
+
+/* Rounded card look for the app-promo band, kept as a dedicated class so
+   the block's own `style` attribute only ever carries one category
+   (spacing) - see the "safe attributes" note in pattern/landing-coffee-shop.php. */
+.omega-rounded-band {
+	border-radius: 16px;
+}

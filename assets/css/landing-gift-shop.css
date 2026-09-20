@@ -1,0 +1,45 @@
+/**
+ * Brand palette override for this page only - remaps the theme's global
+ * preset colors to a playful magenta/plum/marigold gift-shop identity so
+ * every block already using backgroundColor/textColor:"primary" etc.
+ * recolors automatically without touching the pattern markup.
+ */
+.omega-landing--gift-shop {
+	--wp--preset--color--primary: #d6336c;
+	--wp--preset--color--secondary: #4a1942;
+	--wp--preset--color--accent: #ffb703;
+	--wp--preset--color--heading: #4a1942;
+	--wp--preset--color--surface: #fdf2f8;
+	--omega-photo-card-tint: rgba(74, 25, 66, 0.45);
+}
+
+/**
+ * Page-specific styling for pattern/landing-gift-shop.php - only auto-
+ * enqueued on pages whose content contains "omega-landing--gift-shop" (see
+ * includes/core/hooks.php). Shared component classes (.omega-eyebrow,
+ * .omega-photo-card, .omega-card, .omega-strong, ...) live in
+ * assets/css/landing-pages.css instead.
+ */
+
+/* Small circular "Free Gift Wrap" badge floating over the top-right corner
+   of the Personalized Gifts promo photo card. */
+.omega-gift-badge {
+	position: absolute;
+	top: var(--wp--preset--spacing--l, 2rem);
+	right: var(--wp--preset--spacing--l, 2rem);
+	z-index: 2;
+	width: 100px;
+	height: 100px;
+	border-radius: 999px;
+	background: var(--wp--preset--color--primary, #1fbb00);
+	padding: var(--wp--preset--spacing--xs, 0.5rem);
+	text-align: center;
+	gap: 0.15rem !important;
+}
+
+@media (max-width: 600px) {
+	.omega-gift-badge {
+		width: 76px;
+		height: 76px;
+	}
+}

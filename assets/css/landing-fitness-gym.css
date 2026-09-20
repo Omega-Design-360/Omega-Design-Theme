@@ -1,0 +1,42 @@
+/**
+ * Brand palette override for this page only - remaps the theme's global
+ * preset colors to a bold red/black/yellow gym identity so every block
+ * already using backgroundColor/textColor:"primary" etc. recolors
+ * automatically without touching the pattern markup.
+ */
+.omega-landing--fitness-gym {
+	--wp--preset--color--primary: #e11d2e;
+	--wp--preset--color--secondary: #111111;
+	--wp--preset--color--accent: #ffc400;
+	--wp--preset--color--heading: #111111;
+	--wp--preset--color--surface: #f2f2f2;
+	--omega-photo-card-tint: rgba(17, 17, 17, 0.45);
+}
+
+/**
+ * Page-specific styling for pattern/landing-fitness-gym.php - only auto-
+ * enqueued on pages whose content contains "omega-landing--fitness-gym"
+ * (see includes/core/hooks.php). Shared component classes (.omega-eyebrow,
+ * .omega-photo-card, .omega-card, .omega-strong, ...) live in
+ * assets/css/landing-pages.css instead.
+ */
+
+.omega-pricing-card {
+	position: relative;
+	border-radius: 12px;
+	border: 1px solid var(--wp--preset--color--border, #d0d0d0);
+}
+
+.omega-pricing-card--featured {
+	border-color: transparent;
+}
+
+.omega-pricing-card__badge {
+	position: absolute;
+	top: -12px;
+	right: 1.5rem;
+	background: var(--wp--preset--color--accent, #b35b00);
+	border-radius: 999px;
+	padding: 0.25rem 0.75rem;
+	margin: 0 !important;
+}

@@ -1,0 +1,100 @@
+/**
+ * "Pick a look" block style variations registered in
+ * includes/core/block_style_variations.php - WordPress adds an
+ * is-style-{name} class to the block's own wrapper the moment one is
+ * selected in its Styles tab, so every rule here is scoped off that class
+ * alone; no editor-only vs. front-end-only split needed since this file is
+ * loaded on both via enqueue_block_assets.
+ */
+
+/* ---- Button: Ghost, Soft, Pill, 3D ----
+ * Each rule also applies under a body.omega-default-btn-{name} class with
+ * no explicit is-style-* on the button - that's the site-wide "Default
+ * Button Look" set in Settings > Design (see includes/customizer/menus.php
+ * and includes/core/hooks.php), which only ever affects buttons an admin
+ * hasn't already given their own style, so an explicit per-button choice
+ * always wins.
+ */
+
+.is-style-omega-ghost .wp-block-button__link,
+body.omega-default-btn-ghost .wp-block-button:not([class*="is-style-"]) .wp-block-button__link {
+	background: transparent !important;
+	color: var(--wp--preset--color--primary, currentColor);
+	border: 2px solid var(--wp--preset--color--primary, currentColor);
+}
+
+.is-style-omega-ghost .wp-block-button__link:hover,
+body.omega-default-btn-ghost .wp-block-button:not([class*="is-style-"]) .wp-block-button__link:hover {
+	background: var(--wp--preset--color--primary, currentColor) !important;
+	color: var(--wp--preset--color--button-text, #fff);
+}
+
+.is-style-omega-soft .wp-block-button__link,
+body.omega-default-btn-soft .wp-block-button:not([class*="is-style-"]) .wp-block-button__link {
+	background: color-mix(in srgb, var(--wp--preset--color--primary, #000) 14%, transparent) !important;
+	color: var(--wp--preset--color--primary, currentColor);
+}
+
+.is-style-omega-soft .wp-block-button__link:hover,
+body.omega-default-btn-soft .wp-block-button:not([class*="is-style-"]) .wp-block-button__link:hover {
+	background: color-mix(in srgb, var(--wp--preset--color--primary, #000) 24%, transparent) !important;
+}
+
+.is-style-omega-pill .wp-block-button__link,
+body.omega-default-btn-pill .wp-block-button:not([class*="is-style-"]) .wp-block-button__link {
+	border-radius: 999px !important;
+}
+
+.is-style-omega-3d .wp-block-button__link,
+body.omega-default-btn-3d .wp-block-button:not([class*="is-style-"]) .wp-block-button__link {
+	box-shadow: 0 4px 0 0 color-mix(in srgb, var(--wp--preset--color--primary, #000) 60%, black);
+	transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.is-style-omega-3d .wp-block-button__link:hover,
+body.omega-default-btn-3d .wp-block-button:not([class*="is-style-"]) .wp-block-button__link:hover {
+	transform: translateY(2px);
+	box-shadow: 0 2px 0 0 color-mix(in srgb, var(--wp--preset--color--primary, #000) 60%, black);
+}
+
+.is-style-omega-3d .wp-block-button__link:active,
+body.omega-default-btn-3d .wp-block-button:not([class*="is-style-"]) .wp-block-button__link:active {
+	transform: translateY(4px);
+	box-shadow: none;
+}
+
+/* ---- Group/Section: Card, Bordered, Shadow ---- */
+
+.is-style-omega-card {
+	background: var(--wp--preset--color--background, #fff);
+	border-radius: 12px;
+	box-shadow: var(--wp--preset--shadow--soft, 0 2px 6px rgba(0, 0, 0, 0.08));
+	padding: var(--wp--preset--spacing--m, 1.5rem);
+}
+
+.is-style-omega-bordered {
+	border: 1px solid var(--wp--preset--color--border, #d0d0d0);
+	border-radius: 8px;
+}
+
+.is-style-omega-shadow {
+	box-shadow: var(--wp--preset--shadow--medium, 0 4px 12px rgba(0, 0, 0, 0.12));
+	border-radius: 8px;
+}
+
+/* ---- Image: Rounded, Circle, Framed ---- */
+
+.is-style-omega-rounded img {
+	border-radius: 16px;
+}
+
+.is-style-omega-circle img {
+	border-radius: 50%;
+	aspect-ratio: 1 / 1;
+	object-fit: cover;
+}
+
+.is-style-omega-framed img {
+	border: 8px solid var(--wp--preset--color--background, #fff);
+	box-shadow: var(--wp--preset--shadow--medium, 0 4px 12px rgba(0, 0, 0, 0.12));
+}

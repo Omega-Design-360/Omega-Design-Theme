@@ -1,0 +1,404 @@
+/**
+ * Layout styling shared by the theme's landing page patterns (pattern/
+ * landing-*.php) - the section-level classes (omega-category-row,
+ * omega-brand-row, omega-instagram-grid, ...) that core block styles alone
+ * don't cover. Loaded only when a page actually uses one of the landing
+ * blocks - see enqueue_frontend_assets() in includes/core/hooks.php.
+ */
+
+/**
+ * Every landing pattern is inserted into a Page whose own title is left
+ * blank (the pattern supplies its own hero heading instead) and which has
+ * no featured image - so page.html's title/featured-image wrapper group
+ * renders completely empty. WordPress still applies its normal block-gap
+ * margin-top to whatever comes right after that group (.wp-block-post-
+ * content) regardless of the previous sibling being visually empty, which
+ * shows up as a plain white band (the <main> background) between the site
+ * header and the pattern's own cream/colored background before it. Zeroing
+ * that margin only when post-content's own first child is a landing
+ * pattern keeps a normal page's title-to-content spacing untouched.
+ */
+.wp-block-post-content:has(> .omega-landing) {
+	margin-top: 0;
+}
+
+.omega-landing {
+	/*
+	 * Was overflow-x: hidden - but a "Full width" section needs to bleed
+	 * past this wrapper's own (non-full-width) box to reach the true
+	 * viewport edge, and overflow-x: hidden clips exactly that, regardless
+	 * of the section's own margin/width being otherwise correct.
+	 */
+	overflow-x: visible;
+}
+
+/**
+ * Every landing pattern wraps its whole page in one outer Group
+ * (.omega-landing) that is itself a constrained-width container inside
+ * the template's own post-content column - so a "Full width" section
+ * inside it is nested two constrained-layout levels deep. WordPress's own
+ * root-padding-aware alignment CSS deliberately zeroes an alignfull
+ * child's bleed margin in that specific nested-group situation (it's
+ * designed to stop a full-width block bleeding past its own non-full-width
+ * parent group into blank space) - but here the parent group IS the whole
+ * page, so the section should still reach the true viewport edge. This
+ * theme doesn't actually set the --wp--style--root--padding-* variables
+ * core's own (suppressed) rule relies on, so re-using them resolves to a
+ * no-op instead of restoring anything - a plain 50vw bleed is what
+ * verifiably works here, confirmed on the real front end.
+ */
+.omega-landing > .alignfull {
+	width: 100vw !important;
+	max-width: 100vw !important;
+	margin-left: calc(50% - 50vw) !important;
+	margin-right: calc(50% - 50vw) !important;
+}
+
+/**
+ * Reusable component classes shared by every landing pattern. Keeping this
+ * vocabulary small and generic (rather than one-off inline `style` JSON per
+ * block) is what keeps every block's saved markup simple enough to match
+ * exactly what the block editor itself would generate - a hand-typed inline
+ * `style` attribute that doesn't byte-match WordPress's own serialization is
+ * what triggers the editor's "attempt recovery" warning on that block.
+ */
+
+/* Small uppercase label used above nearly every section heading. */
+.omega-eyebrow {
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.1em;
+}
+
+/**
+ * Fixed-size round/rounded photo (avatars, category icons, service photos)
+ * sized and cropped entirely by className, with no width/height/scale/
+ * border attributes on the Image block itself - avoids combining
+ * dimension + border + object-fit in one hand-typed inline `style`
+ * attribute, which was the single biggest source of validation mismatches
+ * in this theme's landing patterns.
+ */
+.omega-round-image {
+	display: block;
+	overflow: hidden;
+	border-radius: 999px;
+	margin: 0;
+}
+
+.omega-rounded-image {
+	display: block;
+	overflow: hidden;
+	border-radius: 12px;
+	margin: 0;
+}
+
+.omega-round-image img,
+.omega-rounded-image img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+
+.omega-avatar-sm { width: 36px; height: 36px; }
+.omega-avatar-md { width: 44px; height: 44px; }
+.omega-avatar-lg { width: 56px; height: 56px; }
+
+.omega-category-row .omega-round-image { width: 84px; height: 84px; }
+
+/* A stat pair ("150+" / "Happy Clients") used in most hero sections. */
+.omega-stat__value {
+	font-weight: 700;
+}
+
+/* A generic padded, rounded surface card - replaces one-off inline
+   background+padding+border-radius combinations on Group blocks. */
+.omega-card {
+	border-radius: 12px;
+	padding: var(--wp--preset--spacing--m, 1.5rem);
+}
+
+/* Five-star rating line. */
+.omega-stars {
+	color: var(--wp--preset--color--warning, #dedc00);
+	letter-spacing: 0.1em;
+}
+
+/* Generic bold text - used instead of inline typography.fontWeight style
+   overrides (prices, names, "Most Popular" labels, ...): Paragraph/Heading
+   don't reliably round-trip an inline font-weight override through the
+   editor's own save(), so it's applied by class instead. */
+.omega-strong {
+	font-weight: 700;
+}
+
+.omega-italic {
+	font-style: italic;
+}
+
+/**
+ * Photo-with-text-overlay section (hero banners, promo banners, offer
+ * bands) - a plain Group wrapping a plain Image plus a content Group,
+ * positioned with CSS instead of a hand-authored Cover block. Cover's own
+ * saved markup (the dim overlay <span>, its dim/gradient classes, the
+ * inner-container wrapper) is intricate enough that hand-typing it reliably
+ * is impractical; this gets the same look with only blocks whose save()
+ * output is trivial to match (Group, Image).
+ */
+.omega-photo-card {
+	position: relative;
+	overflow: hidden;
+	border-radius: 12px;
+}
+
+.omega-photo-card.omega-photo-card--square {
+	border-radius: 0;
+}
+
+.omega-photo-card__bg {
+	margin: 0;
+	position: absolute;
+	inset: 0;
+	z-index: 0;
+}
+
+.omega-photo-card__bg img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+
+.omega-photo-card__bg::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	background: var(--omega-photo-card-tint, rgba(4, 18, 0, 0.45));
+}
+
+.omega-photo-card__content {
+	position: relative;
+	z-index: 1;
+	min-height: 260px;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	padding: var(--wp--preset--spacing--l, 2rem);
+}
+
+.omega-photo-card--tall .omega-photo-card__content {
+	min-height: 420px;
+}
+
+.omega-photo-card--short .omega-photo-card__content {
+	min-height: 200px;
+}
+
+.omega-photo-card--light .omega-photo-card__bg::after {
+	background: var(--omega-photo-card-tint, rgba(255, 255, 255, 0.15));
+}
+
+/*
+ * Shop by Category: horizontally scrollable row of circular items - swipe/
+ * drag still scrolls it, the scrollbar itself is just never shown (was
+ * rendering as a visible bar under the row, which read as a layout bug
+ * rather than an intentional scroll rail).
+ */
+.omega-category-row {
+	flex-wrap: nowrap;
+	overflow-x: auto;
+	scroll-snap-type: x proximity;
+	gap: var(--wp--preset--spacing--l, 2rem);
+	padding-bottom: 0.5rem;
+	-webkit-overflow-scrolling: touch;
+	scrollbar-width: none;
+}
+
+.omega-category-row::-webkit-scrollbar {
+	display: none;
+}
+
+.omega-category-item {
+	flex: 0 0 auto;
+	align-items: center;
+	text-align: center;
+	scroll-snap-align: start;
+	gap: 0.5rem !important;
+	cursor: pointer;
+}
+
+.omega-category-item img {
+	transition: transform 0.25s ease;
+}
+
+.omega-category-item:hover img {
+	transform: scale(1.06);
+}
+
+.omega-category-item p {
+	transition: color 0.2s ease;
+}
+
+.omega-category-item:hover p {
+	color: var(--wp--preset--color--primary);
+}
+
+/* Top Brands: horizontally scrollable wordmark row. */
+.omega-brand-row {
+	flex-wrap: nowrap;
+	overflow-x: auto;
+	gap: var(--wp--preset--spacing--xl, 3rem);
+	-webkit-overflow-scrolling: touch;
+}
+
+.omega-brand-row__item {
+	flex: 0 0 auto;
+	margin: 0;
+	opacity: 0.7;
+	letter-spacing: 0.03em;
+	transition: opacity 0.2s ease, filter 0.2s ease;
+	white-space: nowrap;
+}
+
+.omega-brand-row__item:hover {
+	opacity: 1;
+}
+
+/* When this class is on an image (a real brand logo) instead of a
+   paragraph (plain brand-name text), constrain it to a sane logo size and
+   fade it to grayscale until hovered - the classic "as seen in" treatment. */
+.omega-brand-row__item img {
+	height: 72px;
+	width: auto;
+	object-fit: contain;
+	filter: grayscale(1);
+	transition: filter 0.2s ease;
+}
+
+.omega-brand-row__item:hover img {
+	filter: grayscale(0);
+}
+
+/* Instagram grid: force a tight square grid regardless of gallery column
+   wrapping quirks at small sizes. */
+.omega-instagram-grid.wp-block-gallery {
+	display: grid;
+	grid-template-columns: repeat(6, 1fr);
+	gap: 0.5rem;
+}
+
+/*
+ * Core's own gallery "flex layout" support (the is-layout-flex class WP
+ * adds automatically) sizes each figure/image from the SOURCE image's own
+ * intrinsic dimensions rather than the grid cell - fine for normal-sized
+ * photos, but this set's source files are tiny (62x73px), so the gallery
+ * rendered them at their own tiny native size instead of filling the grid
+ * cell. !important is required to win over that built-in sizing.
+ */
+.omega-instagram-grid .wp-block-image {
+	margin: 0;
+	width: 100% !important;
+	height: 100% !important;
+}
+
+.omega-instagram-grid img {
+	display: block !important;
+	width: 100% !important;
+	height: 100% !important;
+	aspect-ratio: 1 !important;
+	object-fit: cover !important;
+	transition: transform 0.3s ease;
+}
+
+.omega-instagram-grid .wp-block-image {
+	position: relative;
+	overflow: hidden;
+	cursor: pointer;
+}
+
+.omega-instagram-grid .wp-block-image:hover img {
+	transform: scale(1.08);
+}
+
+/* A small "view" icon fading in over each photo on hover - the classic
+   Instagram-grid affordance, built in pure CSS (no extra markup). */
+.omega-instagram-grid .wp-block-image::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.15);
+	opacity: 0;
+	transition: opacity 0.25s ease;
+	pointer-events: none;
+}
+
+.omega-instagram-grid .wp-block-image:hover::after {
+	opacity: 1;
+}
+
+.omega-instagram-handle {
+	margin-top: -0.5rem;
+	margin-bottom: 1rem;
+	font-weight: 600;
+}
+
+@media (max-width: 782px) {
+	.omega-instagram-grid.wp-block-gallery {
+		grid-template-columns: repeat(3, 1fr);
+	}
+}
+
+@media (max-width: 782px) {
+	.omega-category-item {
+		flex-basis: 25%;
+	}
+}
+
+/*
+ * Icon rows built by omega_pattern_icon_row_left() (Trust Badges, Feature
+ * Strip, and the equivalent sections on every other landing pattern) - the
+ * icon itself pops/tilts slightly when its own title+description column is
+ * hovered, so a row of otherwise-static info icons reads as responsive
+ * rather than inert.
+ */
+.omega-landing .wp-block-columns.alignwide .wp-block-icon {
+	transition: transform 0.25s ease;
+}
+
+.omega-landing .wp-block-columns.alignwide .wp-block-column:hover .wp-block-icon {
+	transform: scale(1.15) rotate(-4deg);
+}
+
+/* Blog post cards (Latest from Our Blog): lift + image zoom on hover. */
+.omega-blog-list .wp-block-post {
+	transition: transform 0.2s ease;
+}
+
+.omega-blog-list .wp-block-post:hover {
+	transform: translateY(-4px);
+}
+
+.omega-blog-list .wp-block-post-featured-image img {
+	transition: transform 0.3s ease;
+}
+
+.omega-blog-list .wp-block-post:hover .wp-block-post-featured-image img {
+	transform: scale(1.05);
+}
+
+.omega-blog-list .wp-block-post-title a {
+	transition: color 0.2s ease;
+}
+
+.omega-menu-add-btn .wp-block-button__link {
+	width: 2rem;
+	height: 2rem;
+	min-height: 0;
+	padding: 0 !important;
+	border-radius: 999px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	line-height: 1;
+	font-size: 1.1rem;
+}

@@ -1,0 +1,219 @@
+/**
+ * Omega Icon block — frame + hover choreography (blocks/omega-icon/).
+ *
+ * Ported from the "Icon container" / "Icon choreography" sections of
+ * mysite.css (the mysite-editor plugin), keeping every keyframe, timing
+ * and nth-child target identical - only the trigger selector changed,
+ * from ".mysite-card:hover" (that plugin's card component) to
+ * ".omega-ico-host:hover" so any block can trigger it.
+ *
+ * Usage: put the class "omega-ico-host" on whichever ancestor block
+ * should trigger the animation on hover/focus - a Group, a Column, a
+ * Button, whatever wraps the icon. Without that class the icon still
+ * renders, just static. Add "omega-is-active" alongside it for a
+ * persistent full-icon draw-on (e.g. a selected step/tab).
+ *
+ * Each icon's animated children are targeted by DOM position
+ * (:nth-child), so blocks/omega-icon/index.js must keep every icon's
+ * path/circle/rect in the exact order given in the source ICONS object -
+ * reordering them would silently animate the wrong shape.
+ */
+
+.omega-icon-block {
+	width: 40px;
+	height: 40px;
+	border-radius: 12px;
+	display: grid;
+	place-items: center;
+	border: 1px solid var(--wp--preset--color--border);
+	background: transparent;
+	transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+.omega-ico-host:hover .omega-icon-block,
+.omega-ico-host:focus-within .omega-icon-block,
+.omega-ico-host.omega-is-active .omega-icon-block {
+	background: var(--wp--preset--color--background);
+	border-color: currentColor;
+}
+
+.omega-icon-block svg {
+	width: 20px;
+	height: 20px;
+	overflow: visible;
+	stroke: currentColor;
+	fill: none;
+	stroke-width: 1.7;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+
+/* fill-box makes each child transform around its OWN bounding box, so a
+   wheel turns in place instead of orbiting the viewBox centre. */
+.omega-icon-block svg > * {
+	transform-box: fill-box;
+	transform-origin: 50% 50%;
+	transition: transform 0.35s cubic-bezier(0.22, 0.7, 0.25, 1), opacity 0.3s ease;
+}
+
+
+/* -- Shared keyframes ------------------------------------------- */
+@keyframes omega-icon-trace {
+	from { stroke-dashoffset: var(--omega-icon-len, 40); }
+	to   { stroke-dashoffset: 0; }
+}
+@keyframes omega-icon-dot {
+	0%   { transform: scale(0.2); opacity: 0.3; }
+	60%  { transform: scale(1.45); opacity: 1; }
+	100% { transform: scale(1); opacity: 1; }
+}
+@keyframes omega-icon-seal {
+	0%   { transform: scale(1); }
+	40%  { transform: scale(0.9); }
+	100% { transform: scale(1); }
+}
+
+/* -- GLOBE — meridian sweeps, latitudes dim --------------------- */
+.omega-ico-host:hover [data-icon="globe"] > :nth-child(3) {
+	animation: omega-icon-meridian 2.8s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+.omega-ico-host:hover [data-icon="globe"] > :nth-child(2) {
+	animation: omega-icon-latitude 2.8s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+@keyframes omega-icon-meridian {
+	0%, 100% { transform: scaleX(1); }
+	50%      { transform: scaleX(0.12); }
+}
+@keyframes omega-icon-latitude {
+	0%, 100% { opacity: 1; }
+	50%      { opacity: 0.45; }
+}
+
+/* -- WP — ring settles, W traces left to right ------------------ */
+.omega-ico-host:hover [data-icon="wp"] > :nth-child(1) {
+	animation: omega-icon-ring 0.75s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+.omega-ico-host:hover [data-icon="wp"] > :nth-child(2) {
+	stroke-dasharray: var(--omega-icon-len, 40);
+	animation: omega-icon-trace 0.75s cubic-bezier(0.4, 0, 0.2, 1);
+}
+@keyframes omega-icon-ring {
+	0%   { transform: scale(1); }
+	45%  { transform: scale(1.08); }
+	100% { transform: scale(1); }
+}
+
+/* -- PALETTE — paint dots pop in sequence ----------------------- */
+.omega-ico-host:hover [data-icon="palette"] > :nth-child(2) { animation: omega-icon-dot 0.5s cubic-bezier(0.34, 1.6, 0.64, 1) 0s both; }
+.omega-ico-host:hover [data-icon="palette"] > :nth-child(3) { animation: omega-icon-dot 0.5s cubic-bezier(0.34, 1.6, 0.64, 1) 0.09s both; }
+.omega-ico-host:hover [data-icon="palette"] > :nth-child(4) { animation: omega-icon-dot 0.5s cubic-bezier(0.34, 1.6, 0.64, 1) 0.18s both; }
+
+/* -- BADGE — crest seals, star pops, ribbon drops --------------- */
+.omega-ico-host:hover [data-icon="badge"] > :nth-child(1) { animation: omega-icon-seal 0.6s cubic-bezier(0.34, 1.5, 0.64, 1); }
+.omega-ico-host:hover [data-icon="badge"] > :nth-child(2) { animation: omega-icon-dot 0.45s cubic-bezier(0.34, 1.6, 0.64, 1) 0.12s both; }
+.omega-ico-host:hover [data-icon="badge"] > :nth-child(3) { animation: omega-icon-ribbon 0.5s cubic-bezier(0.22, 0.7, 0.25, 1) 0.2s both; }
+@keyframes omega-icon-ribbon {
+	from { transform: translateY(-4px) scaleY(0.5); opacity: 0; }
+	to   { transform: translateY(0) scaleY(1); opacity: 1; }
+}
+
+/* -- CART — body rolls back, wheels turn underneath ------------- */
+.omega-ico-host:hover [data-icon="cart"] > :nth-child(1) { animation: omega-icon-cart-body 0.7s cubic-bezier(0.3, 0.7, 0.4, 1); }
+.omega-ico-host:hover [data-icon="cart"] > :nth-child(2) { animation: omega-icon-wheel 0.7s cubic-bezier(0.3, 0.7, 0.4, 1); }
+.omega-ico-host:hover [data-icon="cart"] > :nth-child(3) { animation: omega-icon-wheel 0.7s cubic-bezier(0.3, 0.7, 0.4, 1) 0.04s; }
+@keyframes omega-icon-cart-body {
+	0%   { transform: translateX(0); }
+	35%  { transform: translateX(-2.5px); }
+	100% { transform: translateX(0); }
+}
+@keyframes omega-icon-wheel {
+	0%   { transform: translateX(0) rotate(0); }
+	35%  { transform: translateX(-2.5px) rotate(-70deg); }
+	100% { transform: translateX(0) rotate(0); }
+}
+
+/* -- CHART — line climbs, arrowhead lands last ------------------ */
+.omega-ico-host:hover [data-icon="chart"] > :nth-child(3) {
+	stroke-dasharray: var(--omega-icon-len, 32);
+	animation: omega-icon-trace 0.55s cubic-bezier(0.35, 0, 0.2, 1);
+}
+.omega-ico-host:hover [data-icon="chart"] > :nth-child(4) {
+	animation: omega-icon-arrowhead 0.3s cubic-bezier(0.34, 1.6, 0.64, 1) 0.45s both;
+}
+@keyframes omega-icon-arrowhead {
+	from { transform: scale(0.3) translate(-2px, 2px); opacity: 0; }
+	to   { transform: scale(1) translate(0, 0); opacity: 1; }
+}
+
+/* -- SHIELD — plate settles, check strikes through -------------- */
+.omega-ico-host:hover [data-icon="shield"] > :nth-child(1) {
+	animation: omega-icon-seal 0.55s cubic-bezier(0.34, 1.5, 0.64, 1);
+}
+.omega-ico-host:hover [data-icon="shield"] > :nth-child(2) {
+	stroke-dasharray: var(--omega-icon-len, 12);
+	animation: omega-icon-trace 0.35s cubic-bezier(0.6, 0, 0.3, 1) 0.18s both;
+}
+
+/* -- PHONE — screen wakes, then a short haptic tick -------------- */
+.omega-ico-host:hover [data-icon="phone"] {
+	animation: omega-icon-tick 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) 0.25s;
+}
+.omega-ico-host:hover [data-icon="phone"] > :nth-child(1) {
+	animation: omega-icon-wake 0.5s ease;
+}
+@keyframes omega-icon-wake {
+	0%   { opacity: 0.45; }
+	40%  { opacity: 1; }
+	100% { opacity: 1; }
+}
+@keyframes omega-icon-tick {
+	0%, 100% { transform: translateX(0) rotate(0); }
+	25%      { transform: translateX(-1.2px) rotate(-2deg); }
+	55%      { transform: translateX(1.2px) rotate(2deg); }
+	80%      { transform: translateX(-0.6px) rotate(-1deg); }
+}
+
+/* -- SHARE — signal fires from source, travels, lands ------------ */
+.omega-ico-host:hover [data-icon="share"] > :nth-child(2) { animation: omega-icon-dot 0.45s cubic-bezier(0.34, 1.6, 0.64, 1); }
+.omega-ico-host:hover [data-icon="share"] > :nth-child(4) {
+	stroke-dasharray: var(--omega-icon-len, 16);
+	animation: omega-icon-trace 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.12s both;
+}
+.omega-ico-host:hover [data-icon="share"] > :nth-child(1) { animation: omega-icon-dot 0.4s cubic-bezier(0.34, 1.6, 0.64, 1) 0.38s both; }
+.omega-ico-host:hover [data-icon="share"] > :nth-child(3) { animation: omega-icon-dot 0.4s cubic-bezier(0.34, 1.6, 0.64, 1) 0.46s both; }
+
+/* -- PEN — nib travels the stroke it just made ------------------- */
+.omega-ico-host:hover [data-icon="pen"] > :nth-child(1) {
+	stroke-dasharray: var(--omega-icon-len, 52);
+	animation: omega-icon-trace 0.6s cubic-bezier(0.4, 0, 0.25, 1);
+}
+.omega-ico-host:hover [data-icon="pen"] > :nth-child(2) {
+	animation: omega-icon-nib 0.6s cubic-bezier(0.4, 0, 0.25, 1);
+}
+@keyframes omega-icon-nib {
+	0%   { transform: translate(-9px, 9px); }
+	100% { transform: translate(0, 0); }
+}
+
+/* -- Active icon: full draw-on, no hover needed ------------------ */
+.omega-ico-host.omega-is-active .omega-icon-block svg > * {
+	stroke-dasharray: var(--omega-icon-len, 120);
+	animation: omega-icon-draw 0.9s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+@keyframes omega-icon-draw {
+	from { stroke-dashoffset: var(--omega-icon-len, 120); }
+	to   { stroke-dashoffset: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.omega-icon-block svg > * {
+		stroke-dasharray: none;
+		stroke-dashoffset: 0;
+	}
+	.omega-ico-host:hover [data-icon] > *,
+	.omega-ico-host:hover [data-icon],
+	.omega-ico-host.omega-is-active .omega-icon-block svg > * {
+		animation: none !important;
+		transition-duration: 0.01ms !important;
+	}
+}

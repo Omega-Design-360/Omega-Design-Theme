@@ -1,0 +1,47 @@
+/**
+ * Brand palette override for this page only - remaps the theme's global
+ * preset colors to an ocean teal/navy/coral travel identity so every block
+ * already using backgroundColor/textColor:"primary" etc. recolors
+ * automatically without touching the pattern markup.
+ */
+.omega-landing--travel-agency {
+	--wp--preset--color--primary: #0e7c86;
+	--wp--preset--color--secondary: #073b4c;
+	--wp--preset--color--accent: #ff6b35;
+	--wp--preset--color--heading: #073b4c;
+	--wp--preset--color--surface: #eaf6f6;
+	--omega-photo-card-tint: rgba(7, 59, 76, 0.45);
+}
+
+/**
+ * Page-specific styling for pattern/landing-travel-agency.php. Auto-enqueued
+ * by enqueue_frontend_assets() in includes/core/hooks.php whenever the
+ * current page's content contains the "omega-landing--travel-agency"
+ * marker class. Loaded after assets/css/landing-pages.css.
+ */
+
+/*
+ * The booking search bar sits as a plain Group block directly under the
+ * hero photo card in the saved markup; it's pulled up over the bottom of
+ * the hero with a negative margin plus a bit of visual polish (rounded
+ * corners, drop shadow) here in CSS instead of as a hand-typed multi-
+ * property inline `style` on the block, which is what previously caused
+ * the block editor to flag it as invalid/unexpected content.
+ */
+.omega-search-widget {
+	position: relative;
+	z-index: 5;
+	margin-top: -3rem;
+	border-radius: 12px;
+	box-shadow: var(--wp--preset--shadow--medium, 0 4px 16px rgba(0, 0, 0, 0.12));
+}
+
+@media (max-width: 782px) {
+	.omega-search-widget {
+		margin-top: -1.5rem;
+	}
+
+	.omega-search-widget .wp-block-columns {
+		flex-wrap: wrap;
+	}
+}
