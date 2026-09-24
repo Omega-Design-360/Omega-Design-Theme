@@ -369,7 +369,12 @@
 }
 
 /* ── Nav (top level) ─────────────────────────────────────────── */
-.omega-classic-header__nav ul {
+/* Scoped to the menu's own lists (wp_nav_menu() runs with
+   container:false, so its <ul> is a direct child of the nav) - a bare
+   `__nav ul` also matched every list *inside* a Mega Menu panel (list
+   blocks, the Latest Posts grid), forcing them into this row layout. */
+.omega-classic-header__nav > ul,
+.omega-classic-header__nav .sub-menu {
     display: flex;
     align-items: center;
     gap: 1.75rem;
@@ -637,7 +642,14 @@
            are - it's a plain length that would still force full
            viewport width here (causing horizontal overflow) if left
            unset, even though this is no longer positioned at all. */
-        width: auto;
+        width: 100%;
+        /* Must claim the full row explicitly, the same as .sub-menu below -
+           as a flex item it otherwise sizes to its content's max-content
+           width, and any Grid group inside (WP gives those
+           container-type:inline-size, whose intrinsic width is 0) collapses
+           the whole panel to a sliver, wrapping text one letter per line. */
+        flex-basis: 100%;
+        min-width: 0;
         /* Onto its own full-width line below the label+arrow row - the
            trigger <li> is now a (wrapping) flex row itself. Zero padding
            while collapsed, not just max-height:0 - this element isn't
@@ -692,6 +704,58 @@
     }
 
     .omega-classic-header .omega-megamenu-trigger > a::after { display: none !important; }
+
+    /* Panel content is built for a wide desktop dropdown - on a phone its
+       tiles (Media & Text cards in a Grid group, typically) stack into one
+       full-width card each with a full-width image, turning even a handful
+       of links into several screens of scrolling. Reflow it into a compact
+       list instead: one row per card, small thumbnail beside its text. */
+    .omega-megamenu-panel--inline .wp-block-columns.has-background {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+    .omega-megamenu-panel--inline .wp-block-group.is-layout-grid {
+        grid-template-columns: 1fr !important;
+        gap: 0.5rem;
+    }
+    .omega-megamenu-panel--inline .wp-block-columns {
+        gap: 0.5rem;
+        margin-top: 0;
+        margin-bottom: 0;
+    }
+    .omega-megamenu-panel--inline .wp-block-columns.has-background {
+        padding-top: 0.25rem;
+        padding-bottom: 0.25rem;
+    }
+    /* !important only to beat core's own stacked-on-mobile rule, which
+       uses it (and an inline grid-template-columns from the editor). */
+    .omega-megamenu-panel--inline .wp-block-media-text,
+    .omega-megamenu-panel--inline .wp-block-media-text.is-stacked-on-mobile {
+        grid-template-columns: 64px 1fr !important;
+        align-items: center;
+        text-align: left;
+    }
+    .omega-megamenu-panel--inline .wp-block-media-text > .wp-block-media-text__media {
+        grid-column: 1 !important;
+        grid-row: 1 !important;
+    }
+    .omega-megamenu-panel--inline .wp-block-media-text > .wp-block-media-text__content {
+        grid-column: 2 !important;
+        grid-row: 1 !important;
+        padding: 0 0 0 0.85rem;
+    }
+    .omega-megamenu-panel--inline .wp-block-media-text__media img {
+        width: 64px;
+        height: 64px;
+        object-fit: contain;
+    }
+    .omega-megamenu-panel--inline .wp-block-media-text__content p:first-child {
+        font-size: 1.05rem !important;
+    }
+    .omega-megamenu-panel--inline .wp-block-media-text__content p + p {
+        font-size: 0.875rem;
+        opacity: 0.75;
+    }
 }
 
 /* Something outside our own CSS (WooCommerce's nav styles, most likely)
@@ -814,7 +878,7 @@
         overflow: hidden;
     }
 
-    .omega-classic-header__nav ul {
+    .omega-classic-header__nav > ul {
         flex-direction: column;
         /* stretch (not center) - each <li> stays full-width, so the whole
            row (not just the text) is tappable; the actual link text/arrow
@@ -1118,7 +1182,7 @@
     padding-top: 0.7rem;
     padding-bottom: 0.7rem;
 }
-.omega-classic-header--4 .omega-classic-header__nav ul {
+.omega-classic-header--4 .omega-classic-header__nav > ul {
     gap: 0.25rem;
     background: rgba(127, 127, 127, 0.08);
     border-radius: 999px;
@@ -1151,7 +1215,7 @@
     box-shadow: 0 3px 10px -2px color-mix(in srgb, var(--wp--preset--color--primary, #1fbb00) 55%, transparent);
 }
 @media (max-width: 781px) {
-    .omega-classic-header--4 .omega-classic-header__nav ul {
+    .omega-classic-header--4 .omega-classic-header__nav > ul {
         gap: 0;
         background: none;
         border-radius: 0;
