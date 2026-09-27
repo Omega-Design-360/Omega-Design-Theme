@@ -6,6 +6,8 @@ wp_template_part:
 -->
 <!-- wp:group {"tagName":"aside"} -->
 <aside class="wp-block-group omega-sidebar-widgetarea">
+	<!-- wp:search {"label":"Search","placeholder":"Search…","buttonText":"Search"} /-->
+
 	<!-- wp:group -->
 	<div class="wp-block-group omega-sidebar-block">
 		<!-- wp:heading {"level":3} -->
@@ -15,6 +17,22 @@ wp_template_part:
 	</div>
 	<!-- /wp:group -->
 
-	<!-- wp:shortcode -->[omega_sidebar]<!-- /wp:shortcode -->
+	<!-- wp:group -->
+	<div class="wp-block-group omega-sidebar-block">
+		<!-- wp:heading {"level":3} -->
+		<h3>Recent Posts</h3>
+		<!-- /wp:heading -->
+		<!-- wp:latest-posts {"postsToShow":5,"displayPostDate":true} /-->
+	</div>
+	<!-- /wp:group -->
+
+	<!-- wp:group -->
+	<div class="wp-block-group omega-sidebar-block">
+		<!-- wp:heading {"level":3} -->
+		<h3>Tags</h3>
+		<!-- /wp:heading -->
+		<!-- wp:tag-cloud {"numberOfTags":15} /-->
+	</div>
+	<!-- /wp:group -->
 </aside>
 <!-- /wp:group -->

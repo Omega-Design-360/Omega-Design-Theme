@@ -194,6 +194,12 @@ class hooks {
         'gift-shop',
         'restaurant',
         'medical-clinic',
+        'law-firm',
+        'electronics-store',
+        'furniture-store',
+        'beauty-cosmetics',
+        'bookstore',
+        'jewelry-store',
     ];
 
     /**

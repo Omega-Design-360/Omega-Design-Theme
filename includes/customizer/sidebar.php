@@ -27,8 +27,6 @@ class sidebar {
         add_action('customize_register', [$this, 'register_sidebar_settings']);
         add_action('customize_controls_enqueue_scripts', [$this, 'enqueue_control_assets']);
         add_filter('default_wp_template_part_areas', [$this, 'register_sidebar_area']);
-        add_action('widgets_init', [$this, 'register_widget_area']);
-        add_shortcode('omega_sidebar', [$this, 'render_widget_area']);
 
         add_action('init', [$this, 'register_meta']);
         add_action('enqueue_block_editor_assets', [$this, 'enqueue_editor_assets']);
@@ -193,37 +191,6 @@ class sidebar {
         }
 
         return $areas;
-    }
-
-    /**
-     * Register the "Blog Sidebar" widget area so Appearance > Widgets is
-     * usable, and its contents can be placed inside the sidebar template
-     * part via the [omega_sidebar] shortcode.
-     */
-    public function register_widget_area() {
-        register_sidebar([
-            'name'          => __('Blog Sidebar', 'omega-design'),
-            'id'            => 'omega-sidebar',
-            'description'   => __('Widgets added here appear in the sidebar template part.', 'omega-design'),
-            'before_widget' => '<div id="%1$s" class="widget %2$s">',
-            'after_widget'  => '</div>',
-            'before_title'  => '<h2 class="widget-title">',
-            'after_title'   => '</h2>',
-        ]);
-    }
-
-    /**
-     * Render the "Blog Sidebar" widget area. Used via the [omega_sidebar]
-     * shortcode inside parts/sidebar.html.
-     */
-    public function render_widget_area() {
-        if (!$this->is_sidebar_enabled() || !is_active_sidebar('omega-sidebar')) {
-            return '';
-        }
-
-        ob_start();
-        dynamic_sidebar('omega-sidebar');
-        return ob_get_clean();
     }
 
     /**

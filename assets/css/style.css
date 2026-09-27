@@ -541,43 +541,106 @@ li.wc-block-product .wc-block-components-product-image img {
  * per-page override from the editor's Page Settings panel) affects every
  * template at once without editing template files.
  */
-/*
- * WordPress auto-generates a per-instance layout stylesheet for any
- * "flex" layout block (a ".wp-container-core-columns-is-layout-<hash> >
- * .wp-block-column{flex-basis:0;flex-grow:1;...}" rule scoped to this
- * exact wp:columns block) whenever the block itself doesn't declare fixed
- * per-column widths. That generated selector's specificity (a class
- * combined with a child combinator) beats a single plain class here
- * regardless of stylesheet load order, so every rule below needs
- * !important to reliably win - the same fix already used in
- * background_color.php for the equivalent theme.json-generated-rule
- * problem.
+/**
+ * Float-based layout, deliberately NOT flexbox: flexbox keeps both columns
+ * the same fixed height/width for the sidebar's entire run, with no way
+ * for main to reclaim full width once the sidebar's own (usually shorter)
+ * content ends - a float is the only CSS mechanism that does that, since a
+ * float only occupies horizontal space for the vertical range its own
+ * content actually needs; normal-flow content beside it narrows only
+ * where the float is still present, and reclaims full width the moment it
+ * scrolls past the float's bottom edge.
+ *
+ * The real trade-off: that per-line reflow only works reliably for plain
+ * inline content (paragraphs, headings, inline images) - a "box" block
+ * with its own background color, border, or explicit width (a WooCommerce
+ * product grid, a colored Group section, an alignwide/alignfull landing
+ * page section) renders as one rectangle at its own declared width
+ * regardless of the float, so it can visually intrude under/behind the
+ * floated sidebar wherever the two geometrically overlap. Text inside
+ * still avoids the overlap; the box's own background/border doesn't. This
+ * is a real limitation of float-based layout everywhere it's used, not
+ * something this theme can fully paper over in CSS - pages that are nothing
+ * but plain paragraphs (a typical blog post) get a clean result; pages
+ * built from boxed/colored sections (this theme's landing patterns,
+ * WooCommerce archive grids) may show the sidebar visually cutting into
+ * those sections where they overlap it.
+ *
+ * WordPress auto-generates a per-instance flex layout stylesheet for any
+ * "flex" layout `wp:columns` block that doesn't declare fixed per-column
+ * widths (a ".wp-container-core-columns-is-layout-<hash>{flex-wrap:nowrap}"
+ * rule scoped to this exact block) - `display:block` here overrides that
+ * back to normal flow so the float rules below actually apply; the
+ * !important matches that generated rule's own specificity + load-order
+ * advantage, the same reasoning documented in background_color.php for
+ * the equivalent theme.json-generated-rule problem.
  */
+.omega-sidebar-layout {
+	display: block !important;
+}
+
 .wp-block-column.omega-sidebar-layout__aside {
-	flex: 0 0 var(--omega-sidebar-width, 30%) !important;
-	order: 2 !important;
+	float: right;
+	width: var(--omega-sidebar-width, 30%) !important;
+	margin-left: var(--wp--preset--spacing--l, 2rem);
 }
 
 .wp-block-column.omega-sidebar-layout__main {
-	flex: 1 1 0% !important;
-	order: 1 !important;
-	min-width: 0;
+	width: 100% !important;
 }
 
 body.omega-sidebar-pos-left .wp-block-column.omega-sidebar-layout__aside {
-	order: 1 !important;
+	float: left;
+	margin-left: 0;
+	margin-right: var(--wp--preset--spacing--l, 2rem);
 }
 
-body.omega-sidebar-pos-left .wp-block-column.omega-sidebar-layout__main {
-	order: 2 !important;
+/*
+ * Without this, a page whose main content is SHORTER than the floated
+ * sidebar would let whatever comes next (the footer) rise up into the
+ * still-floated sidebar's remaining height, since floats don't contribute
+ * to their normal-flow parent's own height. This forces
+ * .omega-sidebar-layout's own bottom edge to always include the taller of
+ * the two columns, the same guarantee flexbox gave for free before.
+ */
+.omega-sidebar-layout::after {
+	content: "";
+	display: table;
+	clear: both;
+}
+
+/**
+ * Neutralizes the landing patterns' viewport-relative "Full Width" bleed
+ * (.omega-landing > .alignfull in landing-pages.css: width:100vw;
+ * margin-left:calc(50% - 50vw)) whenever a page combines a landing pattern
+ * with the sidebar. That 100vw math only produces the correct result when
+ * .omega-landing sits centered across the FULL browser window with equal
+ * margins either side - the whole reason it can "reach the true viewport
+ * edge" at all. Once the sidebar shrinks main to ~70% width and pushes it
+ * to one side, the same math instead overflows straight through the
+ * sidebar column, overlapping or hiding its content depending on z-order.
+ * There's no way to keep a genuine full-bleed section AND a sidebar
+ * occupying screen space at the same time - this sacrifices the bleed on
+ * exactly the pages where both are present, falling back to simply
+ * filling the main column's own available width, same as a normal block.
+ * Scoped to .omega-sidebar-layout__main specifically so every other page
+ * using these same landing patterns without a sidebar keeps the real
+ * full-bleed effect untouched.
+ */
+body.omega-sidebar-visible .omega-sidebar-layout__main .omega-landing > .alignfull {
+	width: 100% !important;
+	max-width: 100% !important;
+	margin-left: 0 !important;
+	margin-right: 0 !important;
 }
 
 body.omega-sidebar-hidden .wp-block-column.omega-sidebar-layout__aside {
 	display: none !important;
+	float: none !important;
 }
 
 body.omega-sidebar-hidden .wp-block-column.omega-sidebar-layout__main {
-	flex: 1 1 100% !important;
+	width: 100% !important;
 }
 
 .omega-sidebar-layout__aside .widget + .widget {
@@ -586,4 +649,66 @@ body.omega-sidebar-hidden .wp-block-column.omega-sidebar-layout__main {
 
 .omega-sidebar-layout__aside .widget-title {
 	margin-top: 0;
+}
+
+/**
+ * Hide the sidebar entirely on mobile, regardless of position/width - a
+ * narrow phone screen has no room for a floated sidebar sitting beside
+ * main content at all. 599px matches the theme's other mobile breakpoint
+ * (includes/core/responsive_styles.php's BREAKPOINTS['mobile']), so this
+ * switches over at the same point as every other responsive rule on the
+ * site.
+ */
+@media (max-width: 599px) {
+	.wp-block-column.omega-sidebar-layout__aside {
+		display: none !important;
+		float: none !important;
+	}
+
+	.wp-block-column.omega-sidebar-layout__main {
+		width: 100% !important;
+	}
+}
+
+/**
+ * Group "Content Position" (Custom Size panel, assets/js/editor.js) -
+ * vertically positions a plain Group's content within the Height it's been
+ * given. Flex column rather than flow, so the children need an explicit
+ * width: a flex item with auto side margins (every child of a constrained
+ * layout) would otherwise shrink to its content instead of filling the row.
+ */
+.omega-valign-center,
+.omega-valign-bottom {
+	display: flex;
+	flex-direction: column;
+}
+.omega-valign-center { justify-content: center; }
+.omega-valign-bottom { justify-content: flex-end; }
+.omega-valign-center > *,
+.omega-valign-bottom > * {
+	width: 100%;
+	box-sizing: border-box;
+	flex-shrink: 0;
+}
+
+/**
+ * Columns with a Height and "Align middle/bottom": once the columns wrap
+ * (stacked on mobile), the default align-content:stretch splits the height
+ * between each stacked row, spreading the columns apart instead of keeping
+ * them together at the chosen position.
+ */
+.wp-block-columns.are-vertically-aligned-center { align-content: center; }
+.wp-block-columns.are-vertically-aligned-bottom { align-content: flex-end; }
+
+/**
+ * "Fixed background" (core's background-image panel - Group, and Column/
+ * Columns via includes/core/blocks.php add_background_support()). Touch
+ * browsers either ignore background-attachment:fixed (iOS) or size the
+ * image against the whole viewport and blow it up (Android), so they get a
+ * normal scrolling background instead.
+ */
+@media (hover: none) {
+	[style*="background-attachment:fixed"] {
+		background-attachment: scroll !important;
+	}
 }

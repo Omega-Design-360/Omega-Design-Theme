@@ -549,9 +549,6 @@ class menus {
         $megamenu_counts   = post_type_exists('mega_menu') ? wp_count_posts('mega_menu') : null;
         $megamenu_count    = $megamenu_counts && isset($megamenu_counts->publish) ? (int) $megamenu_counts->publish : 0;
 
-        $sidebars_widgets = wp_get_sidebars_widgets();
-        $widget_count     = isset($sidebars_widgets['omega-sidebar']) ? count($sidebars_widgets['omega-sidebar']) : 0;
-
         return [
             'woocommerce_active'   => class_exists('WooCommerce'),
             'php_ok'               => version_compare(PHP_VERSION, '7.4', '>='),
@@ -560,7 +557,6 @@ class menus {
             'wp_version'           => $wp_version,
             'megamenu_published'   => $megamenu_count > 0,
             'megamenu_count'       => $megamenu_count,
-            'widget_count'         => $widget_count,
         ];
     }
 
@@ -750,9 +746,9 @@ class menus {
 
                 <div class="omega-status-card">
                     <span class="dashicons dashicons-screenoptions"></span>
-                    <h3><?php esc_html_e('Sidebar Widgets', 'omega-design'); ?></h3>
-                    <span class="omega-badge omega-badge--neutral"><?php echo esc_html($status['widget_count']); ?></span>
-                    <a class="omega-status-card__link" href="<?php echo esc_url(admin_url('widgets.php')); ?>"><?php esc_html_e('Manage widgets', 'omega-design'); ?></a>
+                    <h3><?php esc_html_e('Sidebar', 'omega-design'); ?></h3>
+                    <span class="omega-badge omega-badge--neutral"><?php esc_html_e('Block-based', 'omega-design'); ?></span>
+                    <a class="omega-status-card__link" href="<?php echo esc_url(admin_url('site-editor.php?postType=wp_template_part&postId=' . rawurlencode(get_stylesheet() . '//sidebar') . '&canvas=edit')); ?>"><?php esc_html_e('Edit in Site Editor', 'omega-design'); ?></a>
                 </div>
 
                 <div class="omega-status-card">

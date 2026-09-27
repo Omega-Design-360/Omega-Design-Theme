@@ -43,7 +43,7 @@ The theme checks both WordPress and PHP versions on load and shows an admin noti
 - **Full Site Editing (FSE)** block theme built on `theme.json`, with templates and template parts for the homepage, blog, search, 404, single post/page, and privacy policy.
 - **Color Mode (Light / Dark / Auto)** — a site-wide setting that follows each visitor's system preference or locks the whole site to one look. Every color in `theme.json` has a matching dark-mode counterpart, switched by `color-mode.css` — no separate dark palette to keep in sync by hand.
 - **Custom logo support**, including an optional dedicated dark-mode logo shown automatically when dark color mode is active (light/dark logo pair swapped via CSS, applied everywhere the logo renders — including the classic header styles below).
-- **Blog sidebar** — optional widget-ready sidebar for category archives, with position (left/right) and width (20–50%) controls.
+- **Blog sidebar** — optional block-editable sidebar for category archives, with position (left/right) and width (20–50%) controls.
 - **Custom "Omega Design" block category** registered in the block editor for theme-provided blocks/patterns.
 - **Custom uploads directory** (`wp-content/uploads/omega-design/`) with protected subfolders for images, fonts, logs, backups, and exports — created automatically on theme activation, each with an `index.php` and `.htaccess` to prevent directory listing.
 - **Translation-ready** (`omega-design` text domain, loads from `/languages`), with RTL language support.
@@ -151,7 +151,7 @@ npm install
 4. **Customize global styles** (colors, typography, spacing) via **Appearance → Editor → Styles** in the Site Editor — this is the recommended place for site-wide design changes, rather than editing `style.css` directly.
 5. **Per-page options**: when editing a post or page in the block editor, open the sidebar's Page Settings panel to find Omega Design's Page Width, Hide Page Title, Featured Image, and Hide Header/Footer controls.
 6. **WooCommerce sites**: activate WooCommerce and the theme automatically picks up its dedicated shop/product/cart/checkout templates — no extra setup required. Configure store pages as usual under **WooCommerce → Settings**, then choose a Product Page layout from **Omega Design → Settings → WooCommerce**.
-7. **Blog sidebar**: enable it from **Settings → General**, then add widgets to the Blog Sidebar widget area under **Appearance → Widgets**.
+7. **Blog sidebar**: enable it and choose its position/width from **Customize → Omega Design → Sidebar** (or override per-page from that page's own Page Settings panel in the editor). Its content — Search, Categories, Recent Posts, Tags — is a normal block template part, so edit it directly from **Appearance → Editor → Template Parts → Sidebar**, the same as any other template part.
 
 ---
 

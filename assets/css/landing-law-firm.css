@@ -1,0 +1,327 @@
+/**
+ * Brand palette override for this page only - remaps the theme's global
+ * preset colors to a dark navy/gold identity, unlike every other landing
+ * page in this theme (which stays on the site's normal light palette).
+ * Every block in pattern/landing-law-firm.php still just says
+ * backgroundColor="secondary" / textColor="primary" etc like any other
+ * pattern - this is the only place that actually decides what those
+ * resolve to on this one page. body-text is overridden too (not just the
+ * brand colors) since the theme's global default is a dark, low-contrast
+ * color that would be unreadable against this page's navy backgrounds.
+ */
+.omega-landing--law-firm {
+	--wp--preset--color--primary: #e8bd70;
+	--wp--preset--color--secondary: #0a171f;
+	--wp--preset--color--accent: #bd8b43;
+	--wp--preset--color--heading: #f7f3eb;
+	--wp--preset--color--background: #071117;
+	--wp--preset--color--surface: #0e1c25;
+	--wp--preset--color--body-text: #c7cccb;
+	--wp--preset--color--border: rgba(255, 255, 255, 0.14);
+	--wp--preset--color--button-text: #171108;
+	--wp--preset--color--button-background: #e8bd70;
+}
+
+/**
+ * Page-specific styling for the Law Firm landing pattern
+ * (pattern/landing-law-firm.php). Loaded only when the page's content
+ * contains the "omega-landing--law-firm" marker class - see
+ * enqueue_frontend_assets() in includes/core/hooks.php.
+ */
+
+/* Glass panel effect - the hero's floating quote card and the About section's content card. */
+.omega-glass-card {
+	background: linear-gradient(145deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.035));
+	border: 1px solid rgba(255, 255, 255, 0.17);
+	backdrop-filter: blur(20px);
+	box-shadow: 0 25px 70px rgba(0, 0, 0, 0.25);
+	border-radius: 20px;
+	padding: var(--wp--preset--spacing--l, 2rem);
+}
+
+/* Hero. */
+.omega-law-hero {
+	position: relative;
+	overflow: hidden;
+	background: radial-gradient(circle at 85% 10%, rgba(232, 189, 112, 0.1), transparent 32%);
+}
+
+.omega-law-hero-art {
+	position: relative;
+}
+
+.omega-law-portrait img {
+	border-radius: 180px 180px 24px 24px;
+	aspect-ratio: 3 / 4;
+	object-fit: cover;
+	width: 100%;
+}
+
+.omega-law-floating-quote {
+	position: absolute;
+	left: -6%;
+	bottom: 10%;
+	max-width: 230px;
+	z-index: 2;
+}
+
+.omega-law-quote-mark {
+	font-family: var(--wp--preset--font-family--poppins, serif);
+	font-size: 2.5rem;
+	line-height: 0.6;
+	margin-bottom: 0.5rem;
+}
+
+/* Hero proof row - a left divider between stat items, skipped on the first. */
+.omega-law-proof-row {
+	margin-top: 1.75rem;
+}
+
+.omega-law-proof {
+	border-left: 1px solid rgba(255, 255, 255, 0.16);
+	padding-left: 1rem;
+}
+
+.omega-law-proof-row > .wp-block-column:first-child .omega-law-proof {
+	border-left: 0;
+	padding-left: 0;
+}
+
+/* Trust strip - a right divider between items, matching the reference's trust-grid. */
+.omega-law-trust-strip .wp-block-columns > .wp-block-column {
+	border-right: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.omega-law-trust-strip .wp-block-columns > .wp-block-column:last-child {
+	border-right: 0;
+}
+
+/* Practice area cards - image top, an icon badge straddling the image/body boundary. */
+.omega-practice-card {
+	border-radius: 16px;
+	overflow: hidden;
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+.omega-practice-card:hover {
+	transform: translateY(-6px);
+	border-color: rgba(232, 189, 112, 0.5);
+}
+
+.omega-practice-card__media {
+	position: relative;
+}
+
+.omega-practice-card__media .omega-practice-card__image {
+	margin: 0;
+}
+
+.omega-practice-card__media .omega-practice-card__image img {
+	aspect-ratio: 4 / 3;
+	object-fit: cover;
+	width: 100%;
+	display: block;
+}
+
+.omega-practice-card__icon {
+	position: absolute;
+	left: 16px;
+	bottom: 0;
+	transform: translateY(50%);
+	width: 44px;
+	height: 44px;
+	border-radius: 50%;
+	background: rgba(7, 17, 23, 0.92);
+	border: 1px solid rgba(232, 189, 112, 0.5);
+	backdrop-filter: blur(10px);
+}
+
+.omega-practice-card__body {
+	padding: 1.75rem 1.25rem 1.25rem;
+}
+
+/* About section - a photo with a circular experience badge overlapping its corner. */
+.omega-law-about-photo {
+	position: relative;
+}
+
+.omega-law-about-photo__image {
+	margin: 0;
+}
+
+.omega-law-about-photo__image img {
+	border-radius: 0 120px 0 0;
+	aspect-ratio: 4 / 5;
+	object-fit: cover;
+	width: 100%;
+}
+
+.omega-law-experience-badge {
+	position: absolute;
+	left: 24px;
+	bottom: 24px;
+	width: 110px;
+	height: 110px;
+	border-radius: 50%;
+	background: rgba(7, 17, 23, 0.88);
+	border: 1px solid rgba(232, 189, 112, 0.5);
+	backdrop-filter: blur(10px);
+}
+
+.omega-law-experience-badge p {
+	margin: 0;
+}
+
+.omega-law-about-card {
+	margin-left: -10%;
+}
+
+/* Why Choose Us cards. */
+.omega-law-why-card {
+	min-height: 220px;
+	padding: 1.75rem 1.5rem;
+	border-radius: 16px;
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	background: rgba(255, 255, 255, 0.02);
+	transition: 0.3s;
+}
+
+.omega-law-why-card:hover,
+.omega-law-why-card--featured {
+	background: linear-gradient(145deg, rgba(232, 189, 112, 0.13), rgba(255, 255, 255, 0.02));
+	border-color: rgba(232, 189, 112, 0.35);
+}
+
+/* Process steps. */
+.omega-law-step__number {
+	flex: 0 0 46px;
+	width: 46px;
+	height: 46px;
+	border-radius: 50%;
+	border: 1px solid rgba(232, 189, 112, 0.5);
+}
+
+/* Team cards. */
+.omega-law-team-card {
+	border-radius: 16px;
+	overflow: hidden;
+}
+
+.omega-law-team-card__image {
+	margin: 0;
+}
+
+.omega-law-team-card__image img {
+	aspect-ratio: 3 / 4;
+	object-fit: cover;
+	width: 100%;
+	display: block;
+}
+
+.omega-law-team-card__info {
+	padding: 1rem 1.25rem;
+}
+
+/* Testimonial avatar - a gradient initials circle instead of a headshot. */
+.omega-law-avatar-initials {
+	flex: 0 0 50px;
+	width: 50px;
+	height: 50px;
+	border-radius: 50%;
+	background: linear-gradient(135deg, var(--wp--preset--color--accent), var(--wp--preset--color--primary));
+}
+
+.omega-law-avatar-initials p {
+	color: #171108;
+	margin: 0;
+}
+
+/* Insights / blog cards. */
+.omega-law-insight {
+	border-radius: 16px;
+	overflow: hidden;
+}
+
+.omega-law-insight img {
+	aspect-ratio: 16 / 10;
+	object-fit: cover;
+	width: 100%;
+	display: block;
+	margin: 0;
+}
+
+.omega-law-insight__body {
+	padding: 1.25rem 1.25rem 1.5rem;
+}
+
+/* FAQ accordion. */
+.omega-landing--law-firm .wp-block-details {
+	border-top: 1px solid rgba(255, 255, 255, 0.12);
+	padding: 1.25rem 0;
+}
+
+.omega-landing--law-firm .wp-block-details:last-child {
+	border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.omega-landing--law-firm .wp-block-details summary {
+	font-family: var(--wp--preset--font-family--poppins, serif);
+	font-size: 1.1rem;
+	cursor: pointer;
+	color: var(--wp--preset--color--heading);
+}
+
+.omega-landing--law-firm .wp-block-details p {
+	margin-top: 0.75rem;
+}
+
+/**
+ * Mobile: the hero floating quote card and the About section's experience
+ * badge are absolutely positioned to overlap their photo, which only
+ * works while the photo is wide enough to overlap onto - below the
+ * breakpoint where columns stack (each column goes full width), that
+ * absolute positioning would either clip against the narrow column or
+ * float over unrelated content below it. Switching both back to normal
+ * document flow here keeps them readable and avoids either problem.
+ */
+@media (max-width: 781px) {
+	.omega-law-floating-quote {
+		position: static;
+		max-width: 100%;
+		margin-top: 1rem;
+	}
+
+	.omega-law-experience-badge {
+		position: static;
+		width: auto;
+		height: auto;
+		border-radius: 16px;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.75rem 1.25rem;
+		margin-top: -1.5rem;
+		margin-left: 1rem;
+	}
+
+	.omega-law-portrait img,
+	.omega-law-about-photo__image img {
+		border-radius: 16px;
+	}
+
+	.omega-law-about-card {
+		margin-left: 0;
+		margin-top: 1.5rem;
+	}
+
+	.omega-law-trust-strip .wp-block-columns > .wp-block-column {
+		border-right: 0;
+		border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+		padding-bottom: 1rem;
+	}
+
+	.omega-law-trust-strip .wp-block-columns > .wp-block-column:last-child {
+		border-bottom: 0;
+	}
+}

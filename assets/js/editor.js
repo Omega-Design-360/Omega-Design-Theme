@@ -201,6 +201,59 @@
 		return style;
 	}
 
+	/**
+	 * A plain Group (flow/constrained layout) has no vertical alignment
+	 * control of its own, so once it's given a Height its content always
+	 * sits at the top. "Content Position" fills that gap - it's the Desktop
+	 * tab of the Responsive Layout panel below, whose Tablet/Mobile
+	 * "Content alignment" overrides it per device. Row/Stack/Grid already
+	 * have core's own alignment controls and are left alone. Stored
+	 * as style.dimensions.omegaVAlign and applied as an .omega-valign-*
+	 * class - on the front end by includes/core/responsive_styles.php, and
+	 * in the editor canvas by withCustomSizeStyleEditor below - never in
+	 * save(), so existing blocks' saved markup stays valid.
+	 */
+	var VALIGN_OPTIONS = [
+		{ value: '', label: __('Top', 'omega-design') },
+		{ value: 'center', label: __('Middle', 'omega-design') },
+		{ value: 'bottom', label: __('Bottom', 'omega-design') }
+	];
+
+	function isFlexOrGridLayout(attributes) {
+		var type = attributes.layout && attributes.layout.type;
+		return type === 'flex' || type === 'grid';
+	}
+
+	function getVAlignClass(attributes) {
+		var value = getCustomSize(attributes).omegaVAlign;
+		return (value === 'center' || value === 'bottom') && !isFlexOrGridLayout(attributes)
+			? 'omega-valign-' + value
+			: '';
+	}
+
+	function renderContentPosition(props, size) {
+		var current = size.omegaVAlign || '';
+
+		return createElement(
+			BaseControl,
+			{ key: 'omega-valign', label: __('Content Position', 'omega-design'), __nextHasNoMarginBottom: true },
+			createElement(
+				ButtonGroup,
+				{},
+				VALIGN_OPTIONS.map(function (option) {
+					return createElement(Button, {
+						key: option.value || 'top',
+						variant: current === option.value ? 'primary' : 'secondary',
+						isPressed: current === option.value,
+						onClick: function () {
+							setCustomSize(props, 'omegaVAlign', option.value);
+						}
+					}, option.label);
+				})
+			)
+		);
+	}
+
 	var withCustomSizeControl = createHigherOrderComponent(function (BlockEdit) {
 		return function (props) {
 			if (TARGET_BLOCKS.indexOf(props.name) === -1 || !props.isSelected) {
@@ -274,12 +327,15 @@
 			}
 
 			var style = getResponsiveSizeStyle(props.attributes, getCurrentDeviceType());
+			var valignClass = props.name === 'core/group' ? getVAlignClass(props.attributes) : '';
 
-			if (!Object.keys(style).length) {
+			if (!Object.keys(style).length && !valignClass) {
 				return createElement(BlockListBlock, props);
 			}
 
+			var existingClassName = (props.wrapperProps && props.wrapperProps.className) || '';
 			var wrapperProps = Object.assign({}, props.wrapperProps, {
+				className: (existingClassName + ' ' + valignClass).trim(),
 				style: Object.assign({}, props.wrapperProps && props.wrapperProps.style, style)
 			});
 
@@ -775,6 +831,851 @@
 		return settings;
 	});
 
+	/**
+	 * Core gives Group a Background image (with Focal point, Fixed
+	 * background, Size and Repeat) but not Column/Columns. Opting them into
+	 * the same core support reuses that exact panel; the server side
+	 * (includes/core/blocks.php add_background_support()) opts them in too,
+	 * so core renders the image as an inline style at render time - nothing
+	 * is added to save(), so existing blocks stay valid.
+	 */
+	var BACKGROUND_BLOCKS = ['core/column', 'core/columns'];
+
+	addFilter('blocks.registerBlockType', 'omega-design/column-background', function (settings, name) {
+		if (BACKGROUND_BLOCKS.indexOf(name) === -1) {
+			return settings;
+		}
+
+		settings.supports = Object.assign({}, settings.supports, {
+			background: Object.assign({}, settings.supports && settings.supports.background, {
+				backgroundImage: true,
+				backgroundSize: true,
+				__experimentalDefaultControls: { backgroundImage: true }
+			})
+		});
+
+		return settings;
+	});
+
+	/**
+	 * "Responsive Background" - a different background image (and focal
+	 * point) for Tablet and Mobile on Group/Row/Stack/Grid, Columns and
+	 * Column. Desktop keeps using core's own Background image panel; these
+	 * only replace it below the tablet/mobile breakpoints, with the same
+	 * mobile -> tablet -> desktop cascade as every other responsive control
+	 * here. Stored under attributes.style.omegaBackground
+	 * ({tabletImage:{id,url}, tabletPosition, mobileImage, mobilePosition})
+	 * and output as `@media` rules by includes/core/responsive_styles.php -
+	 * nothing is added to save(), so existing blocks stay valid.
+	 */
+	var MediaUpload = wp.blockEditor.MediaUpload;
+	var MediaUploadCheck = wp.blockEditor.MediaUploadCheck;
+	var FocalPointPicker = wp.components.FocalPointPicker;
+	var RESPONSIVE_BG_BLOCKS = ['core/group', 'core/columns', 'core/column'];
+	var RESPONSIVE_BG_TABS = [
+		{ name: 'tablet', title: __('Tablet', 'omega-design') },
+		{ name: 'mobile', title: __('Mobile', 'omega-design') }
+	];
+
+	function getResponsiveBackground(attributes) {
+		return (attributes.style && attributes.style.omegaBackground) || {};
+	}
+
+	function setResponsiveBackground(props, changes) {
+		var style = props.attributes.style || {};
+		var background = Object.assign({}, style.omegaBackground, changes);
+
+		Object.keys(background).forEach(function (key) {
+			if (background[key] === undefined || background[key] === '') {
+				delete background[key];
+			}
+		});
+
+		var nextStyle = Object.assign({}, style);
+		if (Object.keys(background).length) {
+			nextStyle.omegaBackground = background;
+		} else {
+			delete nextStyle.omegaBackground;
+		}
+
+		props.setAttributes({ style: nextStyle });
+	}
+
+	function positionToPoint(position) {
+		var parts = String(position || '50% 50%').split(' ');
+		return {
+			x: (parseFloat(parts[0]) || 50) / 100,
+			y: (parseFloat(parts[1]) || 50) / 100
+		};
+	}
+
+	function pointToPosition(point) {
+		return Math.round(point.x * 100) + '% ' + Math.round(point.y * 100) + '%';
+	}
+
+	function renderResponsiveBackgroundFields(props, device) {
+		var background = getResponsiveBackground(props.attributes);
+		var imageKey = device + 'Image';
+		var positionKey = device + 'Position';
+		var image = background[imageKey];
+		var noneKey = device + 'None';
+		var BgToggle = wp.components.ToggleControl;
+		var noneToggle = BgToggle && createElement(BgToggle, {
+			key: 'none',
+			label: device === 'mobile' ? __('No background image on mobile', 'omega-design') : __('No background image on tablet (and mobile)', 'omega-design'),
+			checked: !!background[noneKey],
+			__nextHasNoMarginBottom: true,
+			onChange: function (value) {
+				var change = {};
+				change[noneKey] = value || undefined;
+				if (value) {
+					change[imageKey] = undefined;
+					change[positionKey] = undefined;
+				}
+				setResponsiveBackground(props, change);
+			}
+		});
+
+		if (background[noneKey]) {
+			return createElement('div', { key: device, style: { paddingTop: '12px' } }, noneToggle);
+		}
+
+		function onSelect(media) {
+			var change = {};
+			change[imageKey] = { id: media.id, url: media.url };
+			setResponsiveBackground(props, change);
+		}
+
+		function onRemove() {
+			var change = {};
+			change[imageKey] = undefined;
+			change[positionKey] = undefined;
+			setResponsiveBackground(props, change);
+		}
+
+		return createElement(
+			'div',
+			{ key: device, style: { paddingTop: '12px' } },
+			createElement(
+				MediaUploadCheck,
+				{},
+				createElement(MediaUpload, {
+					onSelect: onSelect,
+					allowedTypes: ['image'],
+					value: image && image.id,
+					render: function (upload) {
+						return createElement(
+							'div',
+							{ style: { display: 'flex', gap: '8px', marginBottom: '12px' } },
+							createElement(Button, { variant: 'secondary', onClick: upload.open },
+								image ? __('Replace image', 'omega-design') : __('Choose image', 'omega-design')),
+							image && createElement(Button, { variant: 'tertiary', isDestructive: true, onClick: onRemove },
+								__('Remove', 'omega-design'))
+						);
+					}
+				})
+			),
+			image && FocalPointPicker && createElement(FocalPointPicker, {
+				label: __('Focal point', 'omega-design'),
+				url: image.url,
+				value: positionToPoint(background[positionKey]),
+				onChange: function (point) {
+					var change = {};
+					change[positionKey] = pointToPosition(point);
+					setResponsiveBackground(props, change);
+				}
+			}),
+			!image && createElement('p', { style: { margin: '0 0 12px', color: '#757575', fontSize: '12px' } },
+				device === 'mobile'
+					? __('No mobile image - uses the tablet image, or the desktop one.', 'omega-design')
+					: __('No tablet image - uses the desktop image.', 'omega-design')),
+			noneToggle
+		);
+	}
+
+	var withResponsiveBackgroundControl = createHigherOrderComponent(function (BlockEdit) {
+		return function (props) {
+			if (RESPONSIVE_BG_BLOCKS.indexOf(props.name) === -1 || !props.isSelected) {
+				return createElement(BlockEdit, props);
+			}
+
+			return createElement(
+				Fragment,
+				{},
+				createElement(BlockEdit, props),
+				createElement(
+					InspectorControls,
+					{ group: 'styles' },
+					createElement(
+						PanelBody,
+						{ title: __('Responsive Background', 'omega-design'), initialOpen: false },
+						createElement(TabPanel, { tabs: RESPONSIVE_BG_TABS }, function (tab) {
+							return renderResponsiveBackgroundFields(props, tab.name);
+						})
+					)
+				)
+			);
+		};
+	}, 'withResponsiveBackgroundControl');
+
+	/**
+	 * Editor canvas preview for the active Tablet/Mobile device preview. A
+	 * scoped <style> with !important rather than wrapperProps.style, since
+	 * core's own background support writes its inline style onto the same
+	 * element and would otherwise win.
+	 */
+	var withResponsiveBackgroundPreview = createHigherOrderComponent(function (BlockListBlock) {
+		return function (props) {
+			if (RESPONSIVE_BG_BLOCKS.indexOf(props.name) === -1) {
+				return createElement(BlockListBlock, props);
+			}
+
+			var device = getCurrentDeviceType();
+			if (device === 'desktop') {
+				return createElement(BlockListBlock, props);
+			}
+
+			var background = getResponsiveBackground(props.attributes);
+			// Same cascade as the front end: the most specific device that
+			// sets either an image or "No image" wins.
+			var chain = device === 'mobile' ? ['mobile', 'tablet'] : ['tablet'];
+			var image = null;
+			var isNone = false;
+			for (var i = 0; i < chain.length; i++) {
+				if (background[chain[i] + 'Image']) { image = background[chain[i] + 'Image']; break; }
+				if (background[chain[i] + 'None']) { isNone = true; break; }
+			}
+
+			var css;
+			if (isNone) {
+				css = '#block-' + props.clientId + '{background-image:none !important;}';
+			} else if (image && image.url) {
+				var position = resolveResponsiveValue(background, 'position', device) || '50% 50%';
+				css = '#block-' + props.clientId + '{' +
+					'background-image:url("' + encodeURI(image.url).replace(/"/g, '%22') + '") !important;' +
+					'background-position:' + position + ' !important;' +
+					'background-size:cover !important;}';
+			} else {
+				return createElement(BlockListBlock, props);
+			}
+
+			return createElement(
+				Fragment,
+				{},
+				createElement('style', {}, css),
+				createElement(BlockListBlock, props)
+			);
+		};
+	}, 'withResponsiveBackgroundPreview');
+
+	if (MediaUpload && MediaUploadCheck && TabPanel) {
+		addFilter('editor.BlockEdit', 'omega-design/responsive-background-control', withResponsiveBackgroundControl);
+		addFilter('editor.BlockListBlock', 'omega-design/responsive-background-preview', withResponsiveBackgroundPreview);
+	}
+
+	/**
+	 * "Responsive Layout" - Tablet/Mobile overrides for what core's own
+	 * layout controls set on desktop: justification, vertical alignment,
+	 * orientation, wrap and gap (Row/Stack), justification (Group), column
+	 * count (Grid), stacking/alignment/gap (Columns), width/alignment
+	 * (Column), plus padding and "Hide on this device" for all of them.
+	 * Desktop stays on core's controls. Stored under
+	 * attributes.style.omegaResponsive ({tablet:{...}, mobile:{...}}) and
+	 * output as `@media` rules by includes/core/responsive_styles.php
+	 * build_layout_rules() - nothing is added to save(), so existing
+	 * blocks stay valid. Mobile inherits Tablet unless set separately.
+	 */
+	var SelectControl = wp.components.SelectControl;
+	var ToggleControl = wp.components.ToggleControl;
+	var RESPONSIVE_LAYOUT_BLOCKS = ['core/group', 'core/columns', 'core/column'];
+	var RESPONSIVE_LAYOUT_TABS = [
+		{ name: 'desktop', title: __('Desktop', 'omega-design') },
+		{ name: 'tablet', title: __('Tablet', 'omega-design') },
+		{ name: 'mobile', title: __('Mobile', 'omega-design') }
+	];
+	var INHERIT_OPTION = { value: '', label: __('Same as larger screen', 'omega-design') };
+	var FLEX_VALUES = {
+		left: 'flex-start', top: 'flex-start', center: 'center', right: 'flex-end',
+		bottom: 'flex-end', stretch: 'stretch', 'space-between': 'space-between'
+	};
+
+	function getLayoutType(props) {
+		var layout = props.attributes.layout || {};
+		return layout.type || (props.name === 'core/group' ? 'flow' : '');
+	}
+
+	function getResponsiveSettings(attributes, device) {
+		var all = (attributes.style && attributes.style.omegaResponsive) || {};
+		return all[device] || {};
+	}
+
+	function setResponsiveSetting(props, device, key, value) {
+		var style = props.attributes.style || {};
+		var all = Object.assign({}, style.omegaResponsive);
+		var settings = Object.assign({}, all[device]);
+
+		if (value === '' || value === undefined || value === false || value === null) {
+			delete settings[key];
+		} else {
+			settings[key] = value;
+		}
+
+		if (Object.keys(settings).length) {
+			all[device] = settings;
+		} else {
+			delete all[device];
+		}
+
+		var nextStyle = Object.assign({}, style);
+		if (Object.keys(all).length) {
+			nextStyle.omegaResponsive = all;
+		} else {
+			delete nextStyle.omegaResponsive;
+		}
+
+		props.setAttributes({ style: nextStyle });
+	}
+
+	/**
+	 * Same rules as responsive_styles.php build_layout_rules(), for one
+	 * device, against the given selector.
+	 */
+	function buildLayoutRules(settings, name, layout, sel) {
+		var self = '';
+		var children = '';
+		var type = (layout && layout.type) || (name === 'core/group' ? 'flow' : '');
+
+		if (name === 'core/group' && type === 'flex') {
+			var orientation = settings.orientation;
+			if (orientation) {
+				self += 'flex-direction:' + (orientation === 'vertical' ? 'column' : 'row') + ' !important;';
+			}
+			var isVertical = (orientation || (layout && layout.orientation) || 'horizontal') === 'vertical';
+			var justify = settings.justify || (orientation ? 'left' : '');
+			var valign = settings.valign || (orientation ? (isVertical ? 'top' : 'center') : '');
+			if (justify && FLEX_VALUES[justify]) {
+				var justifyValue = isVertical && justify === 'space-between' ? 'flex-start' : FLEX_VALUES[justify];
+				self += (isVertical ? 'align-items:' : 'justify-content:') + justifyValue + ' !important;';
+			}
+			if (valign && FLEX_VALUES[valign]) {
+				var valignValue = !isVertical && valign === 'space-between' ? 'stretch' : FLEX_VALUES[valign];
+				self += (isVertical ? 'justify-content:' : 'align-items:') + valignValue + ' !important;';
+			}
+			if (settings.wrap === 'wrap' || settings.wrap === 'nowrap') {
+				self += 'flex-wrap:' + settings.wrap + ' !important;';
+			}
+		}
+
+		if (name === 'core/group' && type === 'grid') {
+			if (settings.gridColumns) {
+				self += 'grid-template-columns:repeat(' + parseInt(settings.gridColumns, 10) + ',minmax(0,1fr)) !important;';
+			}
+			var gridMap = { left: 'start', top: 'start', center: 'center', right: 'end', bottom: 'end', stretch: 'stretch' };
+			if (gridMap[settings.justify]) {
+				self += 'justify-items:' + gridMap[settings.justify] + ' !important;';
+			}
+			if (gridMap[settings.valign]) {
+				self += 'align-items:' + gridMap[settings.valign] + ' !important;';
+			}
+		}
+
+		if ((name === 'core/group' && (type === 'flow' || type === 'constrained')) || name === 'core/column') {
+			var flowJustify = ['left', 'center', 'right'].indexOf(settings.justify) !== -1 ? settings.justify : '';
+			var flowValign = ['top', 'center', 'bottom'].indexOf(settings.valign) !== -1 ? settings.valign : '';
+
+			if (type === 'constrained' && flowJustify) {
+				var margins = { left: ['0', 'auto'], center: ['auto', 'auto'], right: ['auto', '0'] }[flowJustify];
+				children += sel + '>:not(.alignleft):not(.alignright):not(.alignfull){margin-left:' + margins[0] + ' !important;margin-right:' + margins[1] + ' !important;}';
+			}
+
+			var useFlexJustify = flowJustify && type !== 'constrained';
+			if (flowValign || useFlexJustify) {
+				self += 'display:flex !important;flex-direction:column !important;';
+				if (flowValign) {
+					self += 'justify-content:' + FLEX_VALUES[flowValign] + ' !important;';
+				}
+				if (name === 'core/column' && flowValign) {
+					self += 'align-self:stretch !important;';
+				}
+				if (useFlexJustify) {
+					self += 'align-items:' + FLEX_VALUES[flowJustify] + ' !important;text-align:' + flowJustify + ' !important;';
+					children += sel + '>*{max-width:100%;}';
+				} else if (type === 'constrained') {
+					children += sel + '>*{width:100%;box-sizing:border-box;}';
+				}
+			}
+		}
+
+		if (name === 'core/columns') {
+			if (settings.valign && FLEX_VALUES[settings.valign]) {
+				children += sel + '>.wp-block-column{align-self:' + FLEX_VALUES[settings.valign] + ' !important;}';
+			}
+			if (settings.justify && FLEX_VALUES[settings.justify]) {
+				self += 'justify-content:' + FLEX_VALUES[settings.justify] + ' !important;';
+			}
+			if (settings.stack === 'stack') {
+				self += 'flex-wrap:wrap !important;';
+				children += sel + '>.wp-block-column{flex-basis:100% !important;flex-grow:0 !important;}';
+			} else if (settings.stack === 'row') {
+				self += 'flex-wrap:nowrap !important;';
+				children += sel + '>.wp-block-column{flex-basis:0 !important;flex-grow:1 !important;min-width:0;}';
+			}
+		}
+
+		if (name === 'core/column') {
+			if (settings.width) {
+				self += 'flex-basis:' + settings.width + ' !important;flex-grow:0 !important;max-width:100%;';
+			}
+		}
+
+		if (settings.gap && (name === 'core/group' || name === 'core/columns')) {
+			self += 'gap:' + settings.gap + ' !important;';
+		}
+
+		if (settings.padding) {
+			['top', 'right', 'bottom', 'left'].forEach(function (side) {
+				if (settings.padding[side]) {
+					self += 'padding-' + side + ':' + settings.padding[side] + ' !important;';
+				}
+			});
+		}
+
+		if (settings.hide) {
+			// Faded rather than removed in the editor, so the block can
+			// still be selected and un-hidden.
+			self += 'opacity:0.35 !important;outline:1px dashed #999;';
+		}
+
+		var selfSelector = name === 'core/column' ? '.wp-block-columns>' + sel : sel;
+
+		return (self ? selfSelector + '{' + self + '}' : '') + children;
+	}
+
+	function selectField(props, device, settings, key, label, options) {
+		return createElement(SelectControl, {
+			key: key,
+			label: label,
+			value: settings[key] || '',
+			options: [INHERIT_OPTION].concat(options),
+			__nextHasNoMarginBottom: true,
+			onChange: function (value) {
+				setResponsiveSetting(props, device, key, value);
+			}
+		});
+	}
+
+	function unitField(props, device, settings, key, label) {
+		return createElement(UnitControl, {
+			key: key,
+			label: label,
+			units: SIZE_UNITS,
+			value: settings[key] || '',
+			onChange: function (value) {
+				setResponsiveSetting(props, device, key, value);
+			}
+		});
+	}
+
+	/**
+	 * Desktop tab: only what core itself has no control for - the plain
+	 * Group's Content Position. Everything else on desktop is core's own
+	 * layout/dimensions controls.
+	 */
+	function renderResponsiveLayoutDesktop(props) {
+		if (props.name === 'core/group' && !isFlexOrGridLayout(props.attributes)) {
+			return createElement('div', { key: 'desktop', style: { display: 'grid', gap: '8px', paddingTop: '12px' } },
+				renderContentPosition(props, getCustomSize(props.attributes)),
+				createElement('p', { style: { margin: 0, color: '#757575', fontSize: '12px' } },
+					__('Moves the content up or down within the block\'s height. Tablet and Mobile use this unless their Content alignment is set.', 'omega-design'))
+			);
+		}
+
+		return createElement('p', { key: 'desktop', style: { margin: '12px 0 0', color: '#757575', fontSize: '12px' } },
+			__('Desktop uses this block\'s normal layout settings. Use the Tablet and Mobile tabs to change them on smaller screens.', 'omega-design'));
+	}
+
+	function renderResponsiveLayoutFields(props, device) {
+		if (device === 'desktop') {
+			return renderResponsiveLayoutDesktop(props);
+		}
+
+		var settings = getResponsiveSettings(props.attributes, device);
+		var name = props.name;
+		var type = getLayoutType(props);
+		var fields = [];
+		var opt = function (value, label) { return { value: value, label: label }; };
+		var justifyOptions = [opt('left', __('Left', 'omega-design')), opt('center', __('Center', 'omega-design')), opt('right', __('Right', 'omega-design'))];
+		var valignOptions = [opt('top', __('Top', 'omega-design')), opt('center', __('Middle', 'omega-design')), opt('bottom', __('Bottom', 'omega-design')), opt('stretch', __('Stretch', 'omega-design'))];
+
+		var betweenOption = opt('space-between', __('Space between', 'omega-design'));
+		var stretchOption = opt('stretch', __('Stretch', 'omega-design'));
+		var noStretch = valignOptions.slice(0, 3);
+		var justifyLabel = __('Content justification', 'omega-design');
+		var valignLabel = __('Content alignment', 'omega-design');
+
+		if (name === 'core/group' && type === 'flex') {
+			fields.push(selectField(props, device, settings, 'orientation', __('Direction', 'omega-design'),
+				[opt('horizontal', __('Horizontal (row)', 'omega-design')), opt('vertical', __('Vertical (stack)', 'omega-design'))]));
+			fields.push(selectField(props, device, settings, 'justify', justifyLabel, justifyOptions.concat([betweenOption])));
+			fields.push(selectField(props, device, settings, 'valign', valignLabel, valignOptions.concat([betweenOption])));
+			fields.push(selectField(props, device, settings, 'wrap', __('Wrap', 'omega-design'),
+				[opt('wrap', __('Wrap to multiple lines', 'omega-design')), opt('nowrap', __('Keep on one line', 'omega-design'))]));
+		}
+
+		if (name === 'core/group' && (type === 'constrained' || type === 'flow')) {
+			fields.push(selectField(props, device, settings, 'justify', justifyLabel, justifyOptions));
+			fields.push(selectField(props, device, settings, 'valign', valignLabel, noStretch));
+		}
+
+		if (name === 'core/group' && type === 'grid') {
+			fields.push(selectField(props, device, settings, 'gridColumns', __('Columns', 'omega-design'),
+				[1, 2, 3, 4, 5, 6].map(function (n) { return opt(String(n), String(n)); })));
+			fields.push(selectField(props, device, settings, 'justify', justifyLabel, justifyOptions.concat([stretchOption])));
+			fields.push(selectField(props, device, settings, 'valign', valignLabel, valignOptions));
+		}
+
+		if (name === 'core/columns') {
+			fields.push(selectField(props, device, settings, 'stack', __('Layout', 'omega-design'),
+				[opt('stack', __('Stack columns', 'omega-design')), opt('row', __('Side by side', 'omega-design'))]));
+			fields.push(selectField(props, device, settings, 'justify', justifyLabel, justifyOptions.concat([betweenOption])));
+			fields.push(selectField(props, device, settings, 'valign', valignLabel, valignOptions));
+		}
+
+		if (name === 'core/column') {
+			fields.push(unitField(props, device, settings, 'width', __('Width', 'omega-design')));
+			fields.push(selectField(props, device, settings, 'justify', justifyLabel, justifyOptions));
+			fields.push(selectField(props, device, settings, 'valign', valignLabel, noStretch));
+		}
+
+		if ((name === 'core/group' && type !== 'flow') || name === 'core/columns') {
+			fields.push(unitField(props, device, settings, 'gap', __('Gap', 'omega-design')));
+		}
+
+		var padding = settings.padding || {};
+		fields.push(createElement(BaseControl, { key: 'padding', label: __('Padding', 'omega-design'), __nextHasNoMarginBottom: true },
+			createElement('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' } },
+				['top', 'right', 'bottom', 'left'].map(function (side) {
+					return createElement(UnitControl, {
+						key: side,
+						label: side.charAt(0).toUpperCase() + side.slice(1),
+						units: SIZE_UNITS,
+						value: padding[side] || '',
+						onChange: function (value) {
+							var next = Object.assign({}, padding);
+							if (value) { next[side] = value; } else { delete next[side]; }
+							setResponsiveSetting(props, device, 'padding', Object.keys(next).length ? next : '');
+						}
+					});
+				})
+			)
+		));
+
+		if (ToggleControl) {
+			fields.push(createElement(ToggleControl, {
+				key: 'hide',
+				label: device === 'mobile' ? __('Hide on mobile', 'omega-design') : __('Hide on tablet (and mobile)', 'omega-design'),
+				checked: !!settings.hide,
+				__nextHasNoMarginBottom: true,
+				onChange: function (value) {
+					setResponsiveSetting(props, device, 'hide', value);
+				}
+			}));
+		}
+
+		return createElement('div', { key: device, style: { display: 'grid', gap: '16px', paddingTop: '12px' } }, fields);
+	}
+
+	var withResponsiveLayoutControl = createHigherOrderComponent(function (BlockEdit) {
+		return function (props) {
+			if (RESPONSIVE_LAYOUT_BLOCKS.indexOf(props.name) === -1 || !props.isSelected) {
+				return createElement(BlockEdit, props);
+			}
+
+			return createElement(
+				Fragment,
+				{},
+				createElement(BlockEdit, props),
+				createElement(
+					InspectorControls,
+					{ group: 'styles' },
+					createElement(
+						PanelBody,
+						{ title: __('Responsive Layout', 'omega-design'), initialOpen: false },
+						createElement(TabPanel, { tabs: RESPONSIVE_LAYOUT_TABS }, function (tab) {
+							return renderResponsiveLayoutFields(props, tab.name);
+						})
+					)
+				)
+			);
+		};
+	}, 'withResponsiveLayoutControl');
+
+	/**
+	 * Editor canvas preview, keyed off the editor's own Desktop/Tablet/
+	 * Mobile preview toggle rather than `@media` - the canvas can be
+	 * narrower than 1024px even in Desktop view (sidebars open), which would
+	 * otherwise wrongly apply tablet rules while editing on desktop.
+	 */
+	var withResponsiveLayoutPreview = createHigherOrderComponent(function (BlockListBlock) {
+		return function (props) {
+			if (RESPONSIVE_LAYOUT_BLOCKS.indexOf(props.name) === -1) {
+				return createElement(BlockListBlock, props);
+			}
+
+			var device = getCurrentDeviceType();
+			var all = (props.attributes.style && props.attributes.style.omegaResponsive) || {};
+			if (device === 'desktop' || (!all.tablet && !all.mobile)) {
+				return createElement(BlockListBlock, props);
+			}
+
+			var sel = '#block-' + props.clientId;
+			var css = buildLayoutRules(all.tablet || {}, props.name, props.attributes.layout, sel);
+			if (device === 'mobile') {
+				css += buildLayoutRules(all.mobile || {}, props.name, props.attributes.layout, sel);
+			}
+
+			if (!css) {
+				return createElement(BlockListBlock, props);
+			}
+
+			return createElement(
+				Fragment,
+				{},
+				createElement('style', {}, css),
+				createElement(BlockListBlock, props)
+			);
+		};
+	}, 'withResponsiveLayoutPreview');
+
+	if (SelectControl && TabPanel && UnitControl) {
+		addFilter('editor.BlockEdit', 'omega-design/responsive-layout-control', withResponsiveLayoutControl);
+		addFilter('editor.BlockListBlock', 'omega-design/responsive-layout-preview', withResponsiveLayoutPreview);
+	}
+
+	/**
+	 * "Responsive Settings" - Tablet/Mobile text alignment, font size,
+	 * width, margin, padding and hide for every other block (Paragraph,
+	 * Heading, Image, Buttons, List...). Group/Columns/Column have the
+	 * Responsive Layout panel above instead. Stored in a top-level
+	 * omegaResponsive attribute registered on every block here and in
+	 * includes/core/blocks.php add_responsive_attribute(); output by
+	 * includes/core/responsive_styles.php inject_element_styles(). Nothing
+	 * is added to save(), so existing blocks stay valid.
+	 */
+	var RESPONSIVE_EXCLUDED = [
+		'core/group', 'core/columns', 'core/column', 'core/freeform',
+		'core/block', 'core/template-part', 'core/missing', 'core/pattern'
+	];
+
+	addFilter('blocks.registerBlockType', 'omega-design/responsive-attribute', function (settings, name) {
+		if (RESPONSIVE_EXCLUDED.indexOf(name) !== -1) {
+			return settings;
+		}
+
+		settings.attributes = Object.assign({}, settings.attributes, {
+			omegaResponsive: { type: 'object' }
+		});
+
+		return settings;
+	});
+
+	// Only for blocks that actually got the attribute - a plugin block
+	// registered before this script ran would silently drop it on save.
+	function supportsResponsiveSettings(name) {
+		var type = wp.blocks.getBlockType(name);
+		return !!(type && type.attributes && type.attributes.omegaResponsive);
+	}
+
+	function setElementSetting(props, device, key, value) {
+		var all = Object.assign({}, props.attributes.omegaResponsive);
+		var settings = Object.assign({}, all[device]);
+
+		if (value === '' || value === undefined || value === false || value === null) {
+			delete settings[key];
+		} else {
+			settings[key] = value;
+		}
+
+		if (Object.keys(settings).length) {
+			all[device] = settings;
+		} else {
+			delete all[device];
+		}
+
+		props.setAttributes({ omegaResponsive: Object.keys(all).length ? all : undefined });
+	}
+
+	/**
+	 * Same rules as responsive_styles.php build_element_rules().
+	 */
+	function buildElementRules(settings, name, sel) {
+		var self = '';
+		var extra = '';
+		var align = settings.textAlign;
+
+		if (['left', 'center', 'right', 'justify'].indexOf(align) !== -1) {
+			self += 'text-align:' + align + ' !important;';
+			if ((name === 'core/buttons' || name === 'core/social-links') && align !== 'justify') {
+				self += 'justify-content:' + { left: 'flex-start', center: 'center', right: 'flex-end' }[align] + ' !important;';
+			}
+			if (name === 'core/image' && align !== 'justify') {
+				self += 'float:none !important;display:block !important;margin-left:0 !important;margin-right:0 !important;';
+			}
+		}
+
+		if (settings.fontSize) {
+			self += 'font-size:' + settings.fontSize + ' !important;';
+		}
+
+		if (settings.width) {
+			if (name === 'core/image') {
+				extra += sel + ' img{width:' + settings.width + ' !important;max-width:100%;height:auto !important;}';
+			} else {
+				self += 'width:' + settings.width + ' !important;max-width:100%;';
+			}
+		}
+
+		['margin', 'padding'].forEach(function (property) {
+			var box = settings[property];
+			if (box) {
+				['top', 'right', 'bottom', 'left'].forEach(function (side) {
+					if (box[side]) {
+						self += property + '-' + side + ':' + box[side] + ' !important;';
+					}
+				});
+			}
+		});
+
+		if (settings.hide) {
+			self += 'opacity:0.35 !important;outline:1px dashed #999;';
+		}
+
+		return (self ? sel + '{' + self + '}' : '') + extra;
+	}
+
+	function boxField(props, device, settings, key, label) {
+		var box = settings[key] || {};
+
+		return createElement(BaseControl, { key: key, label: label, __nextHasNoMarginBottom: true },
+			createElement('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' } },
+				['top', 'right', 'bottom', 'left'].map(function (side) {
+					return createElement(UnitControl, {
+						key: side,
+						label: side.charAt(0).toUpperCase() + side.slice(1),
+						units: SIZE_UNITS,
+						value: box[side] || '',
+						onChange: function (value) {
+							var next = Object.assign({}, box);
+							if (value) { next[side] = value; } else { delete next[side]; }
+							setElementSetting(props, device, key, Object.keys(next).length ? next : '');
+						}
+					});
+				})
+			)
+		);
+	}
+
+	function renderElementFields(props, device) {
+		var settings = ((props.attributes.omegaResponsive || {})[device]) || {};
+		var alignLabel = props.name === 'core/image' || props.name === 'core/buttons'
+			? __('Alignment', 'omega-design')
+			: __('Text alignment', 'omega-design');
+
+		return createElement('div', { key: device, style: { display: 'grid', gap: '16px', paddingTop: '12px' } },
+			createElement(SelectControl, {
+				label: alignLabel,
+				value: settings.textAlign || '',
+				options: [
+					INHERIT_OPTION,
+					{ value: 'left', label: __('Left', 'omega-design') },
+					{ value: 'center', label: __('Center', 'omega-design') },
+					{ value: 'right', label: __('Right', 'omega-design') },
+					{ value: 'justify', label: __('Justify', 'omega-design') }
+				],
+				__nextHasNoMarginBottom: true,
+				onChange: function (value) { setElementSetting(props, device, 'textAlign', value); }
+			}),
+			createElement(UnitControl, {
+				label: __('Font size', 'omega-design'),
+				units: SIZE_UNITS,
+				value: settings.fontSize || '',
+				onChange: function (value) { setElementSetting(props, device, 'fontSize', value); }
+			}),
+			createElement(UnitControl, {
+				label: props.name === 'core/image' ? __('Image width', 'omega-design') : __('Width', 'omega-design'),
+				units: SIZE_UNITS,
+				value: settings.width || '',
+				onChange: function (value) { setElementSetting(props, device, 'width', value); }
+			}),
+			boxField(props, device, settings, 'margin', __('Margin', 'omega-design')),
+			boxField(props, device, settings, 'padding', __('Padding', 'omega-design')),
+			ToggleControl && createElement(ToggleControl, {
+				label: device === 'mobile' ? __('Hide on mobile', 'omega-design') : __('Hide on tablet (and mobile)', 'omega-design'),
+				checked: !!settings.hide,
+				__nextHasNoMarginBottom: true,
+				onChange: function (value) { setElementSetting(props, device, 'hide', value); }
+			})
+		);
+	}
+
+	var withResponsiveSettingsControl = createHigherOrderComponent(function (BlockEdit) {
+		return function (props) {
+			if (!props.isSelected || !supportsResponsiveSettings(props.name)) {
+				return createElement(BlockEdit, props);
+			}
+
+			return createElement(
+				Fragment,
+				{},
+				createElement(BlockEdit, props),
+				createElement(
+					InspectorControls,
+					{ group: 'styles' },
+					createElement(
+						PanelBody,
+						{ title: __('Responsive Settings', 'omega-design'), initialOpen: false },
+						createElement(TabPanel, { tabs: RESPONSIVE_LAYOUT_TABS.slice(1) }, function (tab) {
+							return renderElementFields(props, tab.name);
+						})
+					)
+				)
+			);
+		};
+	}, 'withResponsiveSettingsControl');
+
+	var withResponsiveSettingsPreview = createHigherOrderComponent(function (BlockListBlock) {
+		return function (props) {
+			var all = props.attributes && props.attributes.omegaResponsive;
+			var device = getCurrentDeviceType();
+
+			if (!all || device === 'desktop' || (!all.tablet && !all.mobile)) {
+				return createElement(BlockListBlock, props);
+			}
+
+			var sel = '#block-' + props.clientId;
+			var css = buildElementRules(all.tablet || {}, props.name, sel);
+			if (device === 'mobile') {
+				css += buildElementRules(all.mobile || {}, props.name, sel);
+			}
+
+			if (!css) {
+				return createElement(BlockListBlock, props);
+			}
+
+			return createElement(
+				Fragment,
+				{},
+				createElement('style', {}, css),
+				createElement(BlockListBlock, props)
+			);
+		};
+	}, 'withResponsiveSettingsPreview');
+
+	if (SelectControl && TabPanel && UnitControl) {
+		addFilter('editor.BlockEdit', 'omega-design/responsive-settings-control', withResponsiveSettingsControl);
+		addFilter('editor.BlockListBlock', 'omega-design/responsive-settings-preview', withResponsiveSettingsPreview);
+	}
+
 	if (wp.blocks.registerBlockVariation) {
 		wp.blocks.registerBlockVariation('core/navigation-link', {
 			name: 'omega-design-mega-menu',
@@ -989,17 +1890,21 @@
 	/**
 	 * Adds a "Text Style" button to the block toolbar (not tucked away in
 	 * the Inspector sidebar) for every text-bearing block, opening a popover
-	 * with Bold, Italic, Size, Line Height, Letter Spacing and Opacity
-	 * controls in one place - requested as a single "everything in the
-	 * toolbar" spot rather than the several separate native Typography
-	 * sidebar panels core already splits these across.
+	 * with Italic, Thickness (font-weight 400/500/600/700), Size, Line
+	 * Height, Letter Spacing and Opacity controls in one place - requested
+	 * as a single "everything in the toolbar" spot rather than the several
+	 * separate native Typography sidebar panels core already splits these
+	 * across. Thickness is a plain numeric font-weight picker rather than a
+	 * Bold on/off toggle, since most of the theme's variable font files
+	 * (DM Sans, Jost, Roboto - see theme.json) actually ship 500/600
+	 * weights worth using, not just 400/700.
 	 *
 	 * Stored under attributes.style.omegaTypography - a custom key nested
 	 * in the same "style" attribute core already auto-registers for every
 	 * block below (each already supports at least color or fontSize),
 	 * following the same convention as omegaHover/omegaAlign/omegaLink
 	 * above rather than a new attribute registration. Opacity has no core
-	 * equivalent at all; Bold/Italic/Size/Line Height/Letter Spacing
+	 * equivalent at all; Italic/Thickness/Size/Line Height/Letter Spacing
 	 * deliberately use this same custom key too (instead of core's own
 	 * style.typography.fontWeight/fontStyle/fontSize/lineHeight/
 	 * letterSpacing) so this one toolbar popover is a single source of
@@ -1027,6 +1932,13 @@
 	var BOX_WIDTH_OPTIONS = [
 		{ label: __('Text Only', 'omega-design'), value: false },
 		{ label: __('Full Width', 'omega-design'), value: true }
+	];
+
+	var THICKNESS_OPTIONS = [
+		{ label: '400', value: '400' },
+		{ label: '500', value: '500' },
+		{ label: '600', value: '600' },
+		{ label: '700', value: '700' }
 	];
 
 	function getTextStyle(attributes) {
@@ -1110,7 +2022,7 @@
 
 		var style = {};
 
-		if (typography.bold) { style.fontWeight = 'bold'; }
+		if (typography.fontWeight) { style.fontWeight = typography.fontWeight; }
 		if (typography.italic) { style.fontStyle = 'italic'; }
 		if (typography.fontSize) { style.fontSize = typography.fontSize; }
 		if (typography.lineHeight) { style.lineHeight = typography.lineHeight; }
@@ -1182,19 +2094,31 @@
 										ButtonGroup,
 										{ className: 'omega-toolbar-popover__row' },
 										createElement(Button, {
-											variant: typography.bold ? 'primary' : 'secondary',
-											isPressed: !!typography.bold,
-											onClick: function () {
-												setTextStyle(props, 'bold', !typography.bold);
-											}
-										}, __('Bold', 'omega-design')),
-										createElement(Button, {
 											variant: typography.italic ? 'primary' : 'secondary',
 											isPressed: !!typography.italic,
 											onClick: function () {
 												setTextStyle(props, 'italic', !typography.italic);
 											}
 										}, __('Italic', 'omega-design'))
+									),
+									createElement(
+										BaseControl,
+										{ label: __('Thickness', 'omega-design') },
+										createElement(
+											ButtonGroup,
+											{},
+											THICKNESS_OPTIONS.map(function (option) {
+												var isActive = typography.fontWeight === option.value;
+												return createElement(Button, {
+													key: option.value,
+													variant: isActive ? 'primary' : 'secondary',
+													isPressed: isActive,
+													onClick: function () {
+														setTextStyle(props, 'fontWeight', isActive ? '' : option.value);
+													}
+												}, option.label);
+											})
+										)
 									),
 									createElement(UnitControl, {
 										label: __('Size', 'omega-design'),

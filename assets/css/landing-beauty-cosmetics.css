@@ -1,0 +1,43 @@
+/**
+ * Brand palette override for this page only - remaps the theme's global
+ * preset colors to a rose/gold beauty identity so every block already
+ * using backgroundColor/textColor:"primary" etc. recolors automatically
+ * without touching the pattern markup.
+ */
+.omega-landing--beauty-cosmetics {
+	--wp--preset--color--primary: #be185d;
+	--wp--preset--color--secondary: #500724;
+	--wp--preset--color--accent: #fbbf24;
+	--wp--preset--color--heading: #500724;
+	--wp--preset--color--surface: #fdf2f8;
+}
+
+/**
+ * Page-specific styling for the Beauty & Cosmetics landing pattern
+ * (pattern/landing-beauty-cosmetics.php). Loaded only when the page's
+ * content contains the "omega-landing--beauty-cosmetics" marker class -
+ * see enqueue_frontend_assets() in includes/core/hooks.php.
+ *
+ * The 8 category-card tints below are applied by class rather than
+ * hand-typed inline `style` JSON, for the same reason as the Digital
+ * Agency service cards (assets/css/landing-digital-agency.css): it keeps
+ * the block's saved markup limited to a plain className, matching what
+ * the block editor itself would generate, so the page never trips the
+ * editor's "attempt recovery" validation.
+ */
+
+.omega-category-card {
+	border-radius: 12px;
+	padding: var(--wp--preset--spacing--m, 1.5rem);
+	text-align: center;
+	align-items: center;
+}
+
+.omega-category-card--1 { background-color: #FCE7F3; }
+.omega-category-card--2 { background-color: #FFE4E6; }
+.omega-category-card--3 { background-color: #FEF3C7; }
+.omega-category-card--4 { background-color: #F3E8FF; }
+.omega-category-card--5 { background-color: #E0F2FE; }
+.omega-category-card--6 { background-color: #FCE7F3; }
+.omega-category-card--7 { background-color: #D1FAE5; }
+.omega-category-card--8 { background-color: #FFEDD5; }

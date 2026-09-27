@@ -26,9 +26,61 @@ class blocks {
 
     private function __construct() {
         add_action('init', [$this, 'register']);
+        add_filter('register_block_type_args', [$this, 'add_background_support'], 10, 2);
+        add_filter('register_block_type_args', [$this, 'add_responsive_attribute'], 10, 2);
+    }
+
+    /**
+     * Blocks that never get the "Responsive Settings" panel (editor.js) -
+     * the layout blocks have their own Responsive Layout panel, the rest
+     * are wrappers with no element of their own to style.
+     */
+    const RESPONSIVE_EXCLUDED = [
+        'core/group', 'core/columns', 'core/column', 'core/freeform',
+        'core/block', 'core/template-part', 'core/missing', 'core/pattern',
+    ];
+
+    /**
+     * Server half of editor.js's "Responsive Settings" attribute: without
+     * it, a dynamic block previewed in the editor via ServerSideRender
+     * (Archives, Calendar, RSS...) would be rejected by the REST API for
+     * carrying an attribute its schema doesn't declare.
+     */
+    public function add_responsive_attribute($args, $block_type) {
+        if (in_array($block_type, self::RESPONSIVE_EXCLUDED, true)) {
+            return $args;
+        }
+
+        $args['attributes'] = array_merge($args['attributes'] ?? [], [
+            'omegaResponsive' => ['type' => 'object'],
+        ]);
+
+        return $args;
     }
 
     public function init() {}
+
+    /**
+     * Server half of editor.js's "omega-design/column-background" filter -
+     * core only renders a block's background image (and its Fixed
+     * background / focal point / size settings) when the block type itself
+     * declares background support, which core/column(s) don't by default.
+     */
+    public function add_background_support($args, $block_type) {
+        if (!in_array($block_type, ['core/column', 'core/columns'], true)) {
+            return $args;
+        }
+
+        $supports             = $args['supports'] ?? [];
+        $background           = $supports['background'] ?? [];
+        $supports['background'] = array_merge($background, [
+            'backgroundImage' => true,
+            'backgroundSize'  => true,
+        ]);
+        $args['supports'] = $supports;
+
+        return $args;
+    }
 
     public function register() {
         $this->register_omega_icon();
