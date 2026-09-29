@@ -1,0 +1,98 @@
+<!-- wp:template-part {"slug":"header"} /-->
+
+<!-- wp:group {"tagName":"main","className":"omega-shop-layout omega-shop-layout--hero","layout":{"type":"constrained"}} -->
+<main class="wp-block-group omega-shop-layout omega-shop-layout--hero">
+	<!-- wp:woocommerce/product-collection {"queryId":0,"query":{"perPage":12,"pages":0,"offset":0,"postType":"product","order":"asc","orderBy":"title","search":"","exclude":[],"inherit":true,"taxQuery":{},"isProductCollectionBlock":true,"woocommerceStockStatus":["instock","outofstock","onbackorder"]},"tagName":"div","displayLayout":{"type":"flex","columns":4,"shrinkColumns":true},"align":"full"} -->
+	<div class="wp-block-woocommerce-product-collection alignfull">
+		<!-- wp:group {"align":"full","className":"omega-shop-hero","backgroundColor":"secondary","textColor":"button-text","style":{"spacing":{"padding":{"top":"var:preset|spacing|2xl","bottom":"var:preset|spacing|xl","left":"var:preset|spacing|m","right":"var:preset|spacing|m"}}},"layout":{"type":"constrained","contentSize":"760px"}} -->
+		<div class="wp-block-group alignfull omega-shop-hero has-button-text-color has-secondary-background-color has-text-color has-background" style="padding-top:var(--wp--preset--spacing--2-xl);padding-right:var(--wp--preset--spacing--m);padding-bottom:var(--wp--preset--spacing--xl);padding-left:var(--wp--preset--spacing--m)">
+			<!-- wp:paragraph {"align":"center","className":"omega-shop-hero__eyebrow","fontSize":"small"} -->
+			<p class="has-text-align-center omega-shop-hero__eyebrow has-small-font-size">New season · New arrivals every week</p>
+			<!-- /wp:paragraph -->
+
+			<!-- wp:query-title {"type":"archive","textAlign":"center","showPrefix":false,"level":1,"textColor":"button-text"} /-->
+
+			<!-- wp:paragraph {"align":"center","className":"omega-shop-hero__lead"} -->
+			<p class="has-text-align-center omega-shop-hero__lead">Hand-picked pieces made to last. Browse by category below, or scroll for everything in store.</p>
+			<!-- /wp:paragraph -->
+
+			<!-- wp:woocommerce/product-filters {"showFilterDrawer":false,"className":"omega-shop-filters omega-shop-filters--chips omega-shop-filters--on-dark"} -->
+			<div class="wp-block-woocommerce-product-filters wc-block-product-filters is-filter-drawer-disabled omega-shop-filters omega-shop-filters--chips omega-shop-filters--on-dark"><!-- wp:woocommerce/product-filter-taxonomy {"displayStyle":"woocommerce/product-filter-chips"} -->
+			<div class="wp-block-woocommerce-product-filter-taxonomy"><!-- wp:woocommerce/product-filter-chips -->
+			<div class="wp-block-woocommerce-product-filter-chips wc-block-product-filter-chips"></div>
+			<!-- /wp:woocommerce/product-filter-chips --></div>
+			<!-- /wp:woocommerce/product-filter-taxonomy --></div>
+			<!-- /wp:woocommerce/product-filters -->
+		</div>
+		<!-- /wp:group -->
+
+		<!-- wp:group {"className":"omega-shop-perks","layout":{"type":"flex","flexWrap":"wrap","justifyContent":"center"}} -->
+		<div class="wp-block-group omega-shop-perks">
+			<!-- wp:paragraph {"fontSize":"small"} -->
+			<p class="has-small-font-size">🚚 Free shipping over $50</p>
+			<!-- /wp:paragraph -->
+
+			<!-- wp:paragraph {"fontSize":"small"} -->
+			<p class="has-small-font-size">↩️ 30-day easy returns</p>
+			<!-- /wp:paragraph -->
+
+			<!-- wp:paragraph {"fontSize":"small"} -->
+			<p class="has-small-font-size">🔒 Secure checkout</p>
+			<!-- /wp:paragraph -->
+		</div>
+		<!-- /wp:group -->
+
+		<!-- wp:group {"className":"omega-shop-hero-body","layout":{"type":"constrained","wideSize":"1400px"}} -->
+		<div class="wp-block-group omega-shop-hero-body">
+			<!-- wp:woocommerce/store-notices {"align":"wide"} /-->
+
+			<!-- wp:group {"align":"wide","className":"omega-shop-toolbar","layout":{"type":"flex","flexWrap":"wrap","justifyContent":"space-between"}} -->
+			<div class="wp-block-group alignwide omega-shop-toolbar">
+				<!-- wp:woocommerce/product-results-count /-->
+				<!-- wp:woocommerce/catalog-sorting /-->
+			</div>
+			<!-- /wp:group -->
+
+			<!-- wp:woocommerce/product-template {"className":"alignwide"} -->
+				<!-- wp:group {"className":"omega-shop-card","layout":{"type":"flex","orientation":"vertical"}} -->
+				<div class="wp-block-group omega-shop-card">
+					<!-- wp:woocommerce/product-image {"showSaleBadge":true,"imageSizing":"thumbnail","isDescendentOfQueryLoop":true} /-->
+
+					<!-- wp:group {"className":"omega-shop-card__body","layout":{"type":"flex","orientation":"vertical"}} -->
+					<div class="wp-block-group omega-shop-card__body">
+						<!-- wp:post-terms {"term":"product_cat","className":"omega-shop-card__cat"} /-->
+
+						<!-- wp:post-title {"level":3,"isLink":true,"fontSize":"medium"} /-->
+
+						<!-- wp:woocommerce/product-rating {"isDescendentOfQueryLoop":true,"className":"omega-shop-card__rating"} /-->
+
+						<!-- wp:woocommerce/product-price {"isDescendentOfQueryLoop":true} /-->
+
+						<!-- wp:woocommerce/product-button {"isDescendentOfQueryLoop":true,"fontSize":"small"} /-->
+					</div>
+					<!-- /wp:group -->
+				</div>
+				<!-- /wp:group -->
+			<!-- /wp:woocommerce/product-template -->
+
+			<!-- wp:query-pagination {"align":"wide","layout":{"type":"flex","justifyContent":"center"}} -->
+				<!-- wp:query-pagination-previous /-->
+				<!-- wp:query-pagination-numbers /-->
+				<!-- wp:query-pagination-next /-->
+			<!-- /wp:query-pagination -->
+
+			<!-- wp:woocommerce/product-collection-no-results -->
+			<!-- wp:group {"layout":{"type":"flex","orientation":"vertical","justifyContent":"center","flexWrap":"wrap"}} -->
+			<div class="wp-block-group">
+				<!-- wp:pattern {"slug":"woocommerce/no-products-found-clear-filters"} /-->
+			</div>
+			<!-- /wp:group -->
+			<!-- /wp:woocommerce/product-collection-no-results -->
+		</div>
+		<!-- /wp:group -->
+	</div>
+	<!-- /wp:woocommerce/product-collection -->
+</main>
+<!-- /wp:group -->
+
+<!-- wp:template-part {"slug":"footer"} /-->

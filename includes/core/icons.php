@@ -41,6 +41,7 @@ class icons {
         add_action('init', [$this, 'register']);
         add_filter('rest_pre_dispatch', [$this, 'maybe_serve_cached_icons'], 10, 3);
         add_filter('rest_post_dispatch', [$this, 'maybe_cache_icons_response'], 10, 3);
+        add_action('enqueue_block_editor_assets', [$this, 'enqueue_editor_icon_cache']);
 
         // See warm_cache() below for why this exists.
         add_action('init', [$this, 'schedule_cache_warm']);
@@ -254,6 +255,16 @@ class icons {
         return $response;
     }
 
+    /**
+     * The full catalog (~4,000 wp_register_icon() calls, ~12ms) is only
+     * needed where someone can browse or pick icons: wp-admin and REST
+     * (the editor's Icon library and its per-icon fetches). A front-end
+     * page view only ever renders the handful of icons its own blocks
+     * reference, so there each icon is registered on demand, just before
+     * the one core/icon block that needs it renders (register_for_block()).
+     * rest_api_init fires on every REST request before any route runs, so
+     * REST still always sees the complete catalog.
+     */
     public function register() {
         if (!function_exists('wp_register_icon_collection')) {
             return;
@@ -264,12 +275,210 @@ class icons {
             'description' => __('Icons from the Omega Design theme.', 'omega-design'),
         ]);
 
+        if (is_admin() || wp_doing_ajax() || (defined('WP_CLI') && WP_CLI)) {
+            $this->register_all();
+            return;
+        }
+
+        add_action('rest_api_init', [$this, 'register_all'], 0);
+        add_filter('render_block_data', [$this, 'register_for_block']);
+    }
+
+    private $all_registered = false;
+
+    public function register_all() {
+        if ($this->all_registered) {
+            return;
+        }
+        $this->all_registered = true;
+
+        $registry = \WP_Icons_Registry::get_instance();
         foreach ($this->get_material_icons() as $name => $label) {
-            wp_register_icon('omega-icons/' . $name, [
-                'label'     => $label,
-                'file_path' => OMEGA_DESIGN_ASSETS . '/icons/material-symbols/' . $name . '.svg',
+            if (!$registry->is_registered('omega-icons/' . $name)) {
+                wp_register_icon('omega-icons/' . $name, [
+                    'label'     => $label,
+                    'file_path' => OMEGA_DESIGN_ASSETS . '/icons/material-symbols/' . $name . '.svg',
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Front-end, on demand: registers the one icon a core/icon block is
+     * about to render. Checks the SVG file exists rather than loading the
+     * 4,000-entry label list just to look one name up.
+     */
+    public function register_for_block($parsed_block) {
+        if ('core/icon' !== ($parsed_block['blockName'] ?? '') || $this->all_registered) {
+            return $parsed_block;
+        }
+
+        $icon = (string) ($parsed_block['attrs']['icon'] ?? '');
+        if (0 !== strpos($icon, 'omega-icons/')) {
+            return $parsed_block;
+        }
+
+        $name = substr($icon, strlen('omega-icons/'));
+        if (!preg_match('/^[a-z0-9-]+$/', $name) || \WP_Icons_Registry::get_instance()->is_registered($icon)) {
+            return $parsed_block;
+        }
+
+        $file = OMEGA_DESIGN_ASSETS . '/icons/material-symbols/' . $name . '.svg';
+        if (is_file($file)) {
+            wp_register_icon($icon, [
+                'label'     => ucwords(str_replace('-', ' ', $name)),
+                'file_path' => $file,
             ]);
         }
+
+        return $parsed_block;
+    }
+
+    /**
+     * Measured cause of the slow editor/Site Editor loads: every core/icon
+     * block - in the post being edited, in each pattern preview, in every
+     * template - fetches its own icon with a separate
+     * GET /wp/v2/icons/omega-icons/{name} request. The theme's patterns
+     * and templates use ~100 different icons, and each of those requests
+     * is a full WordPress + REST bootstrap (~0.6s here), queued behind one
+     * another - 8-12 seconds of icon spinners on every editor open.
+     *
+     * This hands the editor all of those responses inside its own page
+     * load instead, plus a tiny apiFetch middleware that answers every
+     * GET /wp/v2/icons/omega-icons/{name} from them - so none of those
+     * HTTP requests ever happen.
+     *
+     * Not core's own preloading (block_editor_rest_api_preload_paths):
+     * that hands out each preloaded response only once, but every pattern
+     * preview renders in its own block-editor registry and re-requests the
+     * same icons, so anything used more than once still went to the
+     * network. The middleware also remembers icons fetched later (picked
+     * from the Icon library), so each icon is only ever fetched once per
+     * editor session.
+     */
+    public function enqueue_editor_icon_cache() {
+        $screen = function_exists('get_current_screen') ? get_current_screen() : null;
+        if ($screen && !$screen->is_block_editor()) {
+            return;
+        }
+
+        $context = (object) [
+            'name' => ($screen && 'site-editor' === $screen->id) ? 'core/edit-site' : 'core/edit-post',
+            'post' => get_post(),
+        ];
+
+        $icons = $this->icon_responses($this->used_icon_names($context));
+
+        $script = '(function(){if(!window.wp||!wp.apiFetch)return;'
+            . 'var icons=' . wp_json_encode((object) $icons) . ';'
+            . 'var re=/^\/?wp\/v2\/icons\/(omega-icons\/[a-z0-9-]+)(?:\?|$)/;'
+            . 'wp.apiFetch.use(function(o,next){'
+            . 'var m=o&&typeof o.path==="string"&&(!o.method||o.method==="GET")&&re.exec(decodeURIComponent(o.path));'
+            . 'if(!m)return next(o);'
+            . 'var k=m[1],raw=o.parse===false;'
+            // core-data's getEntityRecord() asks for the raw Response
+            // (parse:false) so it can read headers - answer that the same
+            // way core's own preloading middleware does.
+            . 'if(icons[k])return Promise.resolve(raw?new window.Response(JSON.stringify(icons[k]),{status:200,statusText:"OK",headers:{"Content-Type":"application/json","Allow":"GET"}}):JSON.parse(JSON.stringify(icons[k])));'
+            . 'return next(o).then(function(r){'
+            . 'if(!raw){icons[k]=r;}else if(r&&r.ok&&r.clone){r.clone().json().then(function(b){icons[k]=b;},function(){});}'
+            . 'return r;});'
+            . '});})();';
+
+        wp_add_inline_script('wp-api-fetch', $script, 'after');
+    }
+
+    /**
+     * The REST responses for $names, exactly as GET
+     * /wp/v2/icons/omega-icons/{name}?context=view would return them,
+     * cached per icon set (+ the SVG folder's mtime) so an editor page load
+     * doesn't re-resolve 100 icons every time.
+     */
+    private function icon_responses($names) {
+        if (empty($names)) {
+            return [];
+        }
+
+        sort($names);
+        $key = 'omega_icon_responses_' . md5(implode(',', $names) . '|' . @filemtime(OMEGA_DESIGN_ASSETS . '/icons/material-symbols'));
+
+        $cached = get_transient($key);
+        if (is_array($cached)) {
+            return $cached;
+        }
+
+        $this->register_all();
+        $server    = rest_get_server();
+        $responses = [];
+        foreach ($names as $name) {
+            $request = new \WP_REST_Request('GET', '/wp/v2/icons/omega-icons/' . $name);
+            $request->set_query_params(['context' => 'view']);
+            $response = rest_do_request($request);
+            if (!$response->is_error() && 200 === $response->get_status()) {
+                $responses['omega-icons/' . $name] = $server->response_to_data($response, false);
+            }
+        }
+
+        set_transient($key, $responses, WEEK_IN_SECONDS);
+        return $responses;
+    }
+
+    /**
+     * Every omega-icons name referenced by the theme's patterns, templates
+     * and template parts (plus the post being edited, and any Site Editor
+     * customizations), cached by the source files' mtimes so it's only
+     * rescanned when one of them changes.
+     */
+    private function used_icon_names($context) {
+        $theme_dir = get_template_directory();
+        $files     = array_merge(
+            (array) glob($theme_dir . '/pattern/*.php'),
+            (array) glob($theme_dir . '/templates/*.html'),
+            (array) glob($theme_dir . '/parts/*.html')
+        );
+
+        $key = 'omega_used_icons_' . md5(implode('|', array_map(function ($file) {
+            return $file . ':' . @filemtime($file);
+        }, $files)));
+
+        $names = get_transient($key);
+        if (!is_array($names)) {
+            $haystack = '';
+            foreach (\WP_Block_Patterns_Registry::get_instance()->get_all_registered() as $pattern) {
+                $haystack .= $pattern['content'] ?? '';
+            }
+            foreach ($files as $file) {
+                if ('.html' === substr($file, -5)) {
+                    $haystack .= (string) file_get_contents($file);
+                }
+            }
+            $names = $this->extract_icon_names($haystack);
+            set_transient($key, $names, WEEK_IN_SECONDS);
+        }
+
+        $extra = '';
+        if (!empty($context->post) && $context->post instanceof \WP_Post) {
+            $extra .= $context->post->post_content;
+        }
+        // Site Editor: templates/parts the user has customized live in the DB.
+        if ('core/edit-site' === ($context->name ?? '')) {
+            foreach (get_posts(['post_type' => ['wp_template', 'wp_template_part'], 'posts_per_page' => 50, 'post_status' => 'publish', 'no_found_rows' => true]) as $post) {
+                $extra .= $post->post_content;
+            }
+        }
+
+        return array_values(array_unique(array_merge($names, $this->extract_icon_names($extra))));
+    }
+
+    private function extract_icon_names($content) {
+        if ('' === $content || !preg_match_all('#"icon":"omega-icons/([a-z0-9-]+)"#', $content, $matches)) {
+            return [];
+        }
+
+        $dir = OMEGA_DESIGN_ASSETS . '/icons/material-symbols/';
+        return array_values(array_filter(array_unique($matches[1]), function ($name) use ($dir) {
+            return is_file($dir . $name . '.svg');
+        }));
     }
 
     /**

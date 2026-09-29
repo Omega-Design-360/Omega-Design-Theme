@@ -31,7 +31,8 @@ body.woocommerce-checkout .wp-block-post-content {
 	align-items: start;
 }
 
-@media (min-width: 700px) {
+/* 1024px rather than 700px - see the matching comment in cart-page.css. */
+@media (min-width: 1024px) {
 	.wc-block-components-sidebar-layout.wc-block-checkout {
 		flex-wrap: nowrap !important;
 	}
@@ -43,7 +44,7 @@ body.woocommerce-checkout .wp-block-post-content {
 
 	.wc-block-checkout .wc-block-components-sidebar {
 		width: 38% !important;
-		padding-left: 0 !important;
+		padding-left: 1.75rem !important; /* the card itself - see .wc-block-checkout__sidebar below */
 	}
 }
 
@@ -53,52 +54,61 @@ body.woocommerce-checkout .wp-block-post-content {
 
 /* Numbered steps (Contact, Shipping, Payment...) - a plain CSS counter, not
    WooCommerce's own --with-step-numbers attribute, so it works regardless
-   of how the block itself is configured. */
+   of how the block itself is configured.
+   The number sits inline in front of each step's own title rather than
+   absolutely positioned against the step's left padding: WooCommerce's own
+   CSS resets that padding to 0, which dropped every number on top of its
+   step's text, and counting titles (not steps) keeps title-less steps like
+   the order-notes checkbox from being numbered at all. */
 .wc-block-checkout__form {
 	counter-reset: omega-checkout-step;
 }
 
 .wc-block-components-checkout-step {
 	position: relative;
-	padding: var(--wp--preset--spacing--l) 0 var(--wp--preset--spacing--l) 3rem;
+	margin-bottom: 0 !important;
+	padding: var(--wp--preset--spacing--l) 0 !important;
 	border-bottom: 1px solid var(--wp--preset--color--border);
 }
 
 .wc-block-components-checkout-step:first-child {
-	padding-top: 0;
+	padding-top: 0 !important;
 }
 
 .wc-block-components-checkout-step:last-child {
 	border-bottom: none;
-	padding-bottom: 0;
+	padding-bottom: 0 !important;
 }
 
-.wc-block-components-checkout-step::before {
+.wc-block-components-checkout-step__title {
+	display: flex;
+	align-items: center;
+	gap: 0.65rem;
+	font-size: 1.0625rem;
+	font-weight: 700;
+	color: var(--wp--preset--color--heading);
+}
+
+.wc-block-checkout__form .wc-block-components-checkout-step .wc-block-components-checkout-step__title::before {
 	counter-increment: omega-checkout-step;
 	content: counter(omega-checkout-step);
-	position: absolute;
-	left: 0;
-	top: var(--wp--preset--spacing--l);
+	flex: none;
 	width: 28px;
 	height: 28px;
 	border-radius: 50%;
 	background: var(--wp--preset--color--page-background);
-	color: var(--wp--preset--color--heading);
+	color: var(--wp--preset--color--primary);
 	font-size: 0.8125rem;
 	font-weight: 700;
-	display: flex;
+	display: inline-flex;
 	align-items: center;
 	justify-content: center;
 }
 
-.wc-block-components-checkout-step:first-child::before {
-	top: 0;
-}
-
-.wc-block-components-checkout-step__title {
-	font-size: 1.0625rem;
-	font-weight: 700;
-	color: var(--wp--preset--color--heading);
+/* Step content lines up under the title text, not under its number. */
+.wc-block-checkout__form .wc-block-components-checkout-step__description,
+.wc-block-checkout__form .wc-block-components-checkout-step__content {
+	padding-left: calc(28px + 0.65rem);
 }
 
 .wc-block-components-checkout-step__description {
@@ -345,41 +355,102 @@ select {
 	}
 }
 
-/* ---------------------------------------------------------------------
-   Store notices - kept (payment/coupon errors that redirect back still
-   need to be visible), but styled as a real banner instead of the
-   plugin/browser default box.
-   --------------------------------------------------------------------- */
-.woocommerce-message,
-.woocommerce-error,
-.woocommerce-info {
-	list-style: none;
-	margin: 0 0 1.5rem;
-	padding: 1rem 1.25rem;
-	border-radius: 10px;
-	border-left: 3px solid var(--wp--preset--color--primary);
-	background: var(--wp--preset--color--page-background);
-	color: var(--wp--preset--color--heading);
-	font-size: 0.9375rem;
-}
+/* Store notices (.woocommerce-message etc.) are styled site-wide in
+   style.css - they also show on the shop, product and cart pages. */
 
-.woocommerce-error {
-	border-left-color: var(--wp--preset--color--danger);
-}
+/* Tablets: stack form and summary at full width. Side by side (whether
+   WooCommerce's own split or the forced one above), the summary column
+   was ~250px wide - line items wrapped to one word per line. */
+@media (max-width: 1023px) {
+	.wc-block-components-sidebar-layout.wc-block-checkout {
+		flex-direction: column;
+		flex-wrap: nowrap !important;
+		gap: var(--wp--preset--spacing--l);
+	}
 
-.woocommerce-message a.button,
-.woocommerce-error a.button {
-	margin-left: 0.75rem;
-	color: var(--wp--preset--color--primary);
-	text-decoration: underline;
-}
+	.wc-block-checkout .wc-block-components-main,
+	.wc-block-checkout .wc-block-components-sidebar {
+		width: 100% !important;
+		max-width: none;
+	}
 
-@media (max-width: 782px) {
+	.wc-block-checkout .wc-block-components-main {
+		padding-left: 0 !important;
+		padding-right: 0 !important;
+	}
+
 	.wc-block-checkout__sidebar {
 		position: static;
 	}
+}
+
+/* Place Order - the same primary CTA wherever WooCommerce renders it (in
+   the sidebar on this site's own page, in the form's actions row on the
+   default block layout and on phones). */
+.wc-block-checkout .wc-block-components-checkout-place-order-button {
+	width: 100%;
+	min-height: 54px;
+	border-radius: 10px;
+	font-size: 1rem;
+	font-weight: 700;
+	box-shadow: 0 16px 30px -14px color-mix(in srgb, var(--wp--preset--color--primary) 60%, transparent);
+}
+
+/* ---------------------------------------------------------------------
+   Mobile
+   --------------------------------------------------------------------- */
+@media (max-width: 600px) {
+	.wp-block-woocommerce-checkout {
+		margin-top: var(--wp--preset--spacing--s);
+		margin-bottom: var(--wp--preset--spacing--xl);
+	}
+
+	/* The title-width indent is a desktop nicety - on a phone every field
+	   needs the full width. */
+	.wc-block-checkout__form .wc-block-components-checkout-step__description,
+	.wc-block-checkout__form .wc-block-components-checkout-step__content {
+		padding-left: 0;
+	}
 
 	.wc-block-components-checkout-step {
-		padding-left: 2.5rem;
+		padding: var(--wp--preset--spacing--m) 0 !important;
+	}
+
+	.wc-block-components-checkout-step__content {
+		margin-top: 1rem;
+	}
+
+	/* 16px text in every field - anything smaller makes iOS Safari zoom
+	   the whole page in on focus. */
+	.wc-block-components-text-input input,
+	.wc-block-components-combobox .components-combobox-control input,
+	.wc-block-components-select-input select,
+	.wc-blocks-components-select__select,
+	.wc-block-components-textarea {
+		font-size: 16px !important;
+	}
+
+	.wc-block-checkout__shipping-method-option,
+	.wc-block-components-radio-control__option {
+		padding: 0.85rem 0.9rem;
+	}
+
+	.wc-block-checkout__sidebar {
+		padding: 1.25rem;
+		border-radius: 14px;
+	}
+
+	.wc-block-components-totals-footer-item .wc-block-components-totals-item__label,
+	.wc-block-components-totals-footer-item .wc-block-components-totals-item__value {
+		font-size: 1.0625rem;
+	}
+
+	.wc-block-checkout__actions_row {
+		flex-direction: column-reverse;
+		gap: 1rem;
+	}
+
+	.wc-block-components-checkout-return-to-cart-button {
+		align-self: center;
 	}
 }

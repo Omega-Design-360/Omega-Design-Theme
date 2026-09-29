@@ -20,6 +20,22 @@ class hooks {
         $this->init_core_hooks();
     }
 
+    /**
+     * "6 min read" instead of core's "6 minutes" for Time to Read blocks
+     * carrying the omega-read-short class (the compact card meta rows in
+     * pattern/landing-blog-hub.php). Other Time to Read blocks are untouched.
+     */
+    public function short_read_time($content, $block) {
+        if (false === strpos(' ' . ($block['attrs']['className'] ?? '') . ' ', ' omega-read-short ')) {
+            return $content;
+        }
+
+        return preg_replace_callback('/>\s*([\d–-]+)\s+[^<]*</u', function ($m) {
+            /* translators: %s: number of minutes. */
+            return '>' . sprintf(__('%s min read', 'omega-design'), $m[1]) . '<';
+        }, $content, 1);
+    }
+
     public static function get_instance() {
         if (null === self::$instance) {
             self::$instance = new self();
@@ -32,6 +48,7 @@ class hooks {
     }
 
     private function init_core_hooks() {
+        add_filter('render_block_core/post-time-to-read', [$this, 'short_read_time'], 10, 2);
         add_action('wp_enqueue_scripts', [$this, 'enqueue_frontend_assets']);
         add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_assets']);
         add_action('enqueue_block_assets', [$this, 'enqueue_block_assets']);
@@ -170,6 +187,28 @@ class hooks {
             $this->enqueue_checkout_page_assets();
         }
 
+        // Blog page + post archives (category, tag, author, date): card grid
+        // with scroll reveal - assets/css/blog-cards.css, assets/js/blog-cards.js.
+        if (is_home() || is_category() || is_tag() || is_author() || is_date()) {
+            $cards_css = OMEGA_DESIGN_ASSETS . '/css/blog-cards.css';
+            $cards_js  = OMEGA_DESIGN_ASSETS . '/js/blog-cards.js';
+            if (file_exists($cards_css)) {
+                wp_enqueue_style('omega-design-blog-cards', OMEGA_DESIGN_CSS_URI . '/blog-cards.css', ['omega-design-style'], filemtime($cards_css));
+            }
+            if (file_exists($cards_js)) {
+                wp_enqueue_script('omega-design-blog-cards', OMEGA_DESIGN_JS_URI . '/blog-cards.js', [], filemtime($cards_js), ['in_footer' => true, 'strategy' => 'defer']);
+            }
+        }
+
+        // The "Blog Hub" page template (templates/blog-hub.html) widens its
+        // content area via the Blog Hub stylesheet, pattern or not.
+        if (is_singular('page') && 'blog-hub' === get_page_template_slug()) {
+            $hub_css = OMEGA_DESIGN_ASSETS . '/css/landing-blog-hub.css';
+            if (file_exists($hub_css)) {
+                wp_enqueue_style('omega-design-landing-blog-hub', OMEGA_DESIGN_CSS_URI . '/landing-blog-hub.css', [], filemtime($hub_css));
+            }
+        }
+
         if (is_singular() && (
             has_block('omega-design/slider')
             || has_block('omega-design/tabs')
@@ -200,6 +239,8 @@ class hooks {
         'beauty-cosmetics',
         'bookstore',
         'jewelry-store',
+        'blog-magazine',
+        'blog-hub',
     ];
 
     /**

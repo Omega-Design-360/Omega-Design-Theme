@@ -1362,3 +1362,399 @@
 	padding-right: var(--wp--preset--spacing--m);
 	background: var(--wp--preset--color--background);
 }
+
+/* =====================================================================
+   Shared fixes + mobile (all 5 layouts)
+   ===================================================================== */
+
+/*
+ * Every layout renders woocommerce/product-details through do_blocks()
+ * rather than from the template itself (see product_page.php block()), so
+ * WooCommerce never enqueues that block's own stylesheet - the tabs fell
+ * back to a bare bulleted <ul> of links on every layout. This is the base
+ * tab strip each layout's own ul.tabs rules above then skin: a single
+ * row that scrolls sideways on narrow screens instead of wrapping into a
+ * stacked list.
+ */
+.opl .woocommerce-tabs ul.tabs.wc-tabs {
+	display: flex;
+	flex-wrap: nowrap;
+	list-style: none;
+	margin-left: 0;
+	margin-right: 0;
+	padding: 0;
+	overflow-x: auto;
+	scrollbar-width: none;
+	-webkit-overflow-scrolling: touch;
+}
+
+.opl .woocommerce-tabs ul.tabs.wc-tabs::-webkit-scrollbar {
+	display: none;
+}
+
+.opl .woocommerce-tabs ul.tabs.wc-tabs::before,
+.opl .woocommerce-tabs ul.tabs.wc-tabs li::before,
+.opl .woocommerce-tabs ul.tabs.wc-tabs li::after {
+	display: none;
+}
+
+.opl .woocommerce-tabs ul.tabs.wc-tabs li {
+	flex: none;
+	margin: 0;
+	list-style: none;
+	white-space: nowrap;
+}
+
+.opl .woocommerce-tabs ul.tabs.wc-tabs li a {
+	display: block;
+	color: inherit;
+	text-decoration: none;
+}
+
+.opl-bq__tabs ul.tabs.wc-tabs {
+	justify-content: safe center;
+}
+
+/* The panel repeats the active tab's name as its own h2 - at the theme's
+   full heading size it dwarfed the short content it introduces. */
+.opl .woocommerce-Tabs-panel > h2:first-child {
+	font-size: var(--wp--preset--font-size--large);
+	margin-top: 0;
+}
+
+/* Full-screen gallery trigger: WooCommerce's default is a bare emoji
+   pinned to the image's top-left corner, right on top of the sale badge.
+   A round button in the opposite corner reads as a control and stays
+   clear of the badge. */
+.opl .woocommerce-product-gallery {
+	position: relative;
+}
+
+.opl .woocommerce-product-gallery__trigger {
+	position: absolute;
+	top: 0.85rem;
+	right: 0.85rem;
+	left: auto;
+	z-index: 2;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 40px;
+	height: 40px;
+	border-radius: 50%;
+	background: var(--wp--preset--color--background, #fff);
+	box-shadow: 0 6px 16px -6px rgba(0, 0, 0, 0.35);
+	text-decoration: none;
+	font-size: 1rem;
+	line-height: 1;
+}
+
+.opl .woocommerce-product-gallery__trigger img.emoji {
+	width: 18px !important;
+	height: 18px !important;
+	margin: 0 !important;
+}
+
+/* The carousel variant draws its own top border/spacing, and every layout
+   already wraps related() in .opl__related, which draws the same one - so
+   the page showed two stacked divider lines. Keep the outer one only. */
+.opl__related .omega-related-products {
+	margin-top: 0;
+	padding-top: 0;
+	border-top: 0;
+}
+
+/* Gallery thumbnails: fixed-size tiles instead of WooCommerce's
+   percentage widths, which shrank to slivers on a phone. */
+.opl .woocommerce-product-gallery ul.flex-control-thumbs {
+	display: flex;
+	gap: 0.6rem;
+	margin: 0.85rem 0 0;
+	padding: 0;
+	list-style: none;
+}
+
+.opl .woocommerce-product-gallery ul.flex-control-thumbs li {
+	width: 64px !important;
+	flex: none;
+	margin: 0 !important;
+}
+
+@media (max-width: 600px) {
+	/* <main> already provides the page gutter on mobile - every layout's
+	   own side padding on top of it left barely 75% of the screen for
+	   content. */
+	.opl--gallery-feature .opl-gf__grid,
+	.opl--gallery-feature .opl-gf__tabs.wp-block-woocommerce-product-details,
+	.opl--command-deck,
+	.opl-ss__tabs.wp-block-woocommerce-product-details,
+	.opl--spec-sheet,
+	.opl-bq__wrap,
+	.opl-bq__tabs,
+	.opl--gallery-feature .opl__related,
+	.opl--split-stage .opl__related {
+		padding-left: 0;
+		padding-right: 0;
+	}
+
+	.opl {
+		margin-top: var(--wp--preset--spacing--s);
+	}
+
+	/* One swipeable row of thumbnails instead of several wrapped rows. */
+	.opl .woocommerce-product-gallery ul.flex-control-thumbs {
+		flex-wrap: nowrap;
+		overflow-x: auto;
+		scrollbar-width: none;
+	}
+
+	.opl .woocommerce-product-gallery ul.flex-control-thumbs li {
+		width: 56px !important;
+	}
+
+	.opl span.onsale {
+		top: 0.75rem;
+		left: 0.75rem;
+	}
+
+	/* Quantity stepper + Add to cart: one row, the button taking all the
+	   remaining width so it's a big, thumb-friendly target in every
+	   layout (some layouts sized it to its label, others to 100%). */
+	.opl .wp-block-woocommerce-add-to-cart-form form.cart:not(.variations_form),
+	.opl .wp-block-woocommerce-add-to-cart-form .woocommerce-variation-add-to-cart {
+		display: flex;
+		align-items: stretch;
+		gap: 0.6rem;
+	}
+
+	.opl .wp-block-woocommerce-add-to-cart-form .quantity {
+		flex: none;
+		margin: 0 !important;
+	}
+
+	.opl .wp-block-woocommerce-add-to-cart-form .single_add_to_cart_button.wp-element-button {
+		flex: 1 1 auto;
+		width: auto;
+		min-height: 52px;
+		margin: 0;
+		padding-left: 1rem;
+		padding-right: 1rem;
+	}
+
+	.opl .woocommerce-Tabs-panel {
+		font-size: 0.9375rem;
+	}
+
+	.opl table.shop_attributes th {
+		width: 40% !important;
+	}
+
+	.opl__related,
+	.opl--gallery-feature .opl-gf__tabs.wp-block-woocommerce-product-details,
+	.opl-cd__tabs.wp-block-woocommerce-product-details,
+	.opl-ss__tabs.wp-block-woocommerce-product-details,
+	.opl-sh__tabs.wp-block-woocommerce-product-details {
+		margin-top: var(--wp--preset--spacing--xl);
+	}
+
+	.opl__related .related.products > h2,
+	.omega-related-products__heading {
+		font-size: var(--wp--preset--font-size--large);
+		margin-bottom: var(--wp--preset--spacing--m);
+	}
+
+	/* Related products: 2 compact cards per row/view. */
+	.opl__related ul.products {
+		gap: var(--wp--preset--spacing--s);
+	}
+
+	.opl__related li.product .woocommerce-loop-product__title,
+	.omega-related-products-slider li.product .woocommerce-loop-product__title {
+		font-size: 0.9375rem;
+		line-height: 1.35;
+	}
+
+	.opl__related li.product .price,
+	.omega-related-products-slider li.product .price {
+		font-size: 0.875rem;
+	}
+
+	.opl__related li.product .button,
+	.omega-related-products-slider li.product .button {
+		display: block;
+		text-align: center;
+		padding: 0.55rem 0.5rem;
+	}
+
+	/* Gallery Feature */
+	.opl--gallery-feature .opl-gf__grid {
+		row-gap: var(--wp--preset--spacing--m);
+	}
+
+	.opl--gallery-feature .opl-gf__title.wp-block-post-title {
+		font-size: clamp(1.75rem, 8vw, 2.25rem) !important;
+	}
+
+	.opl-gf__info-col > * + * {
+		margin-top: 1rem;
+	}
+
+	.opl--gallery-feature .opl-gf__cta.wp-block-woocommerce-add-to-cart-form {
+		margin-top: 1.25rem;
+	}
+
+	.opl-gf__tabs ul.tabs.wc-tabs li {
+		padding: 0.55em 1.1em !important;
+	}
+
+	/* Command Deck */
+	.opl-cd__grid {
+		gap: var(--wp--preset--spacing--m);
+	}
+
+	.opl-cd__section {
+		padding: 1.25rem;
+	}
+
+	.opl-cd__price.wc-block-components-product-price {
+		font-size: 1.5rem;
+	}
+
+	.opl-cd__specs-title {
+		margin-top: var(--wp--preset--spacing--xl);
+	}
+
+	.opl-cd__tabs ul.tabs.wc-tabs {
+		gap: 1.25rem;
+	}
+
+	/* Split Stage: the dark photo panel bleeds edge to edge (it's the
+	   layout's whole point - same 50vw bleed as landing-pages.css), and
+	   the absolutely-positioned price tag, which sat on top of the product
+	   photo at this width, drops into normal flow under it. */
+	.opl-ss__split {
+		min-height: 0;
+		margin-left: calc(50% - 50vw);
+		margin-right: calc(50% - 50vw);
+	}
+
+	.opl-ss__dark {
+		flex-direction: column;
+		gap: var(--wp--preset--spacing--m);
+		padding: var(--wp--preset--spacing--l) var(--wp--preset--spacing--m);
+	}
+
+	.opl-ss__price-tag {
+		position: static;
+		align-self: flex-start;
+		padding: 0.25rem 0 0.25rem 1rem;
+		text-align: left;
+	}
+
+	.opl-ss__price-tag .wc-block-components-product-price {
+		font-size: 1.75rem !important;
+	}
+
+	.opl-ss__light {
+		padding: var(--wp--preset--spacing--l) var(--wp--preset--spacing--m) 0;
+	}
+
+	.opl-ss__title.wp-block-post-title {
+		font-size: clamp(2rem, 10vw, 2.75rem) !important;
+		margin-bottom: 1rem;
+	}
+
+	.opl-ss__desc {
+		font-size: 1rem;
+	}
+
+	.opl-ss__facts div,
+	.opl-ss__facts div:nth-child(odd) {
+		padding: 0.9rem 0.75rem 0.9rem 0;
+	}
+
+	.opl-ss__facts div:nth-child(even) {
+		padding-left: 0.9rem;
+	}
+
+	.opl-ss__cta.wp-block-woocommerce-add-to-cart-form .single_add_to_cart_button.wp-element-button {
+		letter-spacing: 0.05em;
+	}
+
+	.opl-ss__tabs ul.tabs.wc-tabs {
+		gap: 1.25rem;
+	}
+
+	/* Spec Sheet */
+	.opl-sh__head {
+		gap: var(--wp--preset--spacing--s);
+	}
+
+	.opl-sh__thumb {
+		width: 100%;
+	}
+
+	/* The desktop badge is shrunk to fit a 120px thumbnail - the image is
+	   full width here, so back to the shared size. */
+	.opl-sh__thumb span.onsale {
+		top: 0.75rem;
+		left: 0.75rem;
+		padding: 0.4em 0.85em;
+		font-size: var(--wp--preset--font-size--x-small);
+	}
+
+	.opl-sh__price-strip .wc-block-components-product-price {
+		font-size: 1.625rem;
+	}
+
+	.opl-sh__tabs ul.tabs.wc-tabs {
+		gap: 1.1rem;
+	}
+
+	/* Boutique: its tinted background runs edge to edge. !important because
+	   .opl--boutique is a direct child of the constrained <main>, whose
+	   generated layout rule pins every child's side margins to auto. */
+	.opl--boutique {
+		margin-left: calc(50% - 50vw) !important;
+		margin-right: calc(50% - 50vw) !important;
+	}
+
+	.opl-bq__wrap,
+	.opl-bq__tabs,
+	.opl--boutique .opl__related {
+		padding-left: var(--wp--preset--spacing--m);
+		padding-right: var(--wp--preset--spacing--m);
+	}
+
+	.opl-bq__wrap {
+		padding-top: var(--wp--preset--spacing--l);
+		padding-bottom: var(--wp--preset--spacing--l);
+	}
+
+	.opl-bq__frame {
+		max-width: none;
+	}
+
+	.opl-bq__title.wp-block-post-title {
+		font-size: clamp(1.75rem, 8vw, 2.25rem) !important;
+	}
+
+	.opl-bq__price.wc-block-components-product-price {
+		font-size: clamp(2rem, 11vw, 2.75rem) !important;
+		line-height: 1.15;
+	}
+
+	.opl-bq__cta .single_add_to_cart_button.wp-element-button {
+		padding-left: 1.5rem;
+		padding-right: 1.5rem;
+	}
+
+	.opl-bq__tabs {
+		margin-top: var(--wp--preset--spacing--xl);
+	}
+
+	.opl-bq__tabs ul.tabs.wc-tabs {
+		gap: 1.25rem;
+		margin-bottom: 1.25rem;
+	}
+}

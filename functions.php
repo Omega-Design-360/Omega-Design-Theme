@@ -86,6 +86,15 @@ define('OMEGA_DESIGN_UPLOADS_YEAR_MONTH_DIR', OMEGA_DESIGN_UPLOADS_DIR . '/' . g
  */
 define('OMEGA_DESIGN_UPLOADS_THEME_DIR', OMEGA_DESIGN_UPLOADS_DIR . '/omega-design');
 define('OMEGA_DESIGN_UPLOADS_THEME_URL', OMEGA_DESIGN_UPLOADS_URL . '/omega-design');
+
+/**
+ * Full-page cache hit, served before the rest of the theme even loads -
+ * see OmegaDesign\core\page_cache::serve_early(). Exits here on a hit;
+ * on a miss (or any non-cacheable request) it returns immediately and the
+ * theme boots as normal.
+ */
+require_once __DIR__ . '/includes/core/page_cache.php';
+\OmegaDesign\core\page_cache::serve_early();
 define('OMEGA_DESIGN_UPLOADS_TEMP_DIR', OMEGA_DESIGN_UPLOADS_THEME_DIR . '/temp');
 define('OMEGA_DESIGN_UPLOADS_BACKUP_DIR', OMEGA_DESIGN_UPLOADS_THEME_DIR . '/backups');
 define('OMEGA_DESIGN_UPLOADS_IMAGES_DIR', OMEGA_DESIGN_UPLOADS_THEME_DIR . '/images');

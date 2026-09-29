@@ -77,6 +77,14 @@ class patterns {
                 'description' => __('Individual sections split out of the full landing pages, so any one of them can be inserted on its own, on any page.', 'omega-design'),
             ]
         );
+
+        register_block_pattern_category(
+            'omega-design-shop',
+            [
+                'label'       => __('Shop', 'omega-design'),
+                'description' => __('WooCommerce shop sections - product grids with filters, category pills, a hero banner, an editorial grid and a compact list - for any page.', 'omega-design'),
+            ]
+        );
     }
 
     /**
@@ -90,6 +98,38 @@ class patterns {
         if (!function_exists('register_block_pattern')) {
             return;
         }
+
+        // Front-end page views never list or insert patterns - they only
+        // need one if the page itself references it by slug (a core/pattern
+        // block, e.g. in a user-edited template), so skip the ~30 pattern
+        // registrations there and load them only when such a block renders.
+        // wp-admin and REST (the editor's inserter/pattern modal) always get
+        // the full set: rest_api_init fires before any REST route runs.
+        if (!is_admin() && !wp_doing_ajax() && !(defined('WP_CLI') && WP_CLI)) {
+            add_action('rest_api_init', [$this, 'register_patterns_now'], 0);
+            add_filter('pre_render_block', [$this, 'register_for_pattern_block'], 10, 2);
+            return;
+        }
+
+        $this->register_patterns_now();
+    }
+
+    private $patterns_registered = false;
+
+    public function register_for_pattern_block($pre_render, $parsed_block) {
+        if ('core/pattern' === ($parsed_block['blockName'] ?? '')
+            && 0 === strpos((string) ($parsed_block['attrs']['slug'] ?? ''), 'omega-design/')
+        ) {
+            $this->register_patterns_now();
+        }
+        return $pre_render;
+    }
+
+    public function register_patterns_now() {
+        if ($this->patterns_registered) {
+            return;
+        }
+        $this->patterns_registered = true;
 
         $pattern_dir = defined('OMEGA_DESIGN_PATTERN')
             ? OMEGA_DESIGN_PATTERN
@@ -124,9 +164,12 @@ class patterns {
      * the very next request rebuilds fresh - nothing to manually bust.
      */
     private function get_patterns_data($pattern_dir, $files) {
+        // The Shop section patterns are built from templates/shop-*.html
+        // (see omega_pattern_shop_section()), so those files' mtimes count too.
+        $source_files = array_merge($files, (array) glob(get_template_directory() . '/templates/shop-*.html'));
         $cache_key = 'omega_patterns_' . md5(implode('|', array_map(function ($file) {
             return $file . ':' . filemtime($file);
-        }, $files)));
+        }, $source_files)));
 
         $cached = get_transient($cache_key);
         if (is_array($cached)) {

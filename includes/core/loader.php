@@ -119,6 +119,13 @@ class loader {
             'deps'     => ['hooks'],
             'enabled'  => true,
         ],
+        'shop_layouts' => [
+            'class'    => 'OmegaDesign\\customizer\\shop_layouts',
+            'priority' => 31,
+            'required' => false,
+            'deps'     => ['hooks'],
+            'enabled'  => true,
+        ],
         'footer_visibility' => [
             'class'    => 'OmegaDesign\\customizer\\footer_visibility',
             'priority' => 20,

@@ -1,0 +1,2388 @@
+/**
+ * Shop Layouts (templates/shop-*.html, includes/customizer/shop_layouts.php).
+ *
+ * One small stylesheet for all five layouts, loaded only on the Shop page
+ * while one of them is active (and in the Site Editor canvas). Everything
+ * is scoped under .omega-shop-layout, so nothing here can leak into other
+ * product grids on the site.
+ *
+ * style.css gives every WooCommerce product <li> a card background, a
+ * fixed 200px image box and object-fit:contain (with !important, to beat
+ * WooCommerce's inline image styles) - these layouts draw their own cards
+ * and image ratios, so several rules below have to undo those first.
+ */
+
+/* ---------------------------------------------------------------------
+   Shared: header, toolbar
+   --------------------------------------------------------------------- */
+.omega-shop-layout {
+	--omega-shop-radius: 14px;
+	--omega-shop-image-bg: var(--wp--preset--color--surface);
+	padding-bottom: var(--wp--preset--spacing--2xl);
+}
+
+.omega-shop-head {
+	margin-top: var(--wp--preset--spacing--m);
+	margin-bottom: var(--wp--preset--spacing--m);
+}
+
+.omega-shop-head .wp-block-query-title {
+	margin: 0.35rem 0 0;
+	font-size: clamp(2rem, 4.5vw, 3rem);
+	line-height: 1.1;
+}
+
+.omega-shop-head .wp-block-term-description {
+	max-width: 42rem;
+	margin-top: 0.5rem;
+	opacity: 0.8;
+}
+
+.omega-shop-head--center .wp-block-term-description {
+	margin-left: auto;
+	margin-right: auto;
+}
+
+.omega-shop-toolbar {
+	gap: 0.75rem 1.25rem !important;
+	align-items: center;
+	margin-bottom: var(--wp--preset--spacing--m);
+}
+
+.omega-shop-toolbar .wc-block-product-results-count p,
+.omega-shop-toolbar .woocommerce-result-count {
+	margin: 0;
+}
+
+.omega-shop-toolbar .wc-block-catalog-sorting,
+.omega-shop-toolbar .woocommerce-ordering {
+	margin: 0;
+}
+
+.omega-shop-toolbar--ruled {
+	padding: 0.85rem 0;
+	border-top: 1px solid var(--wp--preset--color--border);
+	border-bottom: 1px solid var(--wp--preset--color--border);
+}
+
+.omega-shop-toolbar__end {
+	gap: 0.75rem 1.25rem !important;
+	align-items: center;
+	margin-left: auto;
+}
+
+/* ---------------------------------------------------------------------
+   Shared: product grid + card
+   --------------------------------------------------------------------- */
+/* Row gap only: WooCommerce's responsive grid computes its column count
+   from its own column gap, and widening that drops a column. */
+.omega-shop-layout .wc-block-product-template {
+	row-gap: var(--wp--preset--spacing--l) !important;
+}
+
+/* Undo style.css's generic <li> card - these layouts draw their own. */
+.omega-shop-layout li.wc-block-product {
+	margin: 0;
+	padding: 0 !important;
+	overflow: visible;
+	background: none !important;
+	border-radius: 0 !important;
+	box-shadow: none !important;
+	transform: none !important;
+}
+
+.omega-shop-card {
+	height: 100%;
+	gap: 0 !important;
+	align-items: stretch !important;
+}
+
+/* Image box: a fixed aspect ratio instead of style.css's fixed 200px
+   height, so photos scale with the column instead of letterboxing. */
+.omega-shop-layout li.wc-block-product .wc-block-components-product-image {
+	position: relative;
+	height: auto;
+	aspect-ratio: 1 / 1;
+	margin: 0 0 0.85rem;
+	overflow: hidden;
+	border-radius: var(--omega-shop-radius);
+	background: var(--omega-shop-image-bg);
+}
+
+.omega-shop-layout li.wc-block-product .wc-block-components-product-image img {
+	padding: 8%;
+	box-sizing: border-box;
+	object-fit: contain !important;
+	transition: transform 0.35s ease;
+}
+
+.omega-shop-layout li.wc-block-product:hover .wc-block-components-product-image img {
+	transform: scale(1.05);
+}
+
+.omega-shop-card__body {
+	flex: 1 1 auto;
+	gap: 0.4rem !important;
+	align-items: stretch !important;
+}
+
+.omega-shop-card__body > * {
+	margin: 0 !important;
+}
+
+.omega-shop-layout .wc-block-product .wp-block-post-title {
+	margin: 0;
+	font-weight: 600;
+	line-height: 1.3;
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+
+.omega-shop-layout .wc-block-product .wp-block-post-title a {
+	color: var(--wp--preset--color--heading);
+	text-decoration: none;
+}
+
+.omega-shop-layout .wc-block-product .wp-block-post-title a:hover {
+	color: var(--wp--preset--color--primary);
+}
+
+.omega-shop-layout .wc-block-product .wc-block-components-product-price {
+	font-weight: 600;
+	color: var(--wp--preset--color--heading);
+}
+
+.omega-shop-layout .wc-block-product .wc-block-components-product-price del {
+	margin-right: 0.35em;
+	opacity: 0.5;
+	font-weight: 400;
+}
+
+.omega-shop-layout .wc-block-product .wc-block-components-product-price ins {
+	text-decoration: none;
+}
+
+/* Add to cart pinned to the bottom of each card, so a row of cards with
+   one- and two-line titles still lines its buttons up. */
+.omega-shop-card .wp-block-button.wc-block-components-product-button {
+	margin-top: auto !important;
+	padding-top: 0.4rem;
+	align-items: stretch;
+}
+
+.omega-shop-card .wc-block-components-product-button__button {
+	width: 100%;
+	padding: 0.6rem 0.9rem;
+	border-radius: 10px;
+	font-weight: 600;
+}
+
+.omega-shop-layout .wc-block-components-product-sale-badge {
+	margin: 0.6rem !important;
+	padding: 0.3em 0.7em;
+	border: 0;
+	border-radius: 999px;
+	background: var(--wp--preset--color--accent, #0ea5e9);
+	color: #fff;
+	font-size: 0.6875rem;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+}
+
+/* Pagination */
+.omega-shop-layout .wp-block-query-pagination {
+	margin-top: var(--wp--preset--spacing--xl);
+	gap: 0.4rem;
+}
+
+.omega-shop-layout .wp-block-query-pagination .page-numbers,
+.omega-shop-layout .wp-block-query-pagination-previous,
+.omega-shop-layout .wp-block-query-pagination-next {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 42px;
+	height: 42px;
+	padding: 0 0.75rem;
+	border: 1px solid var(--wp--preset--color--border);
+	border-radius: 999px;
+	color: var(--wp--preset--color--heading);
+	text-decoration: none;
+	box-sizing: border-box;
+}
+
+.omega-shop-layout .wp-block-query-pagination .page-numbers.current {
+	border-color: var(--wp--preset--color--primary);
+	background: var(--wp--preset--color--primary);
+	color: var(--wp--preset--color--button-text, #fff);
+}
+
+/* ---------------------------------------------------------------------
+   Shared: filter blocks (WooCommerce Product Filters)
+   --------------------------------------------------------------------- */
+.omega-shop-filters h2.wp-block-heading {
+	font-size: var(--wp--preset--font-size--large);
+}
+
+.omega-shop-filters h3.wp-block-heading {
+	font-size: 0.8125rem;
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--wp--preset--color--heading);
+}
+
+.omega-shop-filters .wc-block-product-filter-checkbox-list__item {
+	padding: 0.2rem 0;
+}
+
+.omega-shop-filters .wc-block-product-filter-checkbox-list__count {
+	opacity: 0.55;
+}
+
+.omega-shop-filters .wc-block-product-filter-clear-button .wp-block-button__link {
+	border-radius: 999px;
+	font-size: var(--wp--preset--font-size--small) !important;
+}
+
+/* Chips (category pills in the Pills and Hero layouts) - rounded, with
+   a primary-colored selected state, in one swipeable row on phones. */
+.omega-shop-filters--chips .wc-block-product-filter-chips__items {
+	gap: 0.5rem;
+}
+
+.omega-shop-filters--chips .wc-block-product-filter-chips__item {
+	padding: 0.55em 1.1em;
+	border-color: var(--wp--preset--color--border);
+	border-radius: 999px;
+	background: var(--wp--preset--color--background, #fff);
+	font-size: 0.875rem;
+	font-weight: 500;
+	white-space: nowrap;
+	transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+
+.omega-shop-filters--chips .wc-block-product-filter-chips__item:hover {
+	border-color: var(--wp--preset--color--primary);
+}
+
+.omega-shop-filters--chips .wc-block-product-filter-chips__item[aria-checked="true"] {
+	border-color: var(--wp--preset--color--primary);
+	background: var(--wp--preset--color--primary);
+	color: var(--wp--preset--color--button-text, #fff);
+}
+
+.omega-shop-filters--chips .wc-block-product-filter-chips__count {
+	opacity: 0.6;
+}
+
+/* ---------------------------------------------------------------------
+   Layout 1: Sidebar Filters
+   --------------------------------------------------------------------- */
+.omega-shop-sidebar__cols {
+	align-items: flex-start !important;
+}
+
+.omega-shop-sidebar__aside {
+	position: sticky;
+	top: var(--wp--preset--spacing--m);
+}
+
+.omega-shop-sidebar__aside .omega-shop-filters {
+	gap: 0 !important;
+}
+
+.omega-shop-sidebar__aside .omega-shop-filters > * {
+	padding: 1.1rem 0;
+	border-bottom: 1px solid var(--wp--preset--color--border);
+}
+
+.omega-shop-sidebar__aside .omega-shop-filters > h2 {
+	padding-top: 0;
+}
+
+.omega-shop-sidebar__aside .omega-shop-filters > .wp-block-woocommerce-product-filter-active:not(:has(.wc-block-product-filter-removable-chips__item)) {
+	display: none;
+}
+
+.omega-shop-sidebar__main {
+	min-width: 0;
+}
+
+/* ---------------------------------------------------------------------
+   Layout 2: Category Pills
+   --------------------------------------------------------------------- */
+.omega-shop-pillbar {
+	position: sticky;
+	top: 0;
+	z-index: 5;
+	margin-bottom: var(--wp--preset--spacing--m);
+	padding-top: 0.85rem;
+	background: var(--wp--preset--color--background, #fff);
+	border-bottom: 1px solid var(--wp--preset--color--border);
+}
+
+.omega-shop-pillbar .omega-shop-filters--chips {
+	margin-bottom: 0.75rem;
+}
+
+.omega-shop-pillbar .omega-shop-toolbar {
+	margin-bottom: 0.75rem;
+}
+
+.omega-shop-head--center .wp-block-query-title {
+	text-align: center;
+}
+
+/* ---------------------------------------------------------------------
+   Layout 3: Hero Banner
+   --------------------------------------------------------------------- */
+.omega-shop-hero {
+	position: relative;
+	overflow: hidden;
+	background-image: radial-gradient(circle at 15% 20%, rgba(255, 255, 255, 0.14), transparent 40%), radial-gradient(circle at 85% 90%, color-mix(in srgb, var(--wp--preset--color--primary) 45%, transparent), transparent 45%);
+}
+
+.omega-shop-hero .wp-block-query-title {
+	margin: 0.5rem 0 0.75rem;
+	font-size: clamp(2.25rem, 6vw, 4rem);
+	line-height: 1.05;
+}
+
+.omega-shop-hero__eyebrow {
+	margin: 0;
+	font-weight: 700;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	opacity: 0.8;
+}
+
+.omega-shop-hero__lead {
+	max-width: 34rem;
+	margin: 0 auto var(--wp--preset--spacing--m) !important;
+	opacity: 0.85;
+}
+
+.omega-shop-filters--on-dark .wc-block-product-filter-chips__items {
+	justify-content: center;
+}
+
+.omega-shop-filters--on-dark .wc-block-product-filter-chips__item {
+	border-color: rgba(255, 255, 255, 0.35);
+	background: rgba(255, 255, 255, 0.08);
+	color: #fff;
+}
+
+.omega-shop-filters--on-dark .wc-block-product-filter-chips__item:hover {
+	border-color: #fff;
+}
+
+.omega-shop-filters--on-dark .wc-block-product-filter-chips__item[aria-checked="true"] {
+	border-color: #fff;
+	background: #fff;
+	color: var(--wp--preset--color--secondary);
+}
+
+.omega-shop-perks {
+	gap: 0.5rem 2rem !important;
+	margin: 0 !important;
+	padding: 0.85rem var(--wp--preset--spacing--m);
+	background: var(--wp--preset--color--surface);
+}
+
+.omega-shop-perks p {
+	margin: 0;
+	font-weight: 600;
+}
+
+.omega-shop-hero-body {
+	margin-top: var(--wp--preset--spacing--l) !important;
+	padding-left: var(--wp--preset--spacing--m);
+	padding-right: var(--wp--preset--spacing--m);
+}
+
+/* ---------------------------------------------------------------------
+   Layout 4: Editorial Grid
+   --------------------------------------------------------------------- */
+.omega-shop-head--editorial {
+	margin-top: var(--wp--preset--spacing--xl);
+	margin-bottom: var(--wp--preset--spacing--l);
+}
+
+.omega-shop-kicker {
+	margin: 0;
+	font-weight: 700;
+	letter-spacing: 0.18em;
+	text-transform: uppercase;
+	color: var(--wp--preset--color--primary);
+}
+
+.omega-shop-head--editorial .wp-block-query-title {
+	font-size: clamp(2.5rem, 7vw, 4.5rem);
+	letter-spacing: -0.02em;
+}
+
+.omega-shop-layout--editorial .wc-block-product-template {
+	row-gap: var(--wp--preset--spacing--xl) !important;
+}
+
+.omega-shop-layout--editorial li.wc-block-product .wc-block-components-product-image {
+	aspect-ratio: 4 / 5;
+	border-radius: 4px;
+}
+
+.omega-shop-layout--editorial li.wc-block-product .wc-block-components-product-image img {
+	padding: 0;
+	object-fit: cover !important;
+}
+
+.omega-shop-card--editorial .wp-block-post-title {
+	font-weight: 500 !important;
+	letter-spacing: -0.01em;
+}
+
+.omega-shop-card--editorial .wc-block-components-product-price {
+	font-weight: 500 !important;
+	opacity: 0.85;
+}
+
+.omega-shop-card--editorial .wc-block-components-product-button__button {
+	width: auto;
+	border: 1px solid currentColor;
+	background: transparent;
+	color: var(--wp--preset--color--heading);
+}
+
+.omega-shop-card--editorial .wc-block-components-product-button__button:hover {
+	background: var(--wp--preset--color--heading);
+	color: var(--wp--preset--color--background, #fff);
+}
+
+.omega-shop-card--editorial .wp-block-button.wc-block-components-product-button {
+	align-items: flex-start;
+}
+
+/* ---------------------------------------------------------------------
+   Fold-out filter panel (Editorial + Compact List) - a native <details>
+   element, so opening/closing it needs no JavaScript at all.
+   --------------------------------------------------------------------- */
+.omega-shop-filter-toggle {
+	margin: 0;
+}
+
+.omega-shop-filter-toggle > summary {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.55rem 1.1rem;
+	border: 1px solid var(--wp--preset--color--heading);
+	border-radius: 999px;
+	font-weight: 600;
+	cursor: pointer;
+	list-style: none;
+	user-select: none;
+}
+
+.omega-shop-filter-toggle > summary::-webkit-details-marker {
+	display: none;
+}
+
+.omega-shop-filter-toggle > summary::before {
+	content: "";
+	width: 16px;
+	height: 16px;
+	background: currentColor;
+	-webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 5h18v2H3zm4 6h10v2H7zm3 6h4v2h-4z'/%3E%3C/svg%3E") center / contain no-repeat;
+	mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 5h18v2H3zm4 6h10v2H7zm3 6h4v2h-4z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.omega-shop-filter-toggle[open] > summary {
+	background: var(--wp--preset--color--heading);
+	color: var(--wp--preset--color--background, #fff);
+}
+
+/* Open: the panel takes the full toolbar width, under the buttons. */
+.omega-shop-filter-toggle[open] {
+	order: 3;
+	flex-basis: 100%;
+}
+
+.omega-shop-filters--panel {
+	display: grid !important;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: var(--wp--preset--spacing--m) var(--wp--preset--spacing--l) !important;
+	margin-top: var(--wp--preset--spacing--m);
+	padding: var(--wp--preset--spacing--m);
+	border-radius: var(--omega-shop-radius);
+	background: var(--wp--preset--color--surface);
+}
+
+.omega-shop-filters--panel > .wp-block-woocommerce-product-filter-active {
+	grid-column: 1 / -1;
+}
+
+.omega-shop-filters--panel > .wp-block-woocommerce-product-filter-active:not(:has(.wc-block-product-filter-removable-chips__item)),
+.omega-shop-filters--panel > .wp-block-woocommerce-product-filter-attribute:empty {
+	display: none;
+}
+
+/* ---------------------------------------------------------------------
+   Layout 5: Compact List
+   --------------------------------------------------------------------- */
+.omega-shop-layout--list .wc-block-product-template {
+	gap: 0 !important;
+}
+
+.omega-shop-layout--list li.wc-block-product {
+	padding: var(--wp--preset--spacing--m) 0 !important;
+	border-bottom: 1px solid var(--wp--preset--color--border);
+}
+
+.omega-shop-row {
+	gap: var(--wp--preset--spacing--m) !important;
+	align-items: center !important;
+}
+
+.omega-shop-layout--list li.wc-block-product .omega-shop-row > .wc-block-components-product-image {
+	flex: 0 0 150px;
+	width: 150px;
+	margin: 0;
+}
+
+.omega-shop-row__body {
+	flex: 1 1 auto;
+	min-width: 0;
+	gap: 0.35rem !important;
+}
+
+.omega-shop-row__body > *,
+.omega-shop-row__buy > * {
+	margin: 0 !important;
+}
+
+.omega-shop-row__body .wp-block-post-title {
+	font-size: 1.25rem !important;
+}
+
+.omega-shop-row__body .wc-block-components-product-summary {
+	opacity: 0.75;
+	font-size: 0.9375rem;
+	line-height: 1.55;
+}
+
+.omega-shop-row__body .wc-block-components-product-summary p {
+	margin: 0;
+}
+
+.omega-shop-row__buy {
+	flex: 0 0 190px;
+	gap: 0.4rem !important;
+	align-items: flex-end !important;
+	text-align: right;
+}
+
+.omega-shop-row__buy .wc-block-components-product-price {
+	font-size: 1.25rem !important;
+}
+
+.omega-shop-row__buy .wc-block-components-product-button__button {
+	padding: 0.6rem 1.2rem;
+	border-radius: 10px;
+	font-weight: 600;
+}
+
+.omega-shop-row__buy .wc-block-components-product-stock-indicator {
+	font-size: 0.8125rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.omega-shop-layout li.wc-block-product .wc-block-components-product-image img {
+		transition: none;
+	}
+}
+
+/* ---------------------------------------------------------------------
+   Tablet
+   --------------------------------------------------------------------- */
+@media (max-width: 781px) {
+	.omega-shop-sidebar__aside {
+		flex-basis: 210px !important;
+	}
+
+	.omega-shop-row__buy {
+		flex-basis: 150px;
+	}
+
+	.omega-shop-layout--list li.wc-block-product .omega-shop-row > .wc-block-components-product-image {
+		flex-basis: 120px;
+		width: 120px;
+	}
+}
+
+/* ---------------------------------------------------------------------
+   Phone
+   --------------------------------------------------------------------- */
+@media (max-width: 600px) {
+	.omega-shop-layout {
+		padding-bottom: var(--wp--preset--spacing--xl);
+	}
+
+	.omega-shop-head {
+		margin-top: var(--wp--preset--spacing--s);
+		margin-bottom: var(--wp--preset--spacing--s);
+	}
+
+	.omega-shop-head .wp-block-query-title {
+		font-size: 2rem;
+	}
+
+	/* 2 cards per row, tighter gaps - every grid layout. */
+	.omega-shop-layout .wc-block-product-template:not(.is-product-collection-layout-list) {
+		display: grid !important;
+		grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+		gap: var(--wp--preset--spacing--m) var(--wp--preset--spacing--s) !important;
+	}
+
+	.omega-shop-layout .wc-block-product-template:not(.is-product-collection-layout-list) > li.wc-block-product {
+		width: auto !important;
+		max-width: none !important;
+	}
+
+	.omega-shop-layout li.wc-block-product .wc-block-components-product-image {
+		height: auto !important;
+		margin-bottom: 0.6rem;
+		border-radius: 12px;
+	}
+
+	.omega-shop-layout .wc-block-product .wp-block-post-title {
+		font-size: 0.9375rem !important;
+	}
+
+	.omega-shop-layout .wc-block-product .wc-block-components-product-price {
+		font-size: 0.875rem !important;
+	}
+
+	.omega-shop-card .wc-block-components-product-button__button {
+		padding: 0.55rem 0.5rem;
+		font-size: 0.8125rem !important;
+	}
+
+	/* No hover on touch - the zoom would just stick after a tap. */
+	.omega-shop-layout li.wc-block-product:hover .wc-block-components-product-image img {
+		transform: none;
+	}
+
+	.omega-shop-toolbar {
+		margin-bottom: var(--wp--preset--spacing--s);
+	}
+
+	.omega-shop-toolbar .wc-block-catalog-sorting select.orderby {
+		max-width: 60vw;
+	}
+
+	/* Sidebar: stacked - WooCommerce's own Product Filters block turns
+	   itself into a "Filters" button + slide-in drawer at this width, so
+	   the sidebar column shrinks to just that button. */
+	.omega-shop-sidebar__cols {
+		flex-direction: column;
+		gap: var(--wp--preset--spacing--s) !important;
+	}
+
+	.omega-shop-sidebar__aside {
+		position: static;
+		flex-basis: auto !important;
+		width: 100%;
+	}
+
+	.omega-shop-sidebar__aside .wc-block-product-filters__open-overlay {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+		width: 100%;
+		min-height: 46px;
+		padding: 0.6rem 1rem;
+		border: 1px solid var(--wp--preset--color--heading);
+		border-radius: 999px;
+		background: transparent;
+		color: var(--wp--preset--color--heading);
+		font-weight: 600;
+	}
+
+	.omega-shop-sidebar__aside .wc-block-product-filters__overlay-content .omega-shop-filters > * {
+		border-bottom: 0;
+	}
+
+	.omega-shop-sidebar__main {
+		width: 100%;
+	}
+
+	/* Chips: one swipeable row instead of several wrapped lines. */
+	.omega-shop-filters--chips .wc-block-product-filter-chips__items {
+		flex-wrap: nowrap;
+		overflow-x: auto;
+		margin: 0 calc(-1 * var(--wp--preset--spacing--m));
+		padding: 0.15rem var(--wp--preset--spacing--m);
+		scrollbar-width: none;
+		-webkit-overflow-scrolling: touch;
+	}
+
+	.omega-shop-filters--chips .wc-block-product-filter-chips__items::-webkit-scrollbar {
+		display: none;
+	}
+
+	.omega-shop-filters--on-dark .wc-block-product-filter-chips__items {
+		justify-content: flex-start;
+	}
+
+	.omega-shop-pillbar {
+		padding-top: 0.6rem;
+	}
+
+	.omega-shop-pillbar .omega-shop-toolbar {
+		margin-bottom: 0.6rem;
+	}
+
+	/* Hero */
+	.omega-shop-hero {
+		padding-top: var(--wp--preset--spacing--xl) !important;
+		padding-bottom: var(--wp--preset--spacing--l) !important;
+	}
+
+	.omega-shop-hero .wp-block-query-title {
+		font-size: 2.25rem;
+	}
+
+	.omega-shop-perks {
+		justify-content: flex-start !important;
+		gap: 0.35rem 1.25rem !important;
+	}
+
+	.omega-shop-hero-body {
+		margin-top: var(--wp--preset--spacing--m) !important;
+	}
+
+	/* Editorial */
+	.omega-shop-head--editorial {
+		margin-top: var(--wp--preset--spacing--m);
+		margin-bottom: var(--wp--preset--spacing--m);
+	}
+
+	.omega-shop-head--editorial .wp-block-query-title {
+		font-size: 2.5rem;
+	}
+
+	.omega-shop-layout--editorial .wc-block-product-template {
+		row-gap: var(--wp--preset--spacing--l) !important;
+	}
+
+	.omega-shop-card--editorial .wc-block-components-product-button__button {
+		width: 100%;
+	}
+
+	.omega-shop-card--editorial .wp-block-button.wc-block-components-product-button {
+		align-items: stretch;
+	}
+
+	.omega-shop-toolbar__end {
+		margin-left: 0;
+	}
+
+	.omega-shop-filters--panel {
+		grid-template-columns: 1fr;
+		padding: var(--wp--preset--spacing--s);
+	}
+
+	/* Compact List: image | details, with price + button under the
+	   details instead of in a third column. */
+	.omega-shop-layout--list li.wc-block-product {
+		padding: var(--wp--preset--spacing--s) 0 !important;
+	}
+
+	.omega-shop-row {
+		display: grid !important;
+		grid-template-columns: 96px minmax(0, 1fr);
+		grid-template-areas: "image body" "image buy";
+		gap: 0.35rem 0.9rem !important;
+		align-items: start !important;
+	}
+
+	.omega-shop-layout--list li.wc-block-product .omega-shop-row > .wc-block-components-product-image {
+		grid-area: image;
+		width: 96px;
+		border-radius: 10px;
+	}
+
+	.omega-shop-row__body {
+		grid-area: body;
+	}
+
+	.omega-shop-row__body .wp-block-post-title {
+		font-size: 1rem !important;
+	}
+
+	.omega-shop-row__body .wc-block-components-product-summary {
+		display: none;
+	}
+
+	.omega-shop-row__buy {
+		grid-area: buy;
+		flex-direction: row !important;
+		flex-wrap: wrap !important;
+		align-items: center !important;
+		justify-content: space-between !important;
+		text-align: left;
+	}
+
+	.omega-shop-row__buy .wc-block-components-product-price {
+		font-size: 1.0625rem !important;
+	}
+
+	.omega-shop-row__buy .wc-block-components-product-stock-indicator {
+		display: none;
+	}
+
+	.omega-shop-row__buy .wc-block-components-product-button__button {
+		padding: 0.5rem 0.9rem;
+		font-size: 0.8125rem !important;
+	}
+}
+
+/* =====================================================================
+   Design layer v2 - modern storefront treatment shared by all five
+   layouts (and the matching "Shop" section patterns). Layered on top of
+   the structural rules above rather than replacing them, so every layout
+   keeps its own grid/filters while sharing one polished card, toolbar and
+   motion language.
+   ===================================================================== */
+.omega-shop-layout {
+	--omega-shop-ink: var(--wp--preset--color--heading, #0f172a);
+	--omega-shop-muted: color-mix(in srgb, var(--omega-shop-ink) 58%, transparent);
+	--omega-shop-rule: color-mix(in srgb, var(--omega-shop-ink) 10%, transparent);
+	--omega-shop-image-bg: linear-gradient(160deg, color-mix(in srgb, var(--wp--preset--color--primary) 6%, #fff) 0%, var(--wp--preset--color--surface, #f4f4f6) 100%);
+	--omega-shop-radius: 18px;
+	--omega-shop-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ---- Header -------------------------------------------------------- */
+.omega-shop-head .wp-block-query-title,
+.omega-shop-head h2.wp-block-heading {
+	font-weight: 800;
+	letter-spacing: -0.03em;
+}
+
+.omega-shop-head .woocommerce-breadcrumb,
+.omega-shop-head .wc-block-breadcrumbs {
+	font-size: 0.8125rem;
+	color: var(--omega-shop-muted);
+}
+
+/* ---- Toolbar: results count as a pill, sort as a soft select -------- */
+.omega-shop-toolbar .wc-block-product-results-count p,
+.omega-shop-toolbar .woocommerce-result-count {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
+	font-size: 0.875rem;
+	font-weight: 600;
+	color: var(--omega-shop-muted);
+	opacity: 1;
+}
+
+.omega-shop-toolbar .wc-block-product-results-count p::before,
+.omega-shop-toolbar .woocommerce-result-count::before {
+	content: "";
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: #22c55e;
+	box-shadow: 0 0 0 4px color-mix(in srgb, #22c55e 20%, transparent);
+}
+
+.omega-shop-toolbar select.orderby {
+	padding: 0.65rem 2.4rem 0.65rem 1rem;
+	border: 1px solid var(--omega-shop-rule);
+	border-radius: 999px;
+	background-color: var(--wp--preset--color--background, #fff);
+	font-weight: 600;
+	box-shadow: 0 6px 18px -12px rgba(15, 23, 42, 0.3);
+}
+
+/* ---- Card ---------------------------------------------------------- */
+.omega-shop-card {
+	position: relative;
+	container-type: inline-size;
+}
+
+.omega-shop-layout li.wc-block-product .omega-shop-card > .wc-block-components-product-image {
+	margin-bottom: 1rem;
+	border-radius: var(--omega-shop-radius);
+	background: var(--omega-shop-image-bg);
+	box-shadow: inset 0 0 0 1px var(--omega-shop-rule);
+	transition: box-shadow 0.4s var(--omega-shop-ease), transform 0.4s var(--omega-shop-ease);
+}
+
+.omega-shop-layout li.wc-block-product .omega-shop-card > .wc-block-components-product-image img {
+	padding: 10%;
+	filter: drop-shadow(0 18px 18px rgba(15, 23, 42, 0.16));
+	transition: transform 0.6s var(--omega-shop-ease);
+}
+
+.omega-shop-layout li.wc-block-product:hover .omega-shop-card > .wc-block-components-product-image {
+	box-shadow: inset 0 0 0 1px transparent, 0 24px 44px -26px rgba(15, 23, 42, 0.45);
+	transform: translateY(-4px);
+}
+
+.omega-shop-layout li.wc-block-product:hover .omega-shop-card > .wc-block-components-product-image img {
+	transform: scale(1.07) rotate(-1.5deg);
+}
+
+.omega-shop-card__cat {
+	margin: 0 !important;
+	font-size: 0.6875rem;
+	font-weight: 800;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+}
+
+.omega-shop-card__cat a {
+	color: var(--wp--preset--color--primary);
+	text-decoration: none;
+}
+
+.omega-shop-card__cat .wp-block-post-terms__separator,
+.omega-shop-card__cat .wp-block-post-terms__separator ~ a {
+	display: none;
+}
+
+.omega-shop-layout .omega-shop-card .wp-block-post-title {
+	font-size: 1.0625rem !important;
+	font-weight: 700;
+	letter-spacing: -0.01em;
+}
+
+.omega-shop-card__rating .wc-block-components-product-rating__stars {
+	color: #f59e0b;
+	font-size: 0.8125rem;
+}
+
+.omega-shop-layout .omega-shop-card .wc-block-components-product-price {
+	font-size: 1.0625rem !important;
+	font-weight: 800;
+	letter-spacing: -0.01em;
+}
+
+.omega-shop-layout .omega-shop-card .wc-block-components-product-price del {
+	font-size: 0.85em;
+}
+
+.omega-shop-layout .omega-shop-card .wc-block-components-product-price ins {
+	color: #e11d48;
+}
+
+/* Sale badge: a bold corner tag instead of a small pill. */
+.omega-shop-layout .omega-shop-card .wc-block-components-product-sale-badge,
+.omega-shop-layout .omega-shop-row .wc-block-components-product-sale-badge {
+	margin: 0.75rem !important;
+	padding: 0.45em 0.8em;
+	border-radius: 8px;
+	background: #e11d48;
+	box-shadow: 0 8px 18px -8px rgba(225, 29, 72, 0.7);
+	font-size: 0.6875rem;
+	letter-spacing: 0.08em;
+}
+
+/* Quick-add: the Add to cart button floats over the bottom of the photo
+   (positioned with container-query units - the image is a fixed aspect
+   ratio of the card's width), sliding up on hover/focus with a mouse and
+   always visible on touch screens. The price line underneath stays clean. */
+.omega-shop-card .wp-block-button.wc-block-components-product-button {
+	position: absolute;
+	top: calc(100cqw - 3.75rem);
+	left: 0.75rem;
+	right: 0.75rem;
+	z-index: 3;
+	margin: 0 !important;
+	padding: 0;
+}
+
+.omega-shop-card .wc-block-components-product-button__button {
+	width: 100%;
+	min-height: 44px;
+	border-radius: 999px;
+	background: var(--omega-shop-ink);
+	color: #fff;
+	font-weight: 700;
+	box-shadow: 0 14px 26px -14px rgba(15, 23, 42, 0.7);
+	backdrop-filter: blur(6px);
+	transition: background-color 0.2s ease, transform 0.35s var(--omega-shop-ease), opacity 0.35s var(--omega-shop-ease);
+}
+
+.omega-shop-card .wc-block-components-product-button__button:hover {
+	background: var(--wp--preset--color--primary);
+}
+
+.omega-shop-card .wc-block-components-product-button__button::before {
+	content: "+";
+	margin-right: 0.45rem;
+	font-size: 1.1em;
+	font-weight: 800;
+	line-height: 1;
+}
+
+.omega-shop-card .wc-block-components-product-button .added_to_cart {
+	display: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+	.omega-shop-card .wc-block-components-product-button__button {
+		opacity: 0;
+		transform: translateY(10px);
+	}
+
+	.omega-shop-layout li.wc-block-product:hover .omega-shop-card .wc-block-components-product-button__button,
+	.omega-shop-card:focus-within .wc-block-components-product-button__button,
+	.omega-shop-card .wc-block-components-product-button__button.loading,
+	.omega-shop-card .wc-block-components-product-button__button.added {
+		opacity: 1;
+		transform: translateY(-4px);
+	}
+}
+
+.omega-shop-card--editorial .wp-block-button.wc-block-components-product-button {
+	top: calc(125cqw - 3.75rem);
+}
+
+.omega-shop-card--editorial .wc-block-components-product-button__button {
+	border: 0;
+	background: rgba(255, 255, 255, 0.92);
+	color: var(--omega-shop-ink);
+}
+
+.omega-shop-card--editorial .wc-block-components-product-button__button:hover {
+	background: var(--omega-shop-ink);
+	color: #fff;
+}
+
+.omega-shop-card__body {
+	gap: 0.35rem !important;
+}
+
+/* ---- Filters: a panel card ----------------------------------------- */
+.omega-shop-sidebar__aside .omega-shop-filters {
+	padding: 1.25rem 1.35rem;
+	border: 1px solid var(--omega-shop-rule);
+	border-radius: 22px;
+	background: var(--wp--preset--color--background, #fff);
+	box-shadow: 0 20px 44px -34px rgba(15, 23, 42, 0.45);
+}
+
+.omega-shop-sidebar__aside .omega-shop-filters > *:last-child {
+	border-bottom: 0;
+	padding-bottom: 0.25rem;
+}
+
+.omega-shop-filters .wc-block-product-filter-checkbox-list__input {
+	border-radius: 6px;
+}
+
+.omega-shop-filters .wc-block-product-filter-price-slider input[type="range"]::-webkit-slider-thumb {
+	background: var(--wp--preset--color--primary);
+	border-color: #fff;
+	box-shadow: 0 2px 8px rgba(15, 23, 42, 0.3);
+}
+
+/* ---- Category Pills: frosted sticky bar ----------------------------- */
+.omega-shop-pillbar {
+	margin-left: -0.75rem;
+	margin-right: -0.75rem;
+	padding: 0.85rem 0.75rem 0.1rem;
+	border-bottom: 0;
+	border-radius: 0 0 22px 22px;
+	background: color-mix(in srgb, var(--wp--preset--color--background, #fff) 82%, transparent);
+	-webkit-backdrop-filter: saturate(1.6) blur(14px);
+	backdrop-filter: saturate(1.6) blur(14px);
+	box-shadow: 0 1px 0 var(--omega-shop-rule);
+}
+
+.omega-shop-filters--chips .wc-block-product-filter-chips__item {
+	padding: 0.6em 1.2em;
+	box-shadow: 0 4px 12px -8px rgba(15, 23, 42, 0.35);
+}
+
+.omega-shop-filters--chips .wc-block-product-filter-chips__item[aria-checked="true"] {
+	box-shadow: 0 10px 22px -10px color-mix(in srgb, var(--wp--preset--color--primary) 80%, transparent);
+}
+
+.omega-shop-layout--pills .omega-shop-head .wp-block-query-title {
+	font-size: clamp(2.5rem, 7vw, 4.75rem);
+}
+
+/* ---- Hero Banner: mesh gradient, glass perks ------------------------ */
+.omega-shop-hero {
+	padding-top: clamp(3.5rem, 9vw, 7rem) !important;
+	padding-bottom: clamp(2.5rem, 6vw, 4.5rem) !important;
+	background:
+		radial-gradient(45% 70% at 12% 18%, color-mix(in srgb, var(--wp--preset--color--primary) 70%, transparent), transparent 70%),
+		radial-gradient(40% 60% at 88% 85%, rgba(236, 72, 153, 0.55), transparent 70%),
+		radial-gradient(35% 55% at 70% 10%, rgba(56, 189, 248, 0.35), transparent 70%),
+		var(--wp--preset--color--secondary, #0f172a) !important;
+}
+
+.omega-shop-hero::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background-image: radial-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px);
+	background-size: 22px 22px;
+	mask-image: radial-gradient(70% 70% at 50% 40%, #000, transparent);
+	-webkit-mask-image: radial-gradient(70% 70% at 50% 40%, #000, transparent);
+	pointer-events: none;
+}
+
+.omega-shop-hero > * {
+	position: relative;
+	z-index: 1;
+}
+
+.omega-shop-hero .wp-block-query-title {
+	font-size: clamp(2.75rem, 8vw, 5.5rem);
+	font-weight: 800;
+	letter-spacing: -0.04em;
+}
+
+.omega-shop-hero__eyebrow {
+	display: inline-block;
+	width: auto;
+	margin: 0 auto !important;
+	padding: 0.45em 1em;
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.12);
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+	-webkit-backdrop-filter: blur(8px);
+	backdrop-filter: blur(8px);
+	opacity: 1;
+}
+
+.omega-shop-hero > .omega-shop-hero__eyebrow {
+	display: table;
+}
+
+.omega-shop-filters--on-dark .wc-block-product-filter-chips__item {
+	-webkit-backdrop-filter: blur(10px);
+	backdrop-filter: blur(10px);
+}
+
+.omega-shop-perks {
+	position: relative;
+	z-index: 2;
+	width: fit-content;
+	max-width: calc(100% - 2rem);
+	margin: -1.6rem auto 0 !important;
+	padding: 0.8rem 1.6rem;
+	border-radius: 999px;
+	background: var(--wp--preset--color--background, #fff);
+	box-shadow: 0 18px 40px -22px rgba(15, 23, 42, 0.45);
+}
+
+/* ---- Editorial: magazine type -------------------------------------- */
+.omega-shop-layout--editorial .wp-block-post-title,
+.omega-shop-head--editorial .wp-block-query-title {
+	font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+}
+
+.omega-shop-layout--editorial .wc-block-product-template {
+	counter-reset: omega-look;
+}
+
+.omega-shop-layout--editorial li.wc-block-product {
+	counter-increment: omega-look;
+}
+
+.omega-shop-card--editorial .wp-block-post-title::before {
+	content: counter(omega-look, decimal-leading-zero) " / ";
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	font-size: 0.75em;
+	font-weight: 500;
+	color: var(--omega-shop-muted);
+}
+
+.omega-shop-layout--editorial li.wc-block-product .omega-shop-card > .wc-block-components-product-image {
+	border-radius: 6px;
+	box-shadow: none;
+}
+
+.omega-shop-layout--editorial li.wc-block-product .omega-shop-card > .wc-block-components-product-image img {
+	padding: 0;
+	filter: none;
+}
+
+.omega-shop-layout--editorial li.wc-block-product:hover .omega-shop-card > .wc-block-components-product-image img {
+	transform: scale(1.04);
+}
+
+.omega-shop-filter-toggle > summary {
+	border-color: var(--omega-shop-rule);
+	background: var(--wp--preset--color--background, #fff);
+	box-shadow: 0 6px 18px -12px rgba(15, 23, 42, 0.3);
+}
+
+.omega-shop-filters--panel {
+	border: 1px solid var(--omega-shop-rule);
+	border-radius: 22px;
+	background: var(--wp--preset--color--background, #fff);
+	box-shadow: 0 24px 50px -36px rgba(15, 23, 42, 0.5);
+}
+
+/* ---- Compact List: rows as hover cards ------------------------------ */
+.omega-shop-layout--list li.wc-block-product {
+	margin: 0 0 0.85rem !important;
+	padding: 1rem !important;
+	border: 1px solid var(--omega-shop-rule) !important;
+	border-radius: 22px !important;
+	background: var(--wp--preset--color--background, #fff) !important;
+	transition: box-shadow 0.35s var(--omega-shop-ease), transform 0.35s var(--omega-shop-ease), border-color 0.2s ease;
+}
+
+.omega-shop-layout--list li.wc-block-product:hover {
+	border-color: transparent !important;
+	box-shadow: 0 22px 44px -30px rgba(15, 23, 42, 0.5) !important;
+	transform: translateY(-2px) !important;
+}
+
+.omega-shop-layout--list li.wc-block-product .omega-shop-row > .wc-block-components-product-image {
+	border-radius: 16px;
+	background: var(--omega-shop-image-bg);
+}
+
+.omega-shop-row__buy .wc-block-components-product-price {
+	font-weight: 800;
+}
+
+.omega-shop-row__buy .wc-block-components-product-button__button {
+	border-radius: 999px;
+	background: var(--omega-shop-ink);
+	color: #fff;
+}
+
+.omega-shop-row__buy .wc-block-components-product-button__button:hover {
+	background: var(--wp--preset--color--primary);
+}
+
+.omega-shop-row__buy .wc-block-components-product-stock-indicator {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4rem;
+	color: #16a34a;
+	font-weight: 700;
+}
+
+.omega-shop-row__buy .wc-block-components-product-stock-indicator::before {
+	content: "";
+	width: 7px;
+	height: 7px;
+	border-radius: 50%;
+	background: currentColor;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.omega-shop-layout li.wc-block-product .omega-shop-card > .wc-block-components-product-image,
+	.omega-shop-layout li.wc-block-product .omega-shop-card > .wc-block-components-product-image img,
+	.omega-shop-card .wc-block-components-product-button__button,
+	.omega-shop-layout--list li.wc-block-product {
+		transition: none;
+	}
+
+	.omega-shop-layout li.wc-block-product:hover .omega-shop-card > .wc-block-components-product-image,
+	.omega-shop-layout li.wc-block-product:hover .omega-shop-card > .wc-block-components-product-image img {
+		transform: none;
+	}
+}
+
+/* ---- Phone ---------------------------------------------------------- */
+@media (max-width: 600px) {
+	.omega-shop-layout {
+		--omega-shop-radius: 14px;
+	}
+
+	.omega-shop-layout li.wc-block-product .omega-shop-card > .wc-block-components-product-image {
+		margin-bottom: 0.7rem;
+	}
+
+	/* Quick-add becomes a compact round "+" on the photo's corner.
+	   style.css makes this wrapper full width + stretch on phones for
+	   the other product grids, so both are undone explicitly here. */
+	.omega-shop-layout .omega-shop-card .wp-block-button.wc-block-components-product-button {
+		top: calc(100cqw - 3.1rem);
+		left: auto;
+		right: 0.5rem;
+		width: auto !important;
+		align-items: flex-end !important;
+	}
+
+	.omega-shop-card--editorial .wp-block-button.wc-block-components-product-button {
+		top: calc(125cqw - 3.1rem);
+	}
+
+	.omega-shop-layout li.wc-block-product .omega-shop-card .wc-block-components-product-button__button {
+		width: 40px !important;
+		min-width: 0;
+		min-height: 40px;
+		height: 40px;
+		padding: 0 !important;
+		border-radius: 50%;
+		font-size: 0 !important;
+	}
+
+	.omega-shop-card .wc-block-components-product-button__button::before {
+		margin: 0;
+		font-size: 1.375rem;
+	}
+
+	.omega-shop-card .wc-block-components-product-button__button span {
+		font-size: 0;
+	}
+
+	.omega-shop-layout .omega-shop-card .wp-block-post-title {
+		font-size: 0.9375rem !important;
+	}
+
+	.omega-shop-layout .omega-shop-card .wc-block-components-product-price {
+		font-size: 0.9375rem !important;
+	}
+
+	.omega-shop-layout .omega-shop-card .wc-block-components-product-sale-badge {
+		margin: 0.5rem !important;
+		font-size: 0.625rem;
+	}
+
+	.omega-shop-pillbar {
+		margin-left: calc(-1 * var(--wp--preset--spacing--m));
+		margin-right: calc(-1 * var(--wp--preset--spacing--m));
+		padding-left: var(--wp--preset--spacing--m);
+		padding-right: var(--wp--preset--spacing--m);
+		border-radius: 0 0 18px 18px;
+	}
+
+	.omega-shop-perks {
+		width: auto;
+		max-width: none;
+		margin: -1.25rem 1rem 0 !important;
+		padding: 0.7rem 1rem;
+		border-radius: 18px;
+	}
+
+	.omega-shop-layout--list li.wc-block-product {
+		padding: 0.75rem !important;
+		border-radius: 18px !important;
+	}
+}
+
+/* =====================================================================
+   Layouts 6 + 7: Glass Boutique (filters) / Glass Showcase (no filters)
+   templates/shop-glass.html, templates/shop-glass-wide.html
+
+   Photo-first cards: at rest a card is just the product photo with its
+   badge and wishlist heart. On hover (mouse) a frosted-glass panel slides
+   up over the photo with the name, price, color swatches and Add to cart.
+   On touch screens the panel is always shown, since there is no hover.
+   ===================================================================== */
+.omega-shop-layout--glass {
+	--omega-glass-ink: #111318;
+	--omega-glass-muted: rgba(17, 19, 24, 0.6);
+	--omega-glass-rule: rgba(17, 19, 24, 0.09);
+	--omega-glass-gold: #b8893b;
+	--omega-glass-radius: 22px;
+	--omega-glass-ease: cubic-bezier(0.22, 1, 0.36, 1);
+	color: var(--omega-glass-ink);
+}
+
+/* ---- Hero ---------------------------------------------------------- */
+.omega-glass-hero {
+	position: relative;
+	display: grid;
+	grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+	align-items: center;
+	min-height: 300px;
+	margin-top: var(--wp--preset--spacing--m) !important;
+	margin-bottom: var(--wp--preset--spacing--m) !important;
+	overflow: hidden;
+	border-radius: 28px;
+	background:
+		radial-gradient(60% 90% at 70% 40%, rgba(255, 255, 255, 0.85), transparent 70%),
+		radial-gradient(40% 70% at 100% 100%, rgba(214, 180, 140, 0.45), transparent 70%),
+		linear-gradient(120deg, #f7f1e8 0%, #efe3d2 100%);
+}
+
+.omega-glass-hero::before {
+	content: "";
+	position: absolute;
+	width: 420px;
+	height: 420px;
+	right: 18%;
+	top: -40%;
+	border-radius: 50%;
+	background: radial-gradient(circle, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0));
+	pointer-events: none;
+}
+
+.omega-glass-hero__text {
+	position: relative;
+	z-index: 2;
+	padding: clamp(1.75rem, 4vw, 3rem) clamp(1.5rem, 4vw, 3.25rem);
+}
+
+.omega-glass-hero__text > * {
+	margin: 0;
+}
+
+.omega-glass-hero__eyebrow {
+	display: flex;
+	align-items: center;
+	gap: 0.6rem;
+	font-weight: 700;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+}
+
+.omega-glass-hero__eyebrow::before {
+	content: "";
+	width: 22px;
+	height: 2px;
+	background: currentColor;
+}
+
+.omega-glass-hero__title.wp-block-query-title {
+	margin-top: 0.5rem !important;
+	font-size: clamp(3rem, 7.5vw, 5.75rem) !important;
+	font-weight: 900;
+	letter-spacing: -0.045em;
+	line-height: 0.92;
+	color: var(--omega-glass-ink);
+}
+
+.omega-glass-hero__tagline {
+	margin-top: 0.4rem !important;
+	font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+	font-size: clamp(1.5rem, 3.4vw, 2.6rem);
+	font-weight: 700;
+	letter-spacing: -0.02em;
+	line-height: 1.05;
+	color: var(--omega-glass-gold);
+}
+
+.omega-glass-hero__lead {
+	max-width: 30rem;
+	margin-top: 0.85rem !important;
+	color: rgba(17, 19, 24, 0.78);
+	line-height: 1.55;
+}
+
+.omega-glass-hero__image {
+	position: absolute !important;
+	right: 12%;
+	bottom: -8%;
+	width: min(48%, 520px);
+	margin: 0 !important;
+	z-index: 1;
+}
+
+.omega-glass-hero__image img {
+	display: block;
+	width: 100%;
+	height: auto;
+	filter: drop-shadow(0 30px 40px rgba(60, 40, 20, 0.25));
+}
+
+.omega-glass-hero__script {
+	position: absolute;
+	right: clamp(1rem, 3vw, 2.5rem);
+	top: 50%;
+	z-index: 2;
+	margin: 0;
+	transform: translateY(-50%) rotate(-8deg);
+	font-family: "Segoe Script", "Brush Script MT", "Snell Roundhand", cursive;
+	font-size: clamp(1.5rem, 2.8vw, 2.4rem);
+	line-height: 1.25;
+	text-align: right;
+	color: var(--omega-glass-gold);
+}
+
+/* ---- Toolbar ------------------------------------------------------- */
+.omega-glass-toolbar {
+	margin-bottom: 1.25rem !important;
+}
+
+.omega-glass-toolbar .wc-block-breadcrumbs,
+.omega-glass-toolbar .woocommerce-breadcrumb {
+	margin: 0;
+	font-size: 0.875rem;
+	color: var(--omega-glass-muted);
+}
+
+.omega-glass-toolbar .woocommerce-breadcrumb a {
+	color: var(--omega-glass-muted);
+	text-decoration: none;
+}
+
+.omega-view-toggle {
+	display: inline-flex;
+	gap: 0.3rem;
+	padding: 0.25rem;
+	border: 1px solid var(--omega-glass-rule);
+	border-radius: 12px;
+	background: #fff;
+}
+
+.omega-view-toggle__btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 36px;
+	height: 36px;
+	padding: 0;
+	border: 0;
+	border-radius: 9px;
+	background: transparent;
+	color: var(--omega-glass-muted);
+	cursor: pointer;
+	transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.omega-view-toggle__btn.is-active {
+	background: var(--omega-glass-ink);
+	color: #fff;
+}
+
+/* ---- Filter sidebar ------------------------------------------------ */
+.omega-glass-aside .omega-shop-filters.omega-glass-filters {
+	padding: 1.1rem 1.25rem;
+	border: 1px solid var(--omega-glass-rule);
+	border-radius: 20px;
+	background: #fff;
+	box-shadow: 0 24px 50px -38px rgba(17, 19, 24, 0.5);
+}
+
+.omega-glass-filters > h2.wp-block-heading {
+	display: none;
+}
+
+.omega-glass-filters .omega-filter-group > h3.wp-block-heading {
+	position: relative;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 0.85rem !important;
+	font-size: 1rem !important;
+	font-weight: 700;
+	letter-spacing: 0;
+	text-transform: none;
+	cursor: pointer;
+	user-select: none;
+}
+
+.omega-glass-filters .omega-filter-group > h3.wp-block-heading::after {
+	content: "";
+	width: 9px;
+	height: 9px;
+	border-right: 2px solid currentColor;
+	border-bottom: 2px solid currentColor;
+	transform: rotate(-135deg) translate(-2px, -2px);
+	transition: transform 0.25s ease;
+}
+
+.omega-glass-filters .omega-filter-group.is-collapsed > h3.wp-block-heading {
+	margin-bottom: 0 !important;
+}
+
+.omega-glass-filters .omega-filter-group.is-collapsed > h3.wp-block-heading::after {
+	transform: rotate(45deg) translate(-2px, -2px);
+}
+
+.omega-glass-filters .omega-filter-group.is-collapsed > :not(h3) {
+	display: none !important;
+}
+
+.omega-glass-filters .wc-block-product-filter-checkbox-list__item {
+	padding: 0.28rem 0;
+}
+
+.omega-glass-filters .wc-block-product-filter-checkbox-list__label {
+	width: 100%;
+}
+
+.omega-glass-filters .wc-block-product-filter-checkbox-list__text-wrapper {
+	display: flex;
+	flex: 1;
+	justify-content: space-between;
+	gap: 0.5rem;
+}
+
+.omega-glass-filters .wc-block-product-filter-checkbox-list__count {
+	color: var(--omega-glass-muted);
+	opacity: 1;
+}
+
+.omega-glass-filters .wc-block-product-filter-checkbox-list__input:checked {
+	background: #f59e0b;
+	border-color: #f59e0b;
+}
+
+.omega-glass-filters .wc-block-product-filter-price-slider input[type="range"]::-webkit-slider-thumb {
+	background: #f59e0b;
+	border: 3px solid #fff;
+	box-shadow: 0 2px 8px rgba(17, 19, 24, 0.3);
+}
+
+.omega-glass-filters .wc-block-product-filter-price-slider .wc-block-product-filter-price-slider__range .range-bar {
+	background: var(--omega-glass-ink);
+}
+
+.omega-glass-filters .wc-block-product-filter-price-slider input[type="text"] {
+	border-color: var(--omega-glass-rule);
+	border-radius: 10px;
+}
+
+/* Size: square tiles in a 3-column grid. */
+.omega-glass-filters .omega-filter-attr--size .wc-block-product-filter-chips__items {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 0.5rem;
+}
+
+.omega-glass-filters .omega-filter-attr--size .wc-block-product-filter-chips__item {
+	justify-content: center;
+	padding: 0.6em 0.4em;
+	border: 1px solid var(--omega-glass-rule);
+	border-radius: 10px;
+	background: #fff;
+	font-size: 0.8125rem;
+	font-weight: 600;
+	text-align: center;
+	transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+
+.omega-glass-filters .omega-filter-attr--size .wc-block-product-filter-chips__item:hover {
+	border-color: var(--omega-glass-ink);
+}
+
+.omega-glass-filters .omega-filter-attr--size .wc-block-product-filter-chips__item[aria-checked="true"] {
+	border-color: var(--omega-glass-ink);
+	background: var(--omega-glass-ink);
+	color: #fff;
+}
+
+.omega-glass-filters .omega-filter-attr--size .wc-block-product-filter-chips__count {
+	display: none;
+}
+
+/* Color: round swatches. */
+.omega-glass-filters .omega-filter-attr--color .wc-block-product-filter-chips__items {
+	gap: 0.6rem;
+}
+
+.omega-glass-filters .omega-filter-attr--color .wc-block-product-filter-chips__swatch {
+	width: 30px;
+	height: 30px;
+	box-shadow: inset 0 0 0 1px rgba(17, 19, 24, 0.12);
+}
+
+.omega-glass-filters .omega-filter-attr--color .wc-block-product-filter-chips__item[aria-checked="true"] {
+	border-color: var(--omega-glass-ink);
+	box-shadow: 0 0 0 2px #fff inset;
+}
+
+/* ---- Grid ---------------------------------------------------------- */
+.omega-shop-layout--glass .wc-block-product-template {
+	row-gap: 1.1rem !important;
+}
+
+.omega-shop-layout--glass li.wc-block-product {
+	--omega-card-accent: var(--wp--preset--color--primary, #e11d48);
+}
+
+/* ---- Card ---------------------------------------------------------- */
+.omega-glass-card {
+	position: relative;
+	isolation: isolate;
+	aspect-ratio: 3 / 4;
+	overflow: hidden;
+	border-radius: var(--omega-glass-radius);
+	background:
+		radial-gradient(80% 60% at 50% 30%, #ffffff 0%, rgba(255, 255, 255, 0) 70%),
+		linear-gradient(170deg, #f5f1ec 0%, #e9e2da 100%);
+	box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset, 0 16px 34px -26px rgba(17, 19, 24, 0.55);
+	transition: box-shadow 0.45s var(--omega-glass-ease), transform 0.45s var(--omega-glass-ease);
+}
+
+.omega-shop-layout--glass li.wc-block-product:hover .omega-glass-card {
+	transform: translateY(-4px);
+	box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset, 0 30px 50px -30px rgba(17, 19, 24, 0.6);
+}
+
+.omega-shop-layout--glass li.wc-block-product .omega-glass-card > .wc-block-components-product-image.omega-glass-card__media {
+	position: absolute;
+	inset: 0;
+	z-index: 0;
+	height: auto;
+	margin: 0 !important;
+	aspect-ratio: auto;
+	border-radius: 0;
+	background: transparent;
+	box-shadow: none;
+}
+
+.omega-glass-card__media > a {
+	display: block;
+	width: 100%;
+	height: 100%;
+}
+
+.omega-shop-layout--glass li.wc-block-product .omega-glass-card__media img {
+	width: 100% !important;
+	height: 100% !important;
+	padding: 0 !important;
+	object-fit: cover !important;
+	filter: none;
+	transition: transform 0.9s var(--omega-glass-ease);
+}
+
+.omega-shop-layout--glass li.wc-block-product:hover .omega-glass-card__media img {
+	transform: scale(1.06);
+}
+
+/* Badge + wishlist heart */
+.omega-glass-badge {
+	position: absolute;
+	top: 0.8rem;
+	left: 0.8rem;
+	z-index: 3;
+	padding: 0.35em 0.7em;
+	border-radius: 8px;
+	font-size: 0.75rem;
+	font-weight: 700;
+	line-height: 1.2;
+	color: #fff;
+	box-shadow: 0 8px 18px -10px rgba(0, 0, 0, 0.6);
+}
+
+.omega-glass-badge--new { background: #14161c; }
+.omega-glass-badge--sale { background: linear-gradient(135deg, #f43f5e, #dc2626); }
+.omega-glass-badge--best { background: linear-gradient(135deg, #c8964d, #9a6b2f); }
+.omega-glass-badge--limited { background: linear-gradient(135deg, #ef4444, #b91c1c); }
+
+.omega-glass-wish {
+	position: absolute;
+	top: 0.7rem;
+	right: 0.7rem;
+	z-index: 3;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 38px;
+	height: 38px;
+	padding: 0;
+	border: 1px solid rgba(255, 255, 255, 0.7);
+	border-radius: 50%;
+	background: rgba(255, 255, 255, 0.72);
+	-webkit-backdrop-filter: blur(10px);
+	backdrop-filter: blur(10px);
+	color: var(--omega-glass-ink);
+	cursor: pointer;
+	box-shadow: 0 8px 18px -12px rgba(0, 0, 0, 0.5);
+	transition: transform 0.25s var(--omega-glass-ease), color 0.2s ease, background-color 0.2s ease;
+}
+
+.omega-glass-wish:hover {
+	transform: scale(1.08);
+}
+
+.omega-glass-wish.is-active {
+	color: #e11d48;
+}
+
+.omega-glass-wish.is-active path {
+	fill: currentColor;
+}
+
+.omega-glass-wish.is-popping {
+	animation: omega-glass-pop 0.4s var(--omega-glass-ease);
+}
+
+@keyframes omega-glass-pop {
+	40% { transform: scale(1.3); }
+}
+
+/* Frosted-glass details panel */
+.omega-glass-card__panel {
+	position: absolute;
+	left: 0.6rem;
+	right: 0.6rem;
+	bottom: 0.6rem;
+	z-index: 2;
+	display: flex;
+	flex-direction: column;
+	gap: 0.45rem;
+	padding: 0.85rem 0.85rem 0.8rem;
+	border: 1px solid rgba(255, 255, 255, 0.65);
+	border-radius: 18px;
+	background: linear-gradient(160deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.42));
+	-webkit-backdrop-filter: blur(16px) saturate(1.5);
+	backdrop-filter: blur(16px) saturate(1.5);
+	box-shadow: 0 18px 36px -24px rgba(17, 19, 24, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+	transition: transform 0.5s var(--omega-glass-ease), opacity 0.35s ease;
+}
+
+.omega-glass-card__panel > * {
+	margin: 0 !important;
+}
+
+.omega-glass-card__title {
+	font-size: 0.9375rem !important;
+	font-weight: 600;
+	line-height: 1.3;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.omega-glass-card__title a {
+	color: var(--omega-glass-ink);
+	text-decoration: none;
+}
+
+.omega-glass-card__price.wc-block-components-product-price {
+	display: flex;
+	flex-direction: row-reverse;
+	justify-content: flex-end;
+	align-items: baseline;
+	gap: 0.55rem;
+	font-size: 1.1875rem !important;
+	font-weight: 800;
+	letter-spacing: -0.01em;
+	text-align: left !important;
+	color: var(--omega-glass-ink);
+}
+
+.omega-glass-card__price del {
+	font-size: 0.72em;
+	font-weight: 500;
+	color: var(--omega-glass-muted);
+	opacity: 0.8;
+}
+
+.omega-glass-card__price ins {
+	text-decoration: none;
+}
+
+.omega-glass-card__swatches {
+	display: flex;
+	gap: 0.4rem;
+	min-height: 18px;
+}
+
+.omega-glass-swatch {
+	width: 18px;
+	height: 18px;
+	border-radius: 50%;
+	background: var(--omega-swatch);
+	box-shadow: 0 0 0 2px #fff, 0 0 0 3px rgba(17, 19, 24, 0.12);
+}
+
+.omega-glass-card__cta.wp-block-button {
+	width: 100%;
+	margin-top: 0.15rem !important;
+}
+
+.omega-glass-card .omega-glass-card__cta .wc-block-components-product-button__button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.55rem;
+	width: 100%;
+	min-height: 44px;
+	padding: 0.6rem 0.9rem;
+	border: 0;
+	border-radius: 12px;
+	background: linear-gradient(135deg, var(--omega-card-accent), color-mix(in srgb, var(--omega-card-accent) 70%, #000));
+	color: #fff;
+	font-size: 0.9375rem;
+	font-weight: 700;
+	box-shadow: 0 12px 22px -12px color-mix(in srgb, var(--omega-card-accent) 80%, transparent);
+	transition: filter 0.2s ease, transform 0.2s ease;
+}
+
+.omega-glass-card .omega-glass-card__cta .wc-block-components-product-button__button:hover {
+	filter: brightness(1.08);
+	transform: translateY(-1px);
+}
+
+.omega-glass-card .omega-glass-card__cta .wc-block-components-product-button__button::before {
+	content: "";
+	flex: none;
+	width: 18px;
+	height: 18px;
+	background: currentColor;
+	-webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 3h3l2.7 12.2a2 2 0 0 0 2 1.6h8.1a2 2 0 0 0 2-1.5L21.5 8H6'/%3E%3Ccircle cx='10' cy='20.5' r='1.2'/%3E%3Ccircle cx='18' cy='20.5' r='1.2'/%3E%3C/svg%3E") center / contain no-repeat;
+	mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 3h3l2.7 12.2a2 2 0 0 0 2 1.6h8.1a2 2 0 0 0 2-1.5L21.5 8H6'/%3E%3Ccircle cx='10' cy='20.5' r='1.2'/%3E%3Ccircle cx='18' cy='20.5' r='1.2'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.omega-glass-card .omega-glass-card__cta .added_to_cart {
+	display: none;
+}
+
+/* Mouse: panel hidden until hover / keyboard focus. */
+@media (hover: hover) and (pointer: fine) and (min-width: 601px) {
+	.omega-glass-card__panel {
+		opacity: 0;
+		transform: translateY(calc(100% + 1rem));
+	}
+
+	.omega-shop-layout--glass li.wc-block-product:hover .omega-glass-card__panel,
+	.omega-glass-card:focus-within .omega-glass-card__panel,
+	.omega-glass-card:has(.loading, .added) .omega-glass-card__panel {
+		opacity: 1;
+		transform: none;
+	}
+}
+
+/* ---- List view (toolbar toggle) ------------------------------------ */
+.omega-shop-layout--glass.is-list-view .wc-block-product-template {
+	display: grid !important;
+	grid-template-columns: 1fr !important;
+}
+
+.omega-shop-layout--glass.is-list-view li.wc-block-product {
+	width: 100% !important;
+	max-width: none !important;
+}
+
+.omega-shop-layout--glass.is-list-view .omega-glass-card {
+	display: grid;
+	grid-template-columns: minmax(160px, 240px) minmax(0, 1fr);
+	aspect-ratio: auto;
+	min-height: 220px;
+	background: #fff;
+	box-shadow: inset 0 0 0 1px var(--omega-glass-rule);
+}
+
+.omega-shop-layout--glass.is-list-view li.wc-block-product .omega-glass-card > .wc-block-components-product-image.omega-glass-card__media {
+	position: relative;
+	inset: auto;
+	background: linear-gradient(170deg, #f5f1ec 0%, #e9e2da 100%);
+}
+
+.omega-shop-layout--glass.is-list-view .omega-glass-card__panel {
+	position: static;
+	justify-content: center;
+	gap: 0.65rem;
+	padding: 1.5rem 1.75rem;
+	border: 0;
+	border-radius: 0;
+	background: none;
+	-webkit-backdrop-filter: none;
+	backdrop-filter: none;
+	box-shadow: none;
+	opacity: 1 !important;
+	transform: none !important;
+}
+
+.omega-shop-layout--glass.is-list-view .omega-glass-card__title {
+	font-size: 1.25rem !important;
+	white-space: normal;
+}
+
+.omega-shop-layout--glass.is-list-view .omega-glass-card__cta.wp-block-button {
+	width: auto;
+	align-self: flex-start;
+}
+
+.omega-shop-layout--glass.is-list-view .omega-glass-card .omega-glass-card__cta .wc-block-components-product-button__button {
+	width: auto;
+	padding-left: 1.5rem;
+	padding-right: 1.5rem;
+}
+
+/* ---- Pagination ---------------------------------------------------- */
+.omega-shop-layout--glass .wp-block-query-pagination .page-numbers,
+.omega-shop-layout--glass .wp-block-query-pagination-previous,
+.omega-shop-layout--glass .wp-block-query-pagination-next {
+	border-radius: 10px;
+	background: #fff;
+}
+
+.omega-shop-layout--glass .wp-block-query-pagination .page-numbers.current {
+	border-color: var(--omega-glass-ink);
+	background: var(--omega-glass-ink);
+}
+
+/* ---- Trust strip + newsletter -------------------------------------- */
+.omega-glass-trust {
+	display: grid;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	margin-top: var(--wp--preset--spacing--xl) !important;
+	padding: 1.25rem 0.5rem;
+	border-radius: 22px;
+	background: linear-gradient(180deg, #fafafa, #f3f3f3);
+	box-shadow: inset 0 0 0 1px var(--omega-glass-rule);
+}
+
+.omega-glass-trust__item {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.85rem;
+	padding: 0.4rem 1rem;
+}
+
+.omega-glass-trust__item + .omega-glass-trust__item {
+	border-left: 1px solid var(--omega-glass-rule);
+}
+
+.omega-glass-trust__icon {
+	display: inline-flex;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	width: 52px;
+	height: 52px;
+	border: 2px solid var(--omega-glass-ink);
+	border-radius: 50%;
+}
+
+.omega-glass-trust__item strong {
+	display: block;
+	font-size: 0.9375rem;
+}
+
+.omega-glass-trust__item small {
+	color: var(--omega-glass-muted);
+}
+
+.omega-glass-news {
+	gap: 1.25rem 2rem !important;
+	margin-top: 1.25rem !important;
+	padding: 1.5rem 1.75rem;
+	border-radius: 22px;
+	background:
+		radial-gradient(60% 120% at 0% 0%, rgba(255, 255, 255, 0.08), transparent 60%),
+		#0d0f14;
+	color: #fff;
+}
+
+.omega-glass-news__text > * {
+	margin: 0;
+}
+
+.omega-glass-news__title {
+	font-size: 1.25rem !important;
+	color: #fff;
+}
+
+.omega-glass-news__text p {
+	margin-top: 0.3rem;
+	opacity: 0.75;
+}
+
+.omega-glass-news .omega-newsletter-form-block {
+	flex: 1 1 320px;
+	max-width: 480px;
+}
+
+.omega-glass-news .omega-newsletter-form__row {
+	flex-wrap: nowrap;
+	gap: 0;
+	padding: 0.3rem;
+	border: 1px solid rgba(255, 255, 255, 0.14);
+	border-radius: 14px;
+	background: rgba(255, 255, 255, 0.06);
+}
+
+.omega-glass-news .omega-newsletter-form__input {
+	border: 0;
+	background: transparent;
+	color: #fff;
+	font-size: 16px;
+}
+
+.omega-glass-news .omega-newsletter-form__input::placeholder {
+	color: rgba(255, 255, 255, 0.55);
+}
+
+.omega-glass-news .omega-newsletter-form__submit {
+	border-radius: 11px;
+	background: linear-gradient(135deg, #f7cf8b, #e0a44f);
+	color: #1a1206;
+	font-weight: 700;
+}
+
+.omega-glass-news__social {
+	padding-left: 1.5rem;
+	border-left: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.omega-glass-news__social > p {
+	margin: 0 0 0.5rem;
+}
+
+.omega-glass-news__social .wp-block-social-links {
+	gap: 0.85rem;
+	margin: 0;
+}
+
+.omega-glass-news__social .wp-social-link {
+	color: #fff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.omega-glass-card,
+	.omega-glass-card__panel,
+	.omega-shop-layout--glass li.wc-block-product .omega-glass-card__media img {
+		transition: none;
+	}
+
+	.omega-shop-layout--glass li.wc-block-product:hover .omega-glass-card,
+	.omega-shop-layout--glass li.wc-block-product:hover .omega-glass-card__media img {
+		transform: none;
+	}
+}
+
+/* ---- Tablet -------------------------------------------------------- */
+@media (max-width: 1024px) {
+	.omega-glass-trust {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		row-gap: 0.75rem;
+	}
+
+	.omega-glass-trust__item:nth-child(3) {
+		border-left: 0;
+	}
+
+	.omega-glass-hero__script {
+		display: none;
+	}
+
+	.omega-glass-hero__image {
+		right: 0;
+	}
+}
+
+/* ---- Phone --------------------------------------------------------- */
+@media (max-width: 600px) {
+	.omega-glass-hero {
+		grid-template-columns: 1fr;
+		min-height: 0;
+		border-radius: 22px;
+	}
+
+	.omega-glass-hero__text {
+		padding: 1.5rem 1.25rem 0;
+	}
+
+	.omega-glass-hero__title.wp-block-query-title {
+		font-size: 3rem !important;
+	}
+
+	.omega-glass-hero__tagline {
+		font-size: 1.5rem;
+	}
+
+	.omega-glass-hero__lead {
+		font-size: 0.9375rem;
+	}
+
+	.omega-glass-hero__image {
+		position: relative !important;
+		right: auto;
+		bottom: auto;
+		width: 82%;
+		margin: 0.5rem auto -1.5rem !important;
+	}
+
+	.omega-glass-toolbar .wc-block-breadcrumbs,
+	.omega-glass-toolbar .woocommerce-breadcrumb {
+		flex-basis: 100%;
+	}
+
+	.omega-view-toggle {
+		display: none;
+	}
+
+	/* Cards: photo on top, the glass panel overlapping its bottom edge -
+	   always visible, there is no hover on a phone. */
+	.omega-glass-card {
+		display: flex;
+		flex-direction: column;
+		aspect-ratio: auto;
+		border-radius: 18px;
+	}
+
+	.omega-shop-layout--glass li.wc-block-product .omega-glass-card > .wc-block-components-product-image.omega-glass-card__media {
+		position: relative;
+		inset: auto;
+		aspect-ratio: 4 / 5;
+	}
+
+	.omega-glass-card__panel {
+		position: relative;
+		left: auto;
+		right: auto;
+		bottom: auto;
+		margin: -2.25rem 0.4rem 0.4rem !important;
+		gap: 0.35rem;
+		padding: 0.65rem;
+		border-radius: 14px;
+	}
+
+	.omega-glass-card__title {
+		font-size: 0.8125rem !important;
+	}
+
+	.omega-glass-card__price.wc-block-components-product-price {
+		flex-wrap: wrap;
+		gap: 0 0.4rem;
+		font-size: 1rem !important;
+	}
+
+	.omega-glass-swatch {
+		width: 14px;
+		height: 14px;
+	}
+
+	.omega-glass-card .omega-glass-card__cta .wc-block-components-product-button__button {
+		min-height: 38px;
+		padding: 0.45rem 0.5rem;
+		border-radius: 10px;
+		font-size: 0.8125rem;
+	}
+
+	.omega-glass-card .omega-glass-card__cta .wc-block-components-product-button__button::before {
+		width: 15px;
+		height: 15px;
+	}
+
+	.omega-glass-badge {
+		top: 0.55rem;
+		left: 0.55rem;
+		font-size: 0.6875rem;
+	}
+
+	.omega-glass-wish {
+		top: 0.5rem;
+		right: 0.5rem;
+		width: 32px;
+		height: 32px;
+	}
+
+	.omega-glass-trust {
+		grid-template-columns: 1fr;
+		padding: 0.75rem;
+	}
+
+	.omega-glass-trust__item {
+		justify-content: flex-start;
+	}
+
+	.omega-glass-trust__item + .omega-glass-trust__item {
+		border-left: 0;
+		border-top: 1px solid var(--omega-glass-rule);
+		padding-top: 0.85rem;
+	}
+
+	.omega-glass-news {
+		padding: 1.25rem;
+	}
+
+	.omega-glass-news__social {
+		padding-left: 0;
+		border-left: 0;
+	}
+
+	.omega-glass-news .omega-newsletter-form__row {
+		flex-wrap: wrap;
+	}
+
+	.omega-glass-news .omega-newsletter-form__submit {
+		flex-basis: 100%;
+		min-height: 46px;
+	}
+}
+
+/* Glass layouts: late overrides. */
+.omega-shop-layout--glass li.wc-block-product .omega-glass-card__title a,
+.omega-shop-layout--glass li.wc-block-product .omega-glass-card__title a:visited {
+	color: var(--omega-glass-ink);
+}
+
+.omega-shop-layout--glass li.wc-block-product .omega-glass-card__title a:hover {
+	color: color-mix(in srgb, var(--omega-card-accent) 80%, #000);
+}
+
+@media (max-width: 600px) {
+	.omega-glass-card__title {
+		white-space: normal;
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		-webkit-box-orient: vertical;
+		min-height: 2.6em;
+	}
+
+	/* Only the "Filter products" button shows here (the filters open in
+	   WooCommerce's drawer), so drop the sidebar card around it. */
+	.omega-glass-aside .omega-shop-filters.omega-glass-filters {
+		padding: 0;
+		border: 0;
+		background: none;
+		box-shadow: none;
+	}
+
+	.omega-glass-aside .wc-block-product-filters__open-overlay {
+		width: 100%;
+		border-radius: 14px;
+		background: #fff;
+		box-shadow: 0 10px 24px -18px rgba(17, 19, 24, 0.5);
+	}
+}
+
+/* Glass layouts: theme-driven Add to cart + taller cards.
+   The button uses the active color scheme's own button colors (Omega
+   Design > Settings > Color Scheme, or Global Styles), so it always
+   matches the rest of the site's buttons; hover moves to the scheme's
+   primary color. */
+.omega-shop-layout--glass li.wc-block-product {
+	--omega-card-accent: var(--wp--preset--color--button-background, var(--wp--preset--color--primary, #111318));
+}
+
+.omega-shop-layout--glass li.wc-block-product .omega-glass-card .omega-glass-card__cta .wc-block-components-product-button__button {
+	background: var(--wp--preset--color--button-background, var(--wp--preset--color--primary, #111318));
+	color: var(--wp--preset--color--button-text, #fff);
+	box-shadow: 0 12px 22px -12px color-mix(in srgb, var(--wp--preset--color--button-background, #111318) 75%, transparent);
+	transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.omega-shop-layout--glass li.wc-block-product .omega-glass-card .omega-glass-card__cta .wc-block-components-product-button__button:hover {
+	background: var(--wp--preset--color--primary, #111318);
+	filter: none;
+}
+
+.omega-glass-card {
+	aspect-ratio: 5 / 8;
+}
+
+.omega-shop-layout--glass.is-list-view .omega-glass-card {
+	aspect-ratio: auto;
+	min-height: 260px;
+}
+
+@media (max-width: 600px) {
+	.omega-glass-card {
+		aspect-ratio: auto;
+	}
+
+	.omega-shop-layout--glass li.wc-block-product .omega-glass-card > .wc-block-components-product-image.omega-glass-card__media {
+		aspect-ratio: 3 / 4;
+	}
+}

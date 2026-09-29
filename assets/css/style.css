@@ -241,6 +241,231 @@ li.wc-block-product .wc-block-components-product-image img {
 }
 
 /**
+ * Shop archive toolbar ("Showing all 8 results" + sorting). The sort
+ * control is a bare native <select> by default - the only unstyled control
+ * on the page.
+ */
+.wc-block-catalog-sorting select.orderby,
+.woocommerce-ordering select.orderby {
+	padding: 0.55rem 2.25rem 0.55rem 0.85rem;
+	border: 1px solid var(--wp--preset--color--border);
+	border-radius: 8px;
+	background-color: var(--wp--preset--color--background, #fff);
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%23818181'%3E%3Cpath d='M5.5 7.5l4.5 5 4.5-5z'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right 0.75rem center;
+	background-size: 13px;
+	appearance: none;
+	font-size: 0.9375rem;
+	color: var(--wp--preset--color--heading);
+	cursor: pointer;
+}
+
+.wc-block-product-results-count p,
+.woocommerce-result-count {
+	margin: 0;
+	font-size: var(--wp--preset--font-size--small);
+	opacity: 0.75;
+}
+
+/**
+ * Shop grids on phones: two compact cards per row. The fixed 200px image
+ * box and the card's desktop padding left each ~160px card mostly
+ * whitespace, with titles and prices wrapping awkwardly.
+ */
+@media (max-width: 600px) {
+	.wc-block-product-template.is-flex-container,
+	.wc-block-product-template__responsive {
+		gap: var(--wp--preset--spacing--s) !important;
+	}
+
+	.omega-product-card,
+	li.wc-block-product:not(:has(.omega-product-card)) {
+		padding: 0.6rem 0.6rem 0.85rem !important;
+		border-radius: 12px;
+	}
+
+	.omega-product-card .wc-block-components-product-image,
+	li.wc-block-product .wc-block-components-product-image {
+		height: 140px;
+	}
+
+	.omega-product-card .wp-block-post-title,
+	li.wc-block-product .wp-block-post-title {
+		font-size: 0.9375rem !important;
+		line-height: 1.3;
+		margin-top: 0.6rem !important;
+	}
+
+	.omega-product-card .wc-block-components-product-price,
+	li.wc-block-product .wc-block-components-product-price {
+		font-size: 0.875rem !important;
+	}
+
+	.omega-product-card .wp-block-button.wc-block-components-product-button,
+	li.wc-block-product .wp-block-button.wc-block-components-product-button {
+		width: 100%;
+		align-items: stretch;
+	}
+
+	.omega-product-card .wc-block-components-product-button__button,
+	li.wc-block-product .wc-block-components-product-button__button {
+		width: 100%;
+		padding-left: 0.5rem;
+		padding-right: 0.5rem;
+		font-size: 0.8125rem;
+	}
+
+	/* No hover on touch - the lift just sticks after a tap. */
+	.omega-product-card:hover,
+	.omega-product-card:focus-within,
+	li.wc-block-product:not(:has(.omega-product-card)):hover,
+	li.wc-block-product:not(:has(.omega-product-card)):focus-within {
+		transform: none;
+	}
+
+	/* WooCommerce's older product-grid blocks (the empty cart's "New in
+	   store", Newest/On Sale/Top Rated Products) drop to a single column
+	   under 480px - each product became a full-screen-tall photo. Same
+	   2-up card grid as the shop instead. */
+	.wc-block-grid .wc-block-grid__products {
+		display: grid !important;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: var(--wp--preset--spacing--s);
+		margin: 0;
+	}
+
+	.wc-block-grid .wc-block-grid__product {
+		max-width: none !important;
+		margin: 0 !important;
+		padding: 0.6rem 0.6rem 0.85rem;
+		border: 0;
+		border-radius: 12px;
+		background: var(--wp--preset--color--surface);
+		box-shadow: var(--wp--preset--shadow--soft);
+	}
+
+	.wc-block-grid .wc-block-grid__product-image img {
+		aspect-ratio: 1 / 1;
+		object-fit: contain;
+	}
+
+	.wc-block-grid .wc-block-grid__product-link {
+		text-decoration: none;
+	}
+
+	.wc-block-grid .wc-block-grid__product-title {
+		font-size: 0.9375rem;
+		line-height: 1.3;
+	}
+
+	.wc-block-grid .wc-block-grid__product-add-to-cart .wp-block-button__link {
+		width: 100%;
+		font-size: 0.8125rem;
+	}
+
+	.wp-block-query-pagination {
+		gap: 0.35rem;
+		margin-top: var(--wp--preset--spacing--l);
+	}
+
+	.wp-block-query-pagination-numbers .page-numbers {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 40px;
+		height: 40px;
+	}
+}
+
+/**
+ * Classic WooCommerce notices ("X has been added to your cart", coupon
+ * and payment errors). WooCommerce's own CSS absolutely positions the
+ * icon for a left padding this theme replaces, which dropped the icon on
+ * top of the text, and its "View cart" button inherited primary-colored
+ * text on a primary-colored button - an empty purple box. Laid out as a
+ * wrapping flex row instead: icon, message, then the action, which drops
+ * under the message on a phone rather than squeezing it.
+ */
+.woocommerce-message,
+.woocommerce-error,
+.woocommerce-info {
+	position: relative;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.5rem 0.75rem;
+	list-style: none;
+	margin: 0 0 1.5rem;
+	padding: 0.9rem 1.1rem;
+	border: 0;
+	border-left: 3px solid var(--wp--preset--color--primary);
+	border-radius: 10px;
+	background: var(--wp--preset--color--page-background);
+	color: var(--wp--preset--color--heading);
+	font-size: 0.9375rem;
+	line-height: 1.5;
+}
+
+/* WooCommerce moves focus to a new notice so screen readers announce it -
+   a programmatic focus on a non-interactive box, which otherwise drew a
+   heavy black outline around every "added to cart" message. */
+.woocommerce-message:focus,
+.woocommerce-error:focus,
+.woocommerce-info:focus,
+.woocommerce-notices-wrapper:focus {
+	outline: none;
+}
+
+.woocommerce-error {
+	flex-direction: column;
+	align-items: flex-start;
+	border-left-color: var(--wp--preset--color--danger);
+}
+
+.woocommerce-message::before,
+.woocommerce-error::before,
+.woocommerce-info::before {
+	position: static;
+	flex: none;
+	margin: 0;
+	color: var(--wp--preset--color--primary);
+}
+
+.woocommerce-error::before {
+	display: none;
+}
+
+.woocommerce-message a.button,
+.woocommerce-info a.button,
+.woocommerce-error a.button {
+	order: 2;
+	float: none;
+	margin: 0 0 0 auto;
+	padding: 0.45rem 0.95rem;
+	border-radius: 999px;
+	background: var(--wp--preset--color--primary);
+	color: var(--wp--preset--color--button-text, #fff);
+	font-size: var(--wp--preset--font-size--small);
+	font-weight: 600;
+	line-height: 1.3;
+	text-decoration: none;
+	white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+	.woocommerce-message,
+	.woocommerce-info {
+		font-size: 0.875rem;
+	}
+
+	.woocommerce-message a.button,
+	.woocommerce-info a.button {
+		margin-left: 0;
+	}
+}
+
+/**
  * Hover Colors (Row/Stack/Grid, Columns, Column blocks).
  *
  * Set via the "Hover Colors" panel in the block Inspector (Styles tab, see

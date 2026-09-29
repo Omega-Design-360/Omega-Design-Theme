@@ -22,16 +22,20 @@
 
 		<!-- wp:column {"className":"omega-sidebar-layout__main"} -->
 		<div class="wp-block-column omega-sidebar-layout__main">
-			<!-- wp:query {"query":{"perPage":10,"pages":0,"offset":0,"postType":"post","inherit":true}} -->
-			<div class="wp-block-query">
+			<!-- wp:query {"query":{"perPage":10,"pages":0,"offset":0,"postType":"post","inherit":true},"className":"omega-post-cards"} -->
+			<div class="wp-block-query omega-post-cards">
 				<!-- wp:post-template -->
-					<!-- wp:post-featured-image {} /-->
+					<!-- wp:post-featured-image {"isLink":true} /-->
 					<!-- wp:post-title {"isLink":true} /-->
 					<!-- wp:post-excerpt {} /-->
 					<!-- wp:post-date {} /-->
 				<!-- /wp:post-template -->
 
 				<!-- wp:query-pagination /-->
+
+				<!-- wp:query-no-results -->
+				<!-- wp:paragraph --><p>No posts found.</p><!-- /wp:paragraph -->
+				<!-- /wp:query-no-results -->
 			</div>
 			<!-- /wp:query -->
 		</div>

@@ -298,7 +298,7 @@ class product_page {
                 data-dots="0"
                 data-spv="<?php echo esc_attr($columns); ?>"
                 data-spv-tablet="2"
-                data-spv-mobile="1"
+                data-spv-mobile="2"
                 data-gap="20px"
                 data-prev-label="<?php esc_attr_e('Previous related products', 'omega-design'); ?>"
                 data-next-label="<?php esc_attr_e('Next related products', 'omega-design'); ?>"

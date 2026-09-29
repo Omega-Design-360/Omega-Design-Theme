@@ -587,5 +587,47 @@
       "name": "megamenu",
       "title": "Mega Menu"
     }
+  ],
+  "customTemplates": [
+    {
+      "name": "blog-hub",
+      "title": "Blog Hub",
+      "postTypes": ["page"]
+    },
+    {
+      "name": "shop-sidebar",
+      "title": "Shop: Sidebar Filters",
+      "postTypes": ["omega_shop_layout"]
+    },
+    {
+      "name": "shop-pills",
+      "title": "Shop: Category Pills",
+      "postTypes": ["omega_shop_layout"]
+    },
+    {
+      "name": "shop-hero",
+      "title": "Shop: Hero Banner",
+      "postTypes": ["omega_shop_layout"]
+    },
+    {
+      "name": "shop-editorial",
+      "title": "Shop: Editorial Grid",
+      "postTypes": ["omega_shop_layout"]
+    },
+    {
+      "name": "shop-list",
+      "title": "Shop: Compact List",
+      "postTypes": ["omega_shop_layout"]
+    },
+    {
+      "name": "shop-glass",
+      "title": "Shop: Glass Boutique",
+      "postTypes": ["omega_shop_layout"]
+    },
+    {
+      "name": "shop-glass-wide",
+      "title": "Shop: Glass Showcase",
+      "postTypes": ["omega_shop_layout"]
+    }
   ]
 }

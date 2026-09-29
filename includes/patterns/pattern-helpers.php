@@ -136,6 +136,60 @@ if (!function_exists('omega_pattern_corner_badge')) {
 	}
 }
 
+/**
+ * A Shop section pattern built from one of the Shop Layout templates
+ * (templates/shop-*.html - see includes/customizer/shop_layouts.php), so a
+ * section and its full-page template never drift apart.
+ *
+ * The template is written for the Shop archive itself; to make it work as
+ * a section on any page this:
+ * - drops the header/footer template parts and turns <main> into a <div>,
+ * - switches the Product Collection from "inherit the archive query"
+ *   (there is none on an ordinary page) to its own query, with a queryId
+ *   unique to this pattern so two sections on one page paginate/filter
+ *   independently,
+ * - replaces the archive-only Query Title / Term Description blocks with a
+ *   plain, editable heading.
+ */
+if (!function_exists('omega_pattern_shop_section')) {
+	function omega_pattern_shop_section($layout, $query_id, $heading) {
+		$file = get_template_directory() . '/templates/' . $layout . '.html';
+		if (!is_readable($file)) {
+			return '';
+		}
+
+		$html = (string) file_get_contents($file);
+
+		$html = preg_replace('#<!-- wp:template-part \{"slug":"(header|footer)"\} /-->\s*#', '', $html);
+		$html = str_replace('{"tagName":"main",', '{', $html);
+		$html = preg_replace('#<main class="#', '<div class="', $html, 1);
+		$html = str_replace('</main>', '</div>', $html);
+
+		$html = str_replace('"queryId":0,', '"queryId":' . (int) $query_id . ',', $html);
+		$html = str_replace('"inherit":true', '"inherit":false', $html);
+
+		$html = preg_replace('#\s*<!-- wp:term-description(?: \{[^}]*\})? /-->#', '', $html);
+		$html = preg_replace_callback('#<!-- wp:query-title (\{.*?\}) /-->#', function ($m) use ($heading) {
+			$attrs   = json_decode($m[1], true) ?: [];
+			$h_attrs = [];
+			$classes = ['wp-block-heading'];
+			if (!empty($attrs['textAlign'])) {
+				$h_attrs['textAlign'] = $attrs['textAlign'];
+				$classes[] = 'has-text-align-' . $attrs['textAlign'];
+			}
+			if (!empty($attrs['textColor'])) {
+				$h_attrs['textColor'] = $attrs['textColor'];
+				$classes[] = 'has-' . $attrs['textColor'] . '-color';
+				$classes[] = 'has-text-color';
+			}
+			$comment = empty($h_attrs) ? '' : ' ' . wp_json_encode($h_attrs);
+			return '<!-- wp:heading' . $comment . ' --><h2 class="' . esc_attr(implode(' ', $classes)) . '">' . esc_html($heading) . '</h2><!-- /wp:heading -->';
+		}, $html);
+
+		return trim($html) . "\n";
+	}
+}
+
 /** One WooCommerce Product Collection block (used for each Trending Products tab). */
 if (!function_exists('omega_pattern_product_collection')) {
 	function omega_pattern_product_collection($query_id, $order_by, $on_sale = false) {

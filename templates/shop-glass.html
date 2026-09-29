@@ -1,0 +1,219 @@
+<!-- wp:template-part {"slug":"header"} /-->
+
+<!-- wp:group {"tagName":"main","className":"omega-shop-layout omega-shop-layout--glass","layout":{"type":"constrained"}} -->
+<main class="wp-block-group omega-shop-layout omega-shop-layout--glass">
+	<!-- wp:group {"align":"wide","className":"omega-glass-hero","layout":{"type":"default"}} -->
+	<div class="wp-block-group alignwide omega-glass-hero">
+		<!-- wp:group {"className":"omega-glass-hero__text","layout":{"type":"default"}} -->
+		<div class="wp-block-group omega-glass-hero__text">
+			<!-- wp:paragraph {"className":"omega-glass-hero__eyebrow","fontSize":"small"} -->
+			<p class="omega-glass-hero__eyebrow has-small-font-size">New collection 2026</p>
+			<!-- /wp:paragraph -->
+
+			<!-- wp:query-title {"type":"archive","showPrefix":false,"level":1,"className":"omega-glass-hero__title"} /-->
+
+			<!-- wp:paragraph {"className":"omega-glass-hero__tagline"} -->
+			<p class="omega-glass-hero__tagline">Your Style, Our Collection</p>
+			<!-- /wp:paragraph -->
+
+			<!-- wp:paragraph {"className":"omega-glass-hero__lead"} -->
+			<p class="omega-glass-hero__lead">Explore the latest trends, premium quality and timeless pieces for every occasion.</p>
+			<!-- /wp:paragraph -->
+		</div>
+		<!-- /wp:group -->
+
+		<!-- wp:image {"sizeSlug":"full","linkDestination":"none","className":"omega-glass-hero__image"} -->
+		<figure class="wp-block-image size-full omega-glass-hero__image"><img src="/wp-content/themes/Omega-Design-Theme/assets/images/fashion-store-template-assets/hero/hero-models.png" alt="Models wearing the new collection"/></figure>
+		<!-- /wp:image -->
+
+		<!-- wp:paragraph {"className":"omega-glass-hero__script"} -->
+		<p class="omega-glass-hero__script">Fashion for a<br>Better You</p>
+		<!-- /wp:paragraph -->
+	</div>
+	<!-- /wp:group -->
+
+	<!-- wp:woocommerce/store-notices {"align":"wide"} /-->
+
+	<!-- wp:woocommerce/product-collection {"queryId":0,"query":{"perPage":12,"pages":0,"offset":0,"postType":"product","order":"desc","orderBy":"date","search":"","exclude":[],"inherit":true,"taxQuery":{},"isProductCollectionBlock":true,"woocommerceStockStatus":["instock","outofstock","onbackorder"]},"tagName":"div","displayLayout":{"type":"flex","columns":4,"shrinkColumns":true},"align":"wide","className":"omega-glass-collection"} -->
+	<div class="wp-block-woocommerce-product-collection alignwide omega-glass-collection">
+		<!-- wp:group {"className":"omega-shop-toolbar omega-glass-toolbar","layout":{"type":"flex","flexWrap":"wrap","justifyContent":"space-between"}} -->
+		<div class="wp-block-group omega-shop-toolbar omega-glass-toolbar">
+			<!-- wp:woocommerce/breadcrumbs /-->
+
+			<!-- wp:group {"className":"omega-shop-toolbar__end","layout":{"type":"flex","flexWrap":"wrap"}} -->
+			<div class="wp-block-group omega-shop-toolbar__end">
+				<!-- wp:woocommerce/product-results-count /-->
+				<!-- wp:woocommerce/catalog-sorting /-->
+				<!-- wp:html -->
+				<div class="omega-view-toggle" role="group" aria-label="Product view"><button type="button" class="omega-view-toggle__btn is-active" data-view="grid" aria-pressed="true" aria-label="Grid view"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M3 3h8v8H3zm10 0h8v8h-8zM3 13h8v8H3zm10 0h8v8h-8z"/></svg></button><button type="button" class="omega-view-toggle__btn" data-view="list" aria-pressed="false" aria-label="List view"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M3 5h3v3H3zm5 0h13v3H8zM3 10.5h3v3H3zm5 0h13v3H8zM3 16h3v3H3zm5 0h13v3H8z"/></svg></button></div>
+				<!-- /wp:html -->
+			</div>
+			<!-- /wp:group -->
+		</div>
+		<!-- /wp:group -->
+
+		<!-- wp:columns {"isStackedOnMobile":false,"className":"omega-shop-sidebar__cols","style":{"spacing":{"blockGap":{"left":"var:preset|spacing|l"}}}} -->
+		<div class="wp-block-columns is-not-stacked-on-mobile omega-shop-sidebar__cols">
+			<!-- wp:column {"width":"250px","className":"omega-shop-sidebar__aside omega-glass-aside"} -->
+			<div class="wp-block-column omega-shop-sidebar__aside omega-glass-aside" style="flex-basis:250px">
+				<!-- wp:woocommerce/product-filters {"className":"omega-shop-filters omega-glass-filters"} -->
+				<div class="wp-block-woocommerce-product-filters wc-block-product-filters omega-shop-filters omega-glass-filters"><!-- wp:heading {"style":{"margin":{"top":"0","bottom":"0"},"spacing":{"margin":{"top":"0","bottom":"0"}}}} -->
+				<h2 class="wp-block-heading" style="margin-top:0;margin-bottom:0">Filters</h2>
+				<!-- /wp:heading -->
+
+				<!-- wp:woocommerce/product-filter-active -->
+				<div class="wp-block-woocommerce-product-filter-active"><!-- wp:woocommerce/product-filter-removable-chips -->
+				<div class="wp-block-woocommerce-product-filter-removable-chips wc-block-product-filter-removable-chips"></div>
+				<!-- /wp:woocommerce/product-filter-removable-chips -->
+
+				<!-- wp:woocommerce/product-filter-clear-button -->
+				<!-- wp:buttons {"layout":{"type":"flex","verticalAlignment":"stretched"}} -->
+				<div class="wp-block-buttons"><!-- wp:button {"className":"wc-block-product-filter-clear-button is-style-outline","style":{"border":{"width":"1px"},"typography":{"textDecoration":"none"},"outline":"none","fontSize":"medium","spacing":{"padding":{"left":"8px","right":"8px","top":"5px","bottom":"5px"}}}} -->
+				<div class="wp-block-button wc-block-product-filter-clear-button is-style-outline"><a class="wp-block-button__link wp-element-button" style="border-width:1px;padding-top:5px;padding-right:8px;padding-bottom:5px;padding-left:8px;text-decoration:none">Clear filters</a></div>
+				<!-- /wp:button --></div>
+				<!-- /wp:buttons -->
+				<!-- /wp:woocommerce/product-filter-clear-button --></div>
+				<!-- /wp:woocommerce/product-filter-active -->
+
+				<!-- wp:woocommerce/product-filter-taxonomy {"showCounts":true,"sortOrder":"name-asc"} -->
+				<div class="wp-block-woocommerce-product-filter-taxonomy"><!-- wp:heading {"level":3,"style":{"spacing":{"margin":{"bottom":"0.625rem","top":"0"}}}} -->
+				<h3 class="wp-block-heading" style="margin-top:0;margin-bottom:0.625rem">Categories</h3>
+				<!-- /wp:heading -->
+
+				<!-- wp:woocommerce/product-filter-checkbox-list -->
+				<div class="wp-block-woocommerce-product-filter-checkbox-list wc-block-product-filter-checkbox-list"></div>
+				<!-- /wp:woocommerce/product-filter-checkbox-list --></div>
+				<!-- /wp:woocommerce/product-filter-taxonomy -->
+
+				<!-- wp:woocommerce/product-filter-price -->
+				<div class="wp-block-woocommerce-product-filter-price"><!-- wp:heading {"level":3,"style":{"spacing":{"margin":{"bottom":"0.625rem","top":"0"}}}} -->
+				<h3 class="wp-block-heading" style="margin-top:0;margin-bottom:0.625rem">Price Range</h3>
+				<!-- /wp:heading -->
+
+				<!-- wp:woocommerce/product-filter-price-slider -->
+				<div class="wp-block-woocommerce-product-filter-price-slider wc-block-product-filter-price-slider"></div>
+				<!-- /wp:woocommerce/product-filter-price-slider --></div>
+				<!-- /wp:woocommerce/product-filter-price -->
+
+				<!-- wp:woocommerce/product-filter-taxonomy {"taxonomy":"product_brand","showCounts":true,"sortOrder":"name-asc"} -->
+				<div class="wp-block-woocommerce-product-filter-taxonomy"><!-- wp:heading {"level":3,"style":{"spacing":{"margin":{"bottom":"0.625rem","top":"0"}}}} -->
+				<h3 class="wp-block-heading" style="margin-top:0;margin-bottom:0.625rem">Brand</h3>
+				<!-- /wp:heading -->
+
+				<!-- wp:woocommerce/product-filter-checkbox-list -->
+				<div class="wp-block-woocommerce-product-filter-checkbox-list wc-block-product-filter-checkbox-list"></div>
+				<!-- /wp:woocommerce/product-filter-checkbox-list --></div>
+				<!-- /wp:woocommerce/product-filter-taxonomy -->
+
+				<!-- wp:woocommerce/product-filter-attribute {"displayStyle":"woocommerce/product-filter-chips","sortOrder":"menu_order-asc","className":"omega-filter-attr--size"} -->
+				<div class="wp-block-woocommerce-product-filter-attribute omega-filter-attr--size"><!-- wp:heading {"level":3,"style":{"spacing":{"margin":{"bottom":"0.625rem","top":"0"}}}} -->
+				<h3 class="wp-block-heading" style="margin-top:0;margin-bottom:0.625rem">Size</h3>
+				<!-- /wp:heading -->
+
+				<!-- wp:woocommerce/product-filter-chips -->
+				<div class="wp-block-woocommerce-product-filter-chips wc-block-product-filter-chips"></div>
+				<!-- /wp:woocommerce/product-filter-chips --></div>
+				<!-- /wp:woocommerce/product-filter-attribute -->
+
+				<!-- wp:woocommerce/product-filter-attribute {"displayStyle":"woocommerce/product-filter-chips","className":"omega-filter-attr--color"} -->
+				<div class="wp-block-woocommerce-product-filter-attribute omega-filter-attr--color"><!-- wp:heading {"level":3,"style":{"spacing":{"margin":{"bottom":"0.625rem","top":"0"}}}} -->
+				<h3 class="wp-block-heading" style="margin-top:0;margin-bottom:0.625rem">Color</h3>
+				<!-- /wp:heading -->
+
+				<!-- wp:woocommerce/product-filter-chips -->
+				<div class="wp-block-woocommerce-product-filter-chips wc-block-product-filter-chips"></div>
+				<!-- /wp:woocommerce/product-filter-chips --></div>
+				<!-- /wp:woocommerce/product-filter-attribute --></div>
+				<!-- /wp:woocommerce/product-filters -->
+			</div>
+			<!-- /wp:column -->
+
+			<!-- wp:column {"className":"omega-shop-sidebar__main"} -->
+			<div class="wp-block-column omega-shop-sidebar__main">
+				<!-- wp:woocommerce/product-template -->
+					<!-- wp:group {"className":"omega-glass-card","layout":{"type":"default"}} -->
+					<div class="wp-block-group omega-glass-card">
+						<!-- wp:woocommerce/product-image {"showSaleBadge":false,"imageSizing":"single","isDescendentOfQueryLoop":true,"className":"omega-glass-card__media"} /-->
+
+						<!-- wp:group {"className":"omega-glass-card__panel","layout":{"type":"default"}} -->
+						<div class="wp-block-group omega-glass-card__panel">
+							<!-- wp:post-title {"level":3,"isLink":true,"className":"omega-glass-card__title"} /-->
+
+							<!-- wp:woocommerce/product-price {"isDescendentOfQueryLoop":true,"className":"omega-glass-card__price"} /-->
+
+							<!-- wp:post-terms {"term":"pa_color","className":"omega-glass-card__swatches"} /-->
+
+							<!-- wp:woocommerce/product-button {"isDescendentOfQueryLoop":true,"className":"omega-glass-card__cta"} /-->
+						</div>
+						<!-- /wp:group -->
+					</div>
+					<!-- /wp:group -->
+				<!-- /wp:woocommerce/product-template -->
+
+				<!-- wp:query-pagination {"layout":{"type":"flex","justifyContent":"center"}} -->
+					<!-- wp:query-pagination-previous {"label":"‹"} /-->
+					<!-- wp:query-pagination-numbers /-->
+					<!-- wp:query-pagination-next {"label":"›"} /-->
+				<!-- /wp:query-pagination -->
+
+				<!-- wp:woocommerce/product-collection-no-results -->
+				<!-- wp:group {"layout":{"type":"flex","orientation":"vertical","justifyContent":"center","flexWrap":"wrap"}} -->
+				<div class="wp-block-group">
+					<!-- wp:pattern {"slug":"woocommerce/no-products-found-clear-filters"} /-->
+				</div>
+				<!-- /wp:group -->
+				<!-- /wp:woocommerce/product-collection-no-results -->
+			</div>
+			<!-- /wp:column -->
+		</div>
+		<!-- /wp:columns -->
+	</div>
+	<!-- /wp:woocommerce/product-collection -->
+
+	<!-- wp:html -->
+	<div class="alignwide omega-glass-trust"><div class="omega-glass-trust__item"><span class="omega-glass-trust__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26"><path fill="currentColor" d="M3 5h11v3h3.5L21 12v5h-2a3 3 0 0 1-6 0H9a3 3 0 0 1-6 0H1V7a2 2 0 0 1 2-2Zm11 5v2h5l-1.6-2ZM6 16a1 1 0 1 0 0 2 1 1 0 0 0 0-2Zm10 0a1 1 0 1 0 0 2 1 1 0 0 0 0-2Z"/></svg></span><span><strong>Free Shipping</strong><small>On orders over $50</small></span></div><div class="omega-glass-trust__item"><span class="omega-glass-trust__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26"><path fill="currentColor" d="M12 2 3 6.5v11L12 22l9-4.5v-11Zm0 2.2 6.3 3.1L12 10.5 5.7 7.3ZM5 9l6 3v7.6l-6-3Zm8 10.6V12l6-3v7.6Z"/></svg></span><span><strong>Easy Returns</strong><small>30 day return policy</small></span></div><div class="omega-glass-trust__item"><span class="omega-glass-trust__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26"><path fill="currentColor" d="M12 1a5 5 0 0 0-5 5v3H5v14h14V9h-2V6a5 5 0 0 0-5-5Zm-3 5a3 3 0 0 1 6 0v3H9Zm3 7a2 2 0 0 1 1 3.7V19h-2v-2.3A2 2 0 0 1 12 13Z"/></svg></span><span><strong>Secure Payment</strong><small>100% secure checkout</small></span></div><div class="omega-glass-trust__item"><span class="omega-glass-trust__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26"><path fill="currentColor" d="M12 2a8 8 0 0 0-8 8v5a3 3 0 0 0 3 3h2v-7H6v-1a6 6 0 0 1 12 0v1h-3v7h2.1A4 4 0 0 1 13 21h-2v2h2a6 6 0 0 0 6-5.3A3 3 0 0 0 20 15v-5a8 8 0 0 0-8-8Z"/></svg></span><span><strong>24/7 Support</strong><small>Dedicated support</small></span></div></div>
+	<!-- /wp:html -->
+
+	<!-- wp:group {"align":"wide","className":"omega-glass-news","layout":{"type":"flex","flexWrap":"wrap","justifyContent":"space-between","verticalAlignment":"center"}} -->
+	<div class="wp-block-group alignwide omega-glass-news">
+		<!-- wp:group {"className":"omega-glass-news__text","layout":{"type":"default"}} -->
+		<div class="wp-block-group omega-glass-news__text">
+			<!-- wp:heading {"level":2,"className":"omega-glass-news__title"} -->
+			<h2 class="wp-block-heading omega-glass-news__title">Subscribe to our newsletter</h2>
+			<!-- /wp:heading -->
+
+			<!-- wp:paragraph {"fontSize":"small"} -->
+			<p class="has-small-font-size">Exclusive offers, new arrivals and style inspiration.</p>
+			<!-- /wp:paragraph -->
+		</div>
+		<!-- /wp:group -->
+
+		<!-- wp:omega-design/newsletter-form {"placeholder":"Enter your email address…","buttonText":"Subscribe","successMessage":"Thanks — you're on the list!"} -->
+		<div class="wp-block-omega-design-newsletter-form omega-newsletter-form-block" data-success-message="Thanks — you're on the list!"><form class="omega-newsletter-form" novalidate><input type="text" name="omega_newsletter_company" class="omega-newsletter-form__honeypot" tabindex="-1" autocomplete="off" aria-hidden="true"/><div class="omega-newsletter-form__row"><input type="email" class="omega-newsletter-form__input" placeholder="Enter your email address…" name="omega_newsletter_email" required/><button type="submit" class="omega-newsletter-form__submit wp-element-button">Subscribe</button></div><p class="omega-newsletter-form__message" aria-live="polite"></p></form></div>
+		<!-- /wp:omega-design/newsletter-form -->
+
+		<!-- wp:group {"className":"omega-glass-news__social","layout":{"type":"default"}} -->
+		<div class="wp-block-group omega-glass-news__social">
+			<!-- wp:paragraph {"fontSize":"small"} -->
+			<p class="has-small-font-size"><strong>Follow us</strong></p>
+			<!-- /wp:paragraph -->
+
+			<!-- wp:social-links {"className":"is-style-logos-only"} -->
+			<ul class="wp-block-social-links is-style-logos-only"><!-- wp:social-link {"url":"#","service":"facebook"} /-->
+
+			<!-- wp:social-link {"url":"#","service":"instagram"} /-->
+
+			<!-- wp:social-link {"url":"#","service":"x"} /-->
+
+			<!-- wp:social-link {"url":"#","service":"youtube"} /-->
+
+			<!-- wp:social-link {"url":"#","service":"pinterest"} /--></ul>
+			<!-- /wp:social-links -->
+		</div>
+		<!-- /wp:group -->
+	</div>
+	<!-- /wp:group -->
+</main>
+<!-- /wp:group -->
+
+<!-- wp:template-part {"slug":"footer"} /-->

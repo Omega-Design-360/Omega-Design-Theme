@@ -112,7 +112,7 @@ class color_scheme {
      * theme.json's own palette defines, plus a "-dark" counterpart for
      * color_mode.php's dark mode. background/page-background/heading-dark/
      * body-text(-dark)/border(-dark)/success/warning/danger(-dark) are
-     * deliberately identical across all 5 - those are neutral/semantic
+     * deliberately identical across every scheme - those are neutral/semantic
      * colors, not part of a scheme's brand identity, so only the brand-
      * facing slugs (primary, secondary, accent, surface, button-background)
      * actually vary between schemes.
@@ -192,6 +192,26 @@ class color_scheme {
                     'primary' => '#FB9376', 'secondary' => '#5A3140', 'accent' => '#FCD34D',
                     'surface' => '#2A1A20', 'background' => '#1C1216', 'page-background' => '#1C1216',
                     'button-background' => '#E55F3D',
+                ],
+            ],
+            // Red / black / white. The accent is a deep crimson rather than
+            // white or a second bright red: it backs white text (sale badges,
+            // highlights), so it needs real contrast against it - #991B1B is
+            // 8:1 on white, and #DC2626 primary is still AA (4.8:1) for white
+            // button text and red-on-white links.
+            'crimson' => [
+                'label' => __('Crimson Noir', 'omega-design'),
+                'tagline' => __('Bold. Striking. Timeless.', 'omega-design'),
+                'swatch' => ['#DC2626', '#0A0A0A', '#FFFFFF'],
+                'light' => [
+                    'primary' => '#DC2626', 'secondary' => '#0A0A0A', 'accent' => '#991B1B',
+                    'heading' => '#0A0A0A', 'surface' => '#F5F5F5', 'page-background' => '#FFFFFF',
+                    'button-background' => '#DC2626',
+                ],
+                'dark' => [
+                    'primary' => '#F87171', 'secondary' => '#262626', 'accent' => '#EF4444',
+                    'surface' => '#171717', 'background' => '#0A0A0A', 'page-background' => '#0A0A0A',
+                    'button-background' => '#DC2626',
                 ],
             ],
         ];
