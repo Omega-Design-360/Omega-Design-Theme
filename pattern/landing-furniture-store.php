@@ -162,8 +162,8 @@ echo $build_category_row([
 <div class="wp-block-group alignwide omega-animate" style="padding-top:var(--wp--preset--spacing--l);padding-bottom:var(--wp--preset--spacing--l)" data-omega-animate="fade-up" data-omega-animate-duration="600" data-omega-animate-delay="0">
 <?php
 echo omega_pattern_split_promo([
-	'bg'          => '#292524',
-	'offer_color' => '#65a30d',
+	'bg'          => 'secondary',
+	'offer_color' => 'accent',
 	'eyebrow'     => __('Limited Time', 'omega-design'),
 	'title'       => __('Up to 25% Off Dining Sets', 'omega-design'),
 	'offer'       => __('This Month Only', 'omega-design'),

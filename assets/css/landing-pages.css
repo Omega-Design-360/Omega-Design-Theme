@@ -402,3 +402,87 @@
 	line-height: 1;
 	font-size: 1.1rem;
 }
+
+
+/**
+ * Color Scheme support (page/template "Color Scheme" setting,
+ * includes/core/color_scheme.php). A page set to Global or Custom colors
+ * gets .omega-scheme-active on <body>; the
+ * fixed decorative colors the landing pages use by default (pastel card
+ * tints, photo overlay tints) are swapped here for ones mixed from the
+ * active palette, so the whole page follows the chosen scheme. Pages with
+ * no scheme set keep their original look untouched.
+ */
+.omega-scheme-active .omega-landing {
+	--omega-photo-card-tint: color-mix(in srgb, var(--wp--preset--color--secondary) 45%, transparent);
+}
+
+.omega-scheme-active .omega-category-card--1,
+.omega-category-card--1.omega-scheme-active,
+.omega-scheme-active .omega-service-card--1,
+.omega-service-card--1.omega-scheme-active {
+	background-color: color-mix(in srgb, var(--wp--preset--color--primary) 14%, var(--wp--preset--color--surface));
+}
+
+.omega-scheme-active .omega-category-card--2,
+.omega-category-card--2.omega-scheme-active,
+.omega-scheme-active .omega-service-card--2,
+.omega-service-card--2.omega-scheme-active {
+	background-color: color-mix(in srgb, var(--wp--preset--color--accent) 20%, var(--wp--preset--color--surface));
+}
+
+.omega-scheme-active .omega-category-card--3,
+.omega-category-card--3.omega-scheme-active,
+.omega-scheme-active .omega-service-card--3,
+.omega-service-card--3.omega-scheme-active {
+	background-color: color-mix(in srgb, var(--wp--preset--color--secondary) 10%, var(--wp--preset--color--surface));
+}
+
+.omega-scheme-active .omega-category-card--4,
+.omega-category-card--4.omega-scheme-active,
+.omega-scheme-active .omega-service-card--4,
+.omega-service-card--4.omega-scheme-active {
+	background-color: color-mix(in srgb, var(--wp--preset--color--primary) 24%, var(--wp--preset--color--surface));
+}
+
+.omega-scheme-active .omega-category-card--5,
+.omega-category-card--5.omega-scheme-active,
+.omega-scheme-active .omega-service-card--5,
+.omega-service-card--5.omega-scheme-active {
+	background-color: color-mix(in srgb, var(--wp--preset--color--accent) 32%, var(--wp--preset--color--surface));
+}
+
+.omega-scheme-active .omega-category-card--6,
+.omega-category-card--6.omega-scheme-active,
+.omega-scheme-active .omega-service-card--6,
+.omega-service-card--6.omega-scheme-active {
+	background-color: color-mix(in srgb, var(--wp--preset--color--primary) 14%, var(--wp--preset--color--surface));
+}
+
+.omega-scheme-active .omega-category-card--7,
+.omega-category-card--7.omega-scheme-active,
+.omega-scheme-active .omega-service-card--7,
+.omega-service-card--7.omega-scheme-active {
+	background-color: color-mix(in srgb, var(--wp--preset--color--accent) 20%, var(--wp--preset--color--surface));
+}
+
+.omega-scheme-active .omega-category-card--8,
+.omega-category-card--8.omega-scheme-active,
+.omega-scheme-active .omega-service-card--8,
+.omega-service-card--8.omega-scheme-active {
+	background-color: color-mix(in srgb, var(--wp--preset--color--secondary) 10%, var(--wp--preset--color--surface));
+}
+
+.omega-scheme-active .omega-category-card--9,
+.omega-category-card--9.omega-scheme-active,
+.omega-scheme-active .omega-service-card--9,
+.omega-service-card--9.omega-scheme-active {
+	background-color: color-mix(in srgb, var(--wp--preset--color--primary) 24%, var(--wp--preset--color--surface));
+}
+
+.omega-scheme-active .omega-category-card--10,
+.omega-category-card--10.omega-scheme-active,
+.omega-scheme-active .omega-service-card--10,
+.omega-service-card--10.omega-scheme-active {
+	background-color: color-mix(in srgb, var(--wp--preset--color--accent) 32%, var(--wp--preset--color--surface));
+}

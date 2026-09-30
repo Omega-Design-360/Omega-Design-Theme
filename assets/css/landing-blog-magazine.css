@@ -20,6 +20,11 @@
 	--omega-mag-ink: #0b1020;
 	--omega-mag-muted: rgba(11, 16, 32, 0.62);
 	--omega-mag-rule: rgba(11, 16, 32, 0.1);
+	--omega-mag-violet: #7c3aed;
+	--omega-mag-slate: #1e293b;
+	--omega-mag-berry: #be185d;
+	--omega-mag-rose-soft: #fecdd3;
+	--omega-mag-rose-light: #fda4af;
 	--omega-mag-radius: 20px;
 	--omega-mag-serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
 	--omega-mag-ease: cubic-bezier(0.22, 1, 0.36, 1);
@@ -249,13 +254,13 @@
 	height: 7px;
 	border-radius: 50%;
 	background: var(--wp--preset--color--primary);
-	box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.6);
+	box-shadow: 0 0 0 0 color-mix(in srgb, var(--wp--preset--color--primary) 60%, transparent);
 	animation: omega-mag-pulse 2s infinite;
 }
 
 @keyframes omega-mag-pulse {
-	70% { box-shadow: 0 0 0 8px rgba(225, 29, 72, 0); }
-	100% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0); }
+	70% { box-shadow: 0 0 0 8px color-mix(in srgb, var(--wp--preset--color--primary) 0%, transparent); }
+	100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--wp--preset--color--primary) 0%, transparent); }
 }
 
 .omega-mag-trending__list {
@@ -339,7 +344,7 @@
 .omega-mag-masthead__title em {
 	font-style: italic;
 	color: var(--wp--preset--color--primary);
-	background-image: linear-gradient(transparent 72%, rgba(225, 29, 72, 0.16) 72%);
+	background-image: linear-gradient(transparent 72%, color-mix(in srgb, var(--wp--preset--color--primary) 16%, transparent) 72%);
 }
 
 .omega-mag-search {
@@ -352,7 +357,7 @@
 	border: 1px solid var(--omega-mag-rule);
 	border-radius: 999px;
 	background: var(--wp--preset--color--background, #fff);
-	box-shadow: 0 10px 30px -18px rgba(11, 16, 32, 0.35);
+	box-shadow: 0 10px 30px -18px color-mix(in srgb, var(--omega-mag-ink) 35%, transparent);
 }
 
 .omega-mag-search .wp-block-search__input {
@@ -382,7 +387,7 @@
 	min-height: 220px;
 	overflow: hidden;
 	border-radius: var(--omega-mag-radius);
-	background: linear-gradient(140deg, #1e293b, var(--omega-mag-ink));
+	background: linear-gradient(140deg, var(--omega-mag-slate), var(--omega-mag-ink));
 	color: #fff;
 }
 
@@ -528,7 +533,7 @@
 .omega-mag-topics .wp-block-term-template > li:hover {
 	transform: translateY(-3px);
 	border-color: transparent;
-	box-shadow: 0 18px 36px -22px rgba(11, 16, 32, 0.45);
+	box-shadow: 0 18px 36px -22px color-mix(in srgb, var(--omega-mag-ink) 45%, transparent);
 }
 
 .omega-mag-topics .wp-block-term-name {
@@ -606,7 +611,7 @@
 	-webkit-backdrop-filter: none;
 	backdrop-filter: none;
 	color: var(--wp--preset--color--primary);
-	box-shadow: 0 6px 18px -8px rgba(11, 16, 32, 0.35);
+	box-shadow: 0 6px 18px -8px color-mix(in srgb, var(--omega-mag-ink) 35%, transparent);
 }
 
 /* A post with no featured image: a soft gradient panel in its place, so
@@ -617,15 +622,15 @@
 	aspect-ratio: 16 / 10;
 	border-radius: 18px;
 	background:
-		radial-gradient(80% 90% at 0% 0%, rgba(225, 29, 72, 0.22), transparent 60%),
-		radial-gradient(70% 90% at 100% 100%, rgba(124, 58, 237, 0.22), transparent 60%),
+		radial-gradient(80% 90% at 0% 0%, color-mix(in srgb, var(--wp--preset--color--primary) 22%, transparent), transparent 60%),
+		radial-gradient(70% 90% at 100% 100%, color-mix(in srgb, var(--omega-mag-violet) 22%, transparent), transparent 60%),
 		var(--wp--preset--color--surface);
 }
 
 .omega-mag-tile:not(:has(> .wp-block-post-featured-image)) {
 	background:
-		radial-gradient(90% 90% at 100% 0%, rgba(225, 29, 72, 0.55), transparent 60%),
-		radial-gradient(80% 80% at 0% 100%, rgba(124, 58, 237, 0.5), transparent 60%),
+		radial-gradient(90% 90% at 100% 0%, color-mix(in srgb, var(--wp--preset--color--primary) 55%, transparent), transparent 60%),
+		radial-gradient(80% 80% at 0% 100%, color-mix(in srgb, var(--omega-mag-violet) 50%, transparent), transparent 60%),
 		var(--omega-mag-ink);
 }
 
@@ -741,7 +746,7 @@
 	font-size: 2rem;
 	font-weight: 700;
 	line-height: 1;
-	background: linear-gradient(160deg, var(--wp--preset--color--primary), #7c3aed);
+	background: linear-gradient(160deg, var(--wp--preset--color--primary), var(--omega-mag-violet));
 	-webkit-background-clip: text;
 	background-clip: text;
 	color: transparent;
@@ -775,14 +780,14 @@
 	overflow: hidden;
 	border: 0;
 	background:
-		radial-gradient(120% 90% at 100% 0%, rgba(225, 29, 72, 0.75), transparent 60%),
-		radial-gradient(90% 80% at 0% 100%, rgba(124, 58, 237, 0.7), transparent 60%),
+		radial-gradient(120% 90% at 100% 0%, color-mix(in srgb, var(--wp--preset--color--primary) 75%, transparent), transparent 60%),
+		radial-gradient(90% 80% at 0% 100%, color-mix(in srgb, var(--omega-mag-violet) 70%, transparent), transparent 60%),
 		var(--omega-mag-ink);
 	color: #fff;
 }
 
 .omega-mag-panel--cta .omega-mag-kicker {
-	color: #fecdd3;
+	color: var(--omega-mag-rose-soft);
 }
 
 .omega-mag-panel--cta h3 {
@@ -834,8 +839,8 @@
 .omega-mag-picks {
 	margin-top: clamp(3rem, 6vw, 5.5rem) !important;
 	background:
-		radial-gradient(60% 80% at 10% 0%, rgba(225, 29, 72, 0.25), transparent 60%),
-		radial-gradient(50% 70% at 100% 100%, rgba(124, 58, 237, 0.28), transparent 60%),
+		radial-gradient(60% 80% at 10% 0%, color-mix(in srgb, var(--wp--preset--color--primary) 25%, transparent), transparent 60%),
+		radial-gradient(50% 70% at 100% 100%, color-mix(in srgb, var(--omega-mag-violet) 28%, transparent), transparent 60%),
 		var(--omega-mag-ink);
 	color: #fff;
 }
@@ -845,7 +850,7 @@
 }
 
 .omega-mag-picks .omega-mag-kicker {
-	color: #fda4af;
+	color: var(--omega-mag-rose-light);
 }
 
 .omega-mag-picks .wp-block-post-template {
@@ -872,8 +877,8 @@
 	border-radius: 28px;
 	background:
 		radial-gradient(70% 90% at 0% 0%, rgba(255, 255, 255, 0.22), transparent 55%),
-		radial-gradient(60% 80% at 100% 100%, rgba(11, 16, 32, 0.35), transparent 60%),
-		linear-gradient(125deg, #e11d48 0%, #be185d 45%, #7c3aed 100%);
+		radial-gradient(60% 80% at 100% 100%, color-mix(in srgb, var(--omega-mag-ink) 35%, transparent), transparent 60%),
+		linear-gradient(125deg, var(--wp--preset--color--primary) 0%, var(--omega-mag-berry) 45%, var(--omega-mag-violet) 100%);
 	color: #fff;
 }
 
@@ -1189,4 +1194,23 @@
 		width: 100%;
 		min-height: 50px;
 	}
+}
+
+
+/**
+ * Page color scheme (includes/core/color_scheme.php): once a page or its
+ * template is set to Global or Custom colors (.omega-scheme-active on
+ * <body>), this page's own ink/rose/violet identity follows the active
+ * palette. Pages without a scheme keep the original look; the rainbow
+ * topic chips stay multi-colored on purpose.
+ */
+.omega-scheme-active .omega-landing--blog-magazine {
+	--omega-mag-ink: var(--wp--preset--color--heading);
+	--omega-mag-muted: color-mix(in srgb, var(--wp--preset--color--heading) 62%, transparent);
+	--omega-mag-rule: color-mix(in srgb, var(--wp--preset--color--heading) 10%, transparent);
+	--omega-mag-violet: var(--wp--preset--color--accent);
+	--omega-mag-slate: var(--wp--preset--color--secondary);
+	--omega-mag-berry: color-mix(in srgb, var(--wp--preset--color--primary) 80%, #000);
+	--omega-mag-rose-soft: color-mix(in srgb, var(--wp--preset--color--primary) 25%, #fff);
+	--omega-mag-rose-light: color-mix(in srgb, var(--wp--preset--color--primary) 45%, #fff);
 }

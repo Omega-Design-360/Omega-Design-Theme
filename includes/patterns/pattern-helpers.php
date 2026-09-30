@@ -96,18 +96,35 @@ if (!function_exists('omega_pattern_split_promo')) {
 		$image_url   = $args['image_url'];
 		$image_alt   = $args['image_alt'] ?? '';
 
+		// 'bg' / 'offer_color' may be a palette slug ("secondary") instead of
+		// a fixed hex - then the banner follows the page's color scheme
+		// (Global / Custom, see includes/core/color_scheme.php).
+		$bg_is_slug    = (bool) preg_match('/^[a-z][a-z0-9-]*$/', $bg);
+		$offer_is_slug = (bool) preg_match('/^[a-z][a-z0-9-]*$/', $offer_color);
+
 		$eyebrow_html = $eyebrow
 			? '<!-- wp:paragraph {"style":{"typography":{"fontWeight":"600","textTransform":"uppercase","letterSpacing":"0.05em"}},"fontSize":"x-small"} --><p class="has-x-small-font-size" style="font-weight:600;text-transform:uppercase;letter-spacing:0.05em">' . esc_html($eyebrow) . '</p><!-- /wp:paragraph -->'
 			: '';
 
-		$offer_html = $offer
-			? '<!-- wp:paragraph {"style":{"color":{"text":"' . esc_attr($offer_color) . '"},"typography":{"fontWeight":"700"}},"fontSize":"medium"} --><p class="has-medium-font-size" style="color:' . esc_attr($offer_color) . ';font-weight:700">' . esc_html($offer) . '</p><!-- /wp:paragraph -->'
-			: '';
+		if ($offer && $offer_is_slug) {
+			$offer_html = '<!-- wp:paragraph {"style":{"typography":{"fontWeight":"700"}},"textColor":"' . esc_attr($offer_color) . '","fontSize":"medium"} --><p class="has-' . esc_attr($offer_color) . '-color has-text-color has-medium-font-size" style="font-weight:700">' . esc_html($offer) . '</p><!-- /wp:paragraph -->';
+		} else {
+			$offer_html = $offer
+				? '<!-- wp:paragraph {"style":{"color":{"text":"' . esc_attr($offer_color) . '"},"typography":{"fontWeight":"700"}},"fontSize":"medium"} --><p class="has-medium-font-size" style="color:' . esc_attr($offer_color) . ';font-weight:700">' . esc_html($offer) . '</p><!-- /wp:paragraph -->'
+				: '';
+		}
+
+		$padding_attr  = '"spacing":{"padding":{"top":"var:preset|spacing|m","bottom":"var:preset|spacing|m","left":"var:preset|spacing|m","right":"var:preset|spacing|m"}}';
+		$padding_style = 'padding-top:var(--wp--preset--spacing--m);padding-right:var(--wp--preset--spacing--m);padding-bottom:var(--wp--preset--spacing--m);padding-left:var(--wp--preset--spacing--m);flex-basis:55%';
+		$text_column   = $bg_is_slug
+			? '<!-- wp:column {"verticalAlignment":"center","width":"55%","backgroundColor":"' . esc_attr($bg) . '","style":{' . $padding_attr . '}} -->'
+				. '<div class="wp-block-column is-vertically-aligned-center has-' . esc_attr($bg) . '-background-color has-background" style="' . $padding_style . '">'
+			: '<!-- wp:column {"verticalAlignment":"center","width":"55%","style":{"color":{"background":"' . esc_attr($bg) . '"},' . $padding_attr . '}} -->'
+				. '<div class="wp-block-column is-vertically-aligned-center has-background" style="background-color:' . esc_attr($bg) . ';' . $padding_style . '">';
 
 		return '<!-- wp:columns {"className":"omega-split-promo","style":{"border":{"radius":"12px"}}} -->'
 			. '<div class="wp-block-columns omega-split-promo" style="border-radius:12px">'
-				. '<!-- wp:column {"verticalAlignment":"center","width":"55%","style":{"color":{"background":"' . esc_attr($bg) . '"},"spacing":{"padding":{"top":"var:preset|spacing|m","bottom":"var:preset|spacing|m","left":"var:preset|spacing|m","right":"var:preset|spacing|m"}}}} -->'
-				. '<div class="wp-block-column is-vertically-aligned-center has-background" style="background-color:' . esc_attr($bg) . ';padding-top:var(--wp--preset--spacing--m);padding-right:var(--wp--preset--spacing--m);padding-bottom:var(--wp--preset--spacing--m);padding-left:var(--wp--preset--spacing--m);flex-basis:55%">'
+				. $text_column
 					. $eyebrow_html
 					. '<!-- wp:heading {"level":3,"style":{"spacing":{"margin":{"top":"0","bottom":"0.25rem"}}}} --><h3 class="wp-block-heading" style="margin-top:0;margin-bottom:0.25rem">' . esc_html($title) . '</h3><!-- /wp:heading -->'
 					. $offer_html

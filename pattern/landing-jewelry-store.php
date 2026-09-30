@@ -162,8 +162,8 @@ echo $build_category_row([
 <div class="wp-block-group alignwide omega-animate" style="padding-top:var(--wp--preset--spacing--l);padding-bottom:var(--wp--preset--spacing--l)" data-omega-animate="fade-up" data-omega-animate-duration="600" data-omega-animate-delay="0">
 <?php
 echo omega_pattern_split_promo([
-	'bg'          => '#1c1917',
-	'offer_color' => '#eab308',
+	'bg'          => 'secondary',
+	'offer_color' => 'accent',
 	'eyebrow'     => __('Limited Time', 'omega-design'),
 	'title'       => __('Up to 20% Off Engagement Rings', 'omega-design'),
 	'offer'       => __('This Month Only', 'omega-design'),

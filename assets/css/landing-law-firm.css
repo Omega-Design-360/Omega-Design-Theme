@@ -20,6 +20,13 @@
 	--wp--preset--color--border: rgba(255, 255, 255, 0.14);
 	--wp--preset--color--button-text: #171108;
 	--wp--preset--color--button-background: #e8bd70;
+	/* Glass/line color - white on this page's own dark scheme; switches to
+	   the active palette's heading color under a Global/Custom scheme. */
+	--omega-law-ink: #ffffff;
+}
+
+.omega-scheme-active .omega-landing--law-firm {
+	--omega-law-ink: var(--wp--preset--color--heading);
 }
 
 /**
@@ -31,8 +38,8 @@
 
 /* Glass panel effect - the hero's floating quote card and the About section's content card. */
 .omega-glass-card {
-	background: linear-gradient(145deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.035));
-	border: 1px solid rgba(255, 255, 255, 0.17);
+	background: linear-gradient(145deg, color-mix(in srgb, var(--omega-law-ink) 12%, transparent), color-mix(in srgb, var(--omega-law-ink) 3.5%, transparent));
+	border: 1px solid color-mix(in srgb, var(--omega-law-ink) 17%, transparent);
 	backdrop-filter: blur(20px);
 	box-shadow: 0 25px 70px rgba(0, 0, 0, 0.25);
 	border-radius: 20px;
@@ -43,7 +50,7 @@
 .omega-law-hero {
 	position: relative;
 	overflow: hidden;
-	background: radial-gradient(circle at 85% 10%, rgba(232, 189, 112, 0.1), transparent 32%);
+	background: radial-gradient(circle at 85% 10%, color-mix(in srgb, var(--wp--preset--color--primary) 10%, transparent), transparent 32%);
 }
 
 .omega-law-hero-art {
@@ -78,7 +85,7 @@
 }
 
 .omega-law-proof {
-	border-left: 1px solid rgba(255, 255, 255, 0.16);
+	border-left: 1px solid color-mix(in srgb, var(--omega-law-ink) 16%, transparent);
 	padding-left: 1rem;
 }
 
@@ -89,7 +96,7 @@
 
 /* Trust strip - a right divider between items, matching the reference's trust-grid. */
 .omega-law-trust-strip .wp-block-columns > .wp-block-column {
-	border-right: 1px solid rgba(255, 255, 255, 0.12);
+	border-right: 1px solid color-mix(in srgb, var(--omega-law-ink) 12%, transparent);
 }
 
 .omega-law-trust-strip .wp-block-columns > .wp-block-column:last-child {
@@ -100,13 +107,13 @@
 .omega-practice-card {
 	border-radius: 16px;
 	overflow: hidden;
-	border: 1px solid rgba(255, 255, 255, 0.12);
+	border: 1px solid color-mix(in srgb, var(--omega-law-ink) 12%, transparent);
 	transition: transform 0.3s ease, border-color 0.3s ease;
 }
 
 .omega-practice-card:hover {
 	transform: translateY(-6px);
-	border-color: rgba(232, 189, 112, 0.5);
+	border-color: color-mix(in srgb, var(--wp--preset--color--primary) 50%, transparent);
 }
 
 .omega-practice-card__media {
@@ -132,8 +139,8 @@
 	width: 44px;
 	height: 44px;
 	border-radius: 50%;
-	background: rgba(7, 17, 23, 0.92);
-	border: 1px solid rgba(232, 189, 112, 0.5);
+	background: color-mix(in srgb, var(--wp--preset--color--background) 92%, transparent);
+	border: 1px solid color-mix(in srgb, var(--wp--preset--color--primary) 50%, transparent);
 	backdrop-filter: blur(10px);
 }
 
@@ -164,8 +171,8 @@
 	width: 110px;
 	height: 110px;
 	border-radius: 50%;
-	background: rgba(7, 17, 23, 0.88);
-	border: 1px solid rgba(232, 189, 112, 0.5);
+	background: color-mix(in srgb, var(--wp--preset--color--background) 88%, transparent);
+	border: 1px solid color-mix(in srgb, var(--wp--preset--color--primary) 50%, transparent);
 	backdrop-filter: blur(10px);
 }
 
@@ -182,15 +189,15 @@
 	min-height: 220px;
 	padding: 1.75rem 1.5rem;
 	border-radius: 16px;
-	border: 1px solid rgba(255, 255, 255, 0.12);
-	background: rgba(255, 255, 255, 0.02);
+	border: 1px solid color-mix(in srgb, var(--omega-law-ink) 12%, transparent);
+	background: color-mix(in srgb, var(--omega-law-ink) 2%, transparent);
 	transition: 0.3s;
 }
 
 .omega-law-why-card:hover,
 .omega-law-why-card--featured {
-	background: linear-gradient(145deg, rgba(232, 189, 112, 0.13), rgba(255, 255, 255, 0.02));
-	border-color: rgba(232, 189, 112, 0.35);
+	background: linear-gradient(145deg, color-mix(in srgb, var(--wp--preset--color--primary) 13%, transparent), color-mix(in srgb, var(--omega-law-ink) 2%, transparent));
+	border-color: color-mix(in srgb, var(--wp--preset--color--primary) 35%, transparent);
 }
 
 /* Process steps. */
@@ -199,7 +206,7 @@
 	width: 46px;
 	height: 46px;
 	border-radius: 50%;
-	border: 1px solid rgba(232, 189, 112, 0.5);
+	border: 1px solid color-mix(in srgb, var(--wp--preset--color--primary) 50%, transparent);
 }
 
 /* Team cards. */
@@ -233,7 +240,7 @@
 }
 
 .omega-law-avatar-initials p {
-	color: #171108;
+	color: var(--wp--preset--color--button-text);
 	margin: 0;
 }
 
@@ -257,12 +264,12 @@
 
 /* FAQ accordion. */
 .omega-landing--law-firm .wp-block-details {
-	border-top: 1px solid rgba(255, 255, 255, 0.12);
+	border-top: 1px solid color-mix(in srgb, var(--omega-law-ink) 12%, transparent);
 	padding: 1.25rem 0;
 }
 
 .omega-landing--law-firm .wp-block-details:last-child {
-	border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+	border-bottom: 1px solid color-mix(in srgb, var(--omega-law-ink) 12%, transparent);
 }
 
 .omega-landing--law-firm .wp-block-details summary {
@@ -317,7 +324,7 @@
 
 	.omega-law-trust-strip .wp-block-columns > .wp-block-column {
 		border-right: 0;
-		border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+		border-bottom: 1px solid color-mix(in srgb, var(--omega-law-ink) 12%, transparent);
 		padding-bottom: 1rem;
 	}
 

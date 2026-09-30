@@ -237,6 +237,7 @@ class hooks {
         'electronics-store',
         'furniture-store',
         'beauty-cosmetics',
+        'beauty-salon',
         'bookstore',
         'jewelry-store',
         'blog-magazine',
@@ -470,6 +471,38 @@ class hooks {
     public function enqueue_block_assets() {
         $this->register_assets();
         wp_enqueue_style('omega-design-style');
+
+        if (is_admin()) {
+            $this->enqueue_editor_canvas_landing_styles();
+        }
+    }
+
+    /**
+     * Landing-page CSS for the editor canvas. Since WordPress 6.3 the
+     * canvas is an iframe that only receives styles enqueued here on
+     * enqueue_block_assets - anything enqueued on enqueue_block_editor_assets
+     * (where this used to live) styles the editor's outer UI only, so the
+     * canvas showed every landing page in the theme's default palette and
+     * fonts instead of its real look.
+     *
+     * Every landing-*.css file is loaded, not just the one matching the
+     * post's saved content: a pattern inserted after the editor loaded,
+     * and templates in the Site Editor (no post at all), would otherwise
+     * still render unstyled. Each file only targets its own page's classes
+     * (.omega-landing--{slug} ...), so they can't affect each other.
+     */
+    private function enqueue_editor_canvas_landing_styles() {
+        $shared = OMEGA_DESIGN_ASSETS . '/css/landing-pages.css';
+        if (file_exists($shared)) {
+            wp_enqueue_style('omega-design-landing-pages', OMEGA_DESIGN_CSS_URI . '/landing-pages.css', [], filemtime($shared));
+        }
+
+        foreach (self::LANDING_PAGES as $slug) {
+            $page_css = OMEGA_DESIGN_ASSETS . '/css/landing-' . $slug . '.css';
+            if (file_exists($page_css)) {
+                wp_enqueue_style('omega-design-landing-' . $slug, OMEGA_DESIGN_CSS_URI . '/landing-' . $slug . '.css', ['omega-design-landing-pages'], filemtime($page_css));
+            }
+        }
     }
 
     public function enqueue_editor_assets() {
@@ -481,13 +514,8 @@ class hooks {
             true
         );
 
-        // Same landing-page CSS (shared layout classes + whichever
-        // page-specific brand palette/tint file applies) the front end
-        // gets - without this the editor canvas was missing it entirely,
-        // so a landing page's real look (including things like a section
-        // actually bleeding full-width) only ever showed up after
-        // publishing, never while editing.
-        $this->enqueue_landing_page_assets();
+        // Landing-page CSS for the canvas is loaded on enqueue_block_assets
+        // instead - see enqueue_editor_canvas_landing_styles().
     }
 
     /**

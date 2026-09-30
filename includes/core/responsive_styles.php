@@ -44,6 +44,111 @@ class responsive_styles {
     private function __construct() {
         add_filter('render_block', [$this, 'inject_responsive_styles'], 10, 2);
         add_filter('render_block', [$this, 'inject_element_styles'], 10, 2);
+        add_filter('render_block', [$this, 'inject_image_size_styles'], 10, 2);
+    }
+
+
+    /**
+     * "Image Size" panel (editor.js) for the Image block: desktop rules
+     * unconditionally, tablet/mobile ones in the same max-width queries as
+     * everything else here. Stored in the omegaImage attribute
+     * ({desktop:{...}, tablet:{...}, mobile:{...}}).
+     */
+    public function inject_image_size_styles($block_content, $block) {
+        $settings = $block['attrs']['omegaImage'] ?? [];
+
+        if (empty($settings) || !is_array($settings) || 'core/image' !== ($block['blockName'] ?? '')) {
+            return $block_content;
+        }
+
+        // An Image fit chosen on a larger screen carries down, so a smaller
+        // screen's own default "cover" never silently overrides it.
+        $fit = $settings['desktop']['objectFit'] ?? '';
+        $css = $this->build_image_size_rules($settings['desktop'] ?? [], '');
+        foreach (self::BREAKPOINTS as $device => $max_width) {
+            $rules = $this->build_image_size_rules($settings[$device] ?? [], $fit);
+            $fit   = $settings[$device]['objectFit'] ?? $fit;
+            if ($rules !== '') {
+                $css .= '@media (max-width:' . $max_width . '){' . $rules . '}';
+            }
+        }
+
+        if ($css === '') {
+            return $block_content;
+        }
+
+        $unique_class = 'omega-img-' . wp_unique_id();
+        $css          = str_replace('STRONG', ':is(.' . $unique_class . ',#' . $unique_class . ')', $css);
+
+        return '<style>' . $css . '</style>' . $this->add_class_to_first_tag($block_content, $unique_class);
+    }
+
+    /**
+     * Mirrors editor.js buildImageSizeRules().
+     */
+    private function build_image_size_rules($settings, $inherited_fit = '') {
+        if (empty($settings) || !is_array($settings)) {
+            return '';
+        }
+
+        $get = function ($key) use ($settings) {
+            return trim($this->sanitize_css_value($settings[$key] ?? ''));
+        };
+
+        $width      = $get('width');
+        $max_width  = $get('maxWidth');
+        $height     = $get('height');
+        $min_height = $get('minHeight');
+        $radius     = $get('borderRadius');
+        $position   = $get('objectPosition');
+        $fit        = in_array($settings['objectFit'] ?? '', ['cover', 'contain', 'fill', 'none', 'scale-down'], true) ? $settings['objectFit'] : '';
+        $ratio      = (string) ($settings['aspectRatio'] ?? '');
+        $ratio      = preg_match('#^(auto|\d+(\.\d+)?\s*/\s*\d+(\.\d+)?)$#', $ratio) ? $ratio : '';
+
+        $fig = '';
+        $img = '';
+
+        if ($width !== '') {
+            $fig .= 'width:' . $width . ' !important;max-width:100%;';
+            $img .= 'width:100% !important;';
+        }
+        if ($max_width !== '') {
+            $fig .= 'max-width:' . $max_width . ' !important;';
+            $img .= 'max-width:100% !important;';
+        }
+        if ($height !== '') {
+            $img .= 'height:' . $height . ' !important;';
+        }
+        if ($min_height !== '') {
+            $img .= 'min-height:' . $min_height . ' !important;';
+        }
+        if ($ratio !== '') {
+            $img .= 'aspect-ratio:' . $ratio . ' !important;';
+            if ($height === '') {
+                $img .= 'height:auto !important;';
+            }
+        }
+        if ($height !== '' || $min_height !== '' || $ratio !== '') {
+            $fig .= 'height:auto !important;';
+            if ($width === '') {
+                $img .= 'width:100% !important;';
+            }
+            if ($fit === '' && $inherited_fit === '') {
+                $img .= 'object-fit:cover !important;';
+            }
+        }
+        if ($fit !== '') {
+            $img .= 'object-fit:' . $fit . ' !important;';
+        }
+        if ($position !== '') {
+            $img .= 'object-position:' . $position . ' !important;';
+        }
+        if ($radius !== '') {
+            $img .= 'border-radius:' . $radius . ' !important;';
+            $fig .= 'border-radius:' . $radius . ' !important;';
+        }
+
+        return ($fig !== '' ? 'STRONG{' . $fig . '}' : '') . ($img !== '' ? 'STRONG img{' . $img . '}' : '');
     }
 
     /**
@@ -505,6 +610,12 @@ class responsive_styles {
      */
     private function add_class_to_first_tag($html, $class) {
         $class = esc_attr($class);
+
+        // Skip any <style> blocks another filter here already prepended
+        // (an Image can carry both Responsive Settings and Image Size).
+        if (preg_match('#^((?:\s*<style>.*?</style>)+)(.*)$#s', $html, $parts)) {
+            return $parts[1] . $this->add_class_to_first_tag($parts[2], $class);
+        }
 
         if (preg_match('/^\s*<[a-z0-9]+[^>]*\sclass="/i', $html)) {
             return preg_replace('/^(\s*<[a-z0-9]+[^>]*\sclass=")/i', '$1' . $class . ' ', $html, 1);

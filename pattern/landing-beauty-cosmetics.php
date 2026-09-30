@@ -162,8 +162,8 @@ echo $build_category_row([
 <div class="wp-block-group alignwide omega-animate" style="padding-top:var(--wp--preset--spacing--l);padding-bottom:var(--wp--preset--spacing--l)" data-omega-animate="fade-up" data-omega-animate-duration="600" data-omega-animate-delay="0">
 <?php
 echo omega_pattern_split_promo([
-	'bg'          => '#500724',
-	'offer_color' => '#fbbf24',
+	'bg'          => 'secondary',
+	'offer_color' => 'accent',
 	'eyebrow'     => __('Limited Time', 'omega-design'),
 	'title'       => __('Up to 30% Off Skincare Sets', 'omega-design'),
 	'offer'       => __('This Week Only', 'omega-design'),

@@ -1676,6 +1676,319 @@
 		addFilter('editor.BlockListBlock', 'omega-design/responsive-settings-preview', withResponsiveSettingsPreview);
 	}
 
+	/**
+	 * "Image Size" - full per-device sizing for the Image block wherever it
+	 * sits (Group, Row, Stack, Grid, Columns...): width, max width, height,
+	 * min height, aspect ratio, crop (object-fit), focal point and corner
+	 * radius, on Desktop/Tablet/Mobile tabs. Tablet falls back to Desktop
+	 * and Mobile to Tablet, like the other responsive panels.
+	 *
+	 * Stored in a top-level omegaImage attribute ({desktop:{}, tablet:{},
+	 * mobile:{}}), registered here and in includes/core/blocks.php
+	 * add_image_size_attribute(); output on the front end by
+	 * includes/core/responsive_styles.php inject_image_size_styles(). Rules
+	 * are !important so they win over the Image block's own inline size and
+	 * over any pattern stylesheet that sizes its images by class. Nothing
+	 * is added to save(), so existing Image blocks stay valid.
+	 */
+	var IMAGE_SIZE_BLOCK = 'core/image';
+
+	var ASPECT_OPTIONS = [
+		{ value: '', label: __('Default', 'omega-design') },
+		{ value: 'auto', label: __('Original', 'omega-design') },
+		{ value: '1/1', label: __('Square - 1:1', 'omega-design') },
+		{ value: '4/5', label: __('Portrait - 4:5', 'omega-design') },
+		{ value: '3/4', label: __('Portrait - 3:4', 'omega-design') },
+		{ value: '2/3', label: __('Portrait - 2:3', 'omega-design') },
+		{ value: '9/16', label: __('Tall - 9:16', 'omega-design') },
+		{ value: '5/4', label: __('Landscape - 5:4', 'omega-design') },
+		{ value: '4/3', label: __('Landscape - 4:3', 'omega-design') },
+		{ value: '3/2', label: __('Landscape - 3:2', 'omega-design') },
+		{ value: '16/9', label: __('Wide - 16:9', 'omega-design') },
+		{ value: '21/9', label: __('Ultra wide - 21:9', 'omega-design') }
+	];
+
+	var FIT_OPTIONS = [
+		{ value: '', label: __('Default', 'omega-design') },
+		{ value: 'cover', label: __('Cover - fill and crop', 'omega-design') },
+		{ value: 'contain', label: __('Contain - show whole image', 'omega-design') },
+		{ value: 'fill', label: __('Stretch', 'omega-design') },
+		{ value: 'none', label: __('Actual size', 'omega-design') },
+		{ value: 'scale-down', label: __('Scale down', 'omega-design') }
+	];
+
+	var IMAGE_SIZE_FIELDS = ['width', 'maxWidth', 'height', 'minHeight', 'aspectRatio', 'objectFit', 'objectPosition', 'borderRadius'];
+
+	function setImageSize(props, device, key, value) {
+		var all = Object.assign({}, props.attributes.omegaImage);
+		var settings = Object.assign({}, all[device]);
+
+		if (value === '' || value === undefined || value === null) {
+			delete settings[key];
+		} else {
+			settings[key] = value;
+		}
+
+		if (Object.keys(settings).length) {
+			all[device] = settings;
+		} else {
+			delete all[device];
+		}
+
+		props.setAttributes({ omegaImage: Object.keys(all).length ? all : undefined });
+	}
+
+	/**
+	 * Same rules as responsive_styles.php build_image_size_rules(). `sel` is
+	 * the figure; `editor` adds the rules needed to also size the editor's
+	 * own resize handle wrapper around the <img>.
+	 */
+	function buildImageSizeRules(settings, sel, editor, inheritedFit) {
+		var fig = '';
+		var img = '';
+
+		if (settings.width) {
+			fig += 'width:' + settings.width + ' !important;max-width:100%;';
+			img += 'width:100% !important;';
+		}
+		if (settings.maxWidth) {
+			fig += 'max-width:' + settings.maxWidth + ' !important;';
+			img += 'max-width:100% !important;';
+		}
+		if (settings.height) {
+			img += 'height:' + settings.height + ' !important;';
+		}
+		if (settings.minHeight) {
+			img += 'min-height:' + settings.minHeight + ' !important;';
+		}
+		if (settings.aspectRatio) {
+			img += 'aspect-ratio:' + settings.aspectRatio + ' !important;';
+			if (!settings.height) {
+				img += 'height:auto !important;';
+			}
+		}
+		if (settings.height || settings.minHeight || settings.aspectRatio) {
+			fig += 'height:auto !important;';
+			if (!settings.width) {
+				img += 'width:100% !important;';
+			}
+			if (!settings.objectFit && !inheritedFit) {
+				img += 'object-fit:cover !important;';
+			}
+		}
+		if (settings.objectFit) {
+			img += 'object-fit:' + settings.objectFit + ' !important;';
+		}
+		if (settings.objectPosition) {
+			img += 'object-position:' + settings.objectPosition + ' !important;';
+		}
+		if (settings.borderRadius) {
+			img += 'border-radius:' + settings.borderRadius + ' !important;';
+			fig += 'border-radius:' + settings.borderRadius + ' !important;';
+		}
+
+		var css = (fig ? sel + '{' + fig + '}' : '') + (img ? sel + ' img{' + img + '}' : '');
+		if (editor && (settings.width || settings.maxWidth || settings.height || settings.aspectRatio)) {
+			css += sel + ' .components-resizable-box__container{width:100% !important;height:auto !important;max-width:100% !important;}';
+		}
+		return css;
+	}
+
+	function positionToFocal(value) {
+		var parts = String(value || '').match(/([\d.]+)%\s+([\d.]+)%/);
+		return parts ? { x: parseFloat(parts[1]) / 100, y: parseFloat(parts[2]) / 100 } : { x: 0.5, y: 0.5 };
+	}
+
+	function renderImageSizeFields(props, device) {
+		var settings = ((props.attributes.omegaImage || {})[device]) || {};
+		var inheritNote = device === 'desktop'
+			? null
+			: createElement('p', { key: 'note', style: { margin: 0, fontSize: '12px', color: '#757575' } },
+				device === 'tablet'
+					? __('Leave a field empty to use the Desktop value.', 'omega-design')
+					: __('Leave a field empty to use the Tablet (or Desktop) value.', 'omega-design'));
+
+		function unitField(key, label, help) {
+			return createElement(UnitControl, {
+				key: key,
+				label: label,
+				help: help,
+				units: SIZE_UNITS,
+				value: settings[key] || '',
+				onChange: function (value) { setImageSize(props, device, key, value); }
+			});
+		}
+
+		var hasSettings = IMAGE_SIZE_FIELDS.some(function (key) { return settings[key]; });
+
+		return createElement('div', { key: device, style: { display: 'grid', gap: '16px', paddingTop: '12px' } },
+			inheritNote,
+			createElement('div', { key: 'wh', style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' } },
+				unitField('width', __('Width', 'omega-design')),
+				unitField('maxWidth', __('Max width', 'omega-design')),
+				unitField('height', __('Height', 'omega-design')),
+				unitField('minHeight', __('Min height', 'omega-design'))
+			),
+			createElement(SelectControl, {
+				key: 'aspect',
+				label: __('Aspect ratio', 'omega-design'),
+				value: settings.aspectRatio || '',
+				options: ASPECT_OPTIONS,
+				__nextHasNoMarginBottom: true,
+				onChange: function (value) { setImageSize(props, device, 'aspectRatio', value); }
+			}),
+			createElement(SelectControl, {
+				key: 'fit',
+				label: __('Image fit', 'omega-design'),
+				help: __('How the image fills its box once a height or aspect ratio is set.', 'omega-design'),
+				value: settings.objectFit || '',
+				options: FIT_OPTIONS,
+				__nextHasNoMarginBottom: true,
+				onChange: function (value) { setImageSize(props, device, 'objectFit', value); }
+			}),
+			FocalPointPicker && props.attributes.url && createElement(FocalPointPicker, {
+				key: 'focal',
+				label: __('Focal point (which part stays visible when cropped)', 'omega-design'),
+				url: props.attributes.url,
+				value: positionToFocal(settings.objectPosition),
+				__nextHasNoMarginBottom: true,
+				onChange: function (point) {
+					setImageSize(props, device, 'objectPosition', Math.round(point.x * 100) + '% ' + Math.round(point.y * 100) + '%');
+				}
+			}),
+			unitField('borderRadius', __('Corner radius', 'omega-design')),
+			hasSettings && createElement(Button, {
+				key: 'reset',
+				variant: 'secondary',
+				isDestructive: true,
+				onClick: function () {
+					var all = Object.assign({}, props.attributes.omegaImage);
+					delete all[device];
+					props.setAttributes({ omegaImage: Object.keys(all).length ? all : undefined });
+				}
+			}, device === 'desktop' ? __('Reset Desktop size', 'omega-design') : device === 'tablet' ? __('Reset Tablet size', 'omega-design') : __('Reset Mobile size', 'omega-design'))
+		);
+	}
+
+	addFilter('blocks.registerBlockType', 'omega-design/image-size-attribute', function (settings, name) {
+		if (name !== IMAGE_SIZE_BLOCK) {
+			return settings;
+		}
+
+		settings.attributes = Object.assign({}, settings.attributes, {
+			omegaImage: { type: 'object' }
+		});
+
+		return settings;
+	});
+
+	var withImageSizeControl = createHigherOrderComponent(function (BlockEdit) {
+		return function (props) {
+			if (props.name !== IMAGE_SIZE_BLOCK || !props.isSelected) {
+				return createElement(BlockEdit, props);
+			}
+
+			return createElement(
+				Fragment,
+				{},
+				createElement(BlockEdit, props),
+				createElement(
+					InspectorControls,
+					{ group: 'styles' },
+					createElement(
+						PanelBody,
+						{ title: __('Image Size', 'omega-design'), initialOpen: true },
+						createElement(TabPanel, { tabs: RESPONSIVE_LAYOUT_TABS }, function (tab) {
+							return renderImageSizeFields(props, tab.name);
+						})
+					)
+				)
+			);
+		};
+	}, 'withImageSizeControl');
+
+	/** Applies the settings for the editor's current device preview to the canvas. */
+	var withImageSizePreview = createHigherOrderComponent(function (BlockListBlock) {
+		return function (props) {
+			var all = props.name === IMAGE_SIZE_BLOCK && props.attributes && props.attributes.omegaImage;
+
+			if (!all) {
+				return createElement(BlockListBlock, props);
+			}
+
+			var device = getCurrentDeviceType();
+			var sel = '#block-' + props.clientId;
+			var desktopFit = (all.desktop || {}).objectFit || '';
+			var tabletFit = (all.tablet || {}).objectFit || desktopFit;
+			var css = buildImageSizeRules(all.desktop || {}, sel, true, '');
+			if (device === 'tablet' || device === 'mobile') {
+				css += buildImageSizeRules(all.tablet || {}, sel, true, desktopFit);
+			}
+			if (device === 'mobile') {
+				css += buildImageSizeRules(all.mobile || {}, sel, true, tabletFit);
+			}
+
+			if (!css) {
+				return createElement(BlockListBlock, props);
+			}
+
+			return createElement(
+				Fragment,
+				{},
+				createElement('style', {}, css),
+				createElement(BlockListBlock, props)
+			);
+		};
+	}, 'withImageSizePreview');
+
+	if (SelectControl && TabPanel && UnitControl) {
+		addFilter('editor.BlockEdit', 'omega-design/image-size-control', withImageSizeControl);
+		addFilter('editor.BlockListBlock', 'omega-design/image-size-preview', withImageSizePreview);
+	}
+
+	/**
+	 * The "Choose a pattern" starter popup is only for EMPTY pages.
+	 *
+	 * Core decides whether to open it once, as the editor mounts, from
+	 * isEditedPostEmpty(). In some flows (e.g. opening a page from the Site
+	 * Editor) the page's content hasn't been loaded into the editor yet at
+	 * that moment, so a page that already has content briefly looks empty
+	 * and gets the popup anyway. This closes it as soon as the page turns
+	 * out to have content - checked against both the editor's blocks and
+	 * the page's saved content from the server - while a genuinely empty
+	 * page still gets it as normal.
+	 */
+	var startModals = document.getElementsByClassName('editor-start-page-options__modal');
+
+	function pageHasContent() {
+		var editor = wp.data.select('core/editor');
+		if (!editor || !editor.getCurrentPostId || !editor.getCurrentPostId()) {
+			return false;
+		}
+		if (editor.isEditedPostEmpty && !editor.isEditedPostEmpty()) {
+			return true;
+		}
+		var record = wp.data.select('core').getEntityRecord('postType', editor.getCurrentPostType(), editor.getCurrentPostId());
+		var saved = record && record.content ? (typeof record.content === 'string' ? record.content : record.content.raw || '') : '';
+		return saved.replace(/<!--\s*\/?wp:paragraph\s*-->|<p>\s*<\/p>|\s+/g, '') !== '';
+	}
+
+	(wp.domReady || function (callback) { callback(); })(function () {
+		// Post editor and Site Editor only (the widgets editor has no post).
+		if (!wp.data.subscribe || !wp.data.select('core/editor')) {
+			return;
+		}
+		wp.data.subscribe(function () {
+			if (!startModals.length || !pageHasContent()) {
+				return;
+			}
+			var close = startModals[0].querySelector('.components-modal__header button');
+			if (close) {
+				close.click();
+			}
+		});
+	});
+
 	if (wp.blocks.registerBlockVariation) {
 		wp.blocks.registerBlockVariation('core/navigation-link', {
 			name: 'omega-design-mega-menu',

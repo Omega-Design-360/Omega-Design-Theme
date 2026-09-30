@@ -40,6 +40,10 @@ namespace OmegaDesign\core;
 
 defined('ABSPATH') || exit;
 
+// Loaded here (not just by the autoloader) because serve_early() runs
+// before the theme's autoloader exists and needs the visitor's language.
+require_once __DIR__ . '/visitor_language.php';
+
 class page_cache {
 
     private static $instance = null;
@@ -138,14 +142,17 @@ class page_cache {
             return;
         }
 
-        $file = OMEGA_DESIGN_UPLOADS_THEME_DIR . '/page-cache/' . self::cache_key() . '.html';
-        if (!is_file($file) || (time() - filemtime($file)) >= self::TTL) {
+        $file = self::find_cached_file(OMEGA_DESIGN_UPLOADS_THEME_DIR . '/page-cache', $per_language);
+        if (null === $file) {
             return;
         }
 
         if (!headers_sent()) {
             header('Content-Type: text/html; charset=' . get_option('blog_charset', 'UTF-8'));
             header('X-Omega-Cache: HIT');
+            if ($per_language) {
+                header('Vary: Accept-Language, Cookie', false);
+            }
             header('Cache-Control: max-age=0, must-revalidate');
         }
         if ('HEAD' !== $method) {
@@ -198,9 +205,9 @@ class page_cache {
             return;
         }
 
-        $file = $this->cache_dir() . '/' . $this->cache_key() . '.html';
+        $file = self::find_cached_file($this->cache_dir(), $per_language);
 
-        if (file_exists($file) && (time() - filemtime($file)) < self::TTL) {
+        if (null !== $file) {
             // Normally already served by serve_early() - this is the
             // fallback if the theme was loaded some other way.
             if (!headers_sent()) {
@@ -213,7 +220,7 @@ class page_cache {
         if (!headers_sent()) {
             header('X-Omega-Cache: MISS');
         }
-        $this->cache_file = $file;
+        $this->cache_file = null;
         ob_start([$this, 'capture']);
     }
 
@@ -241,6 +248,12 @@ class page_cache {
             wp_mkdir_p($dir);
         }
         $this->protect_directory($dir);
+
+        // A bilingual page (it carries the language toggle - see
+        // visitor_language.php) is cached once per language; every other
+        // page is identical for everyone, so it gets one shared copy.
+        $per_language     = false !== strpos($buffer, 'class="omega-lang-switch"');
+        $this->cache_file = $dir . '/' . self::cache_key($per_language) . '.html';
 
         // Write to a temp file and rename (atomic on the same filesystem),
         // so a request reading the file mid-write never sees a partial page.
@@ -309,10 +322,28 @@ class page_cache {
         return false;
     }
 
-    private static function cache_key() {
+    /**
+     * Bilingual pages (includes/core/visitor_language.php) render
+     * differently per visitor language, so they're cached per language;
+     * all other pages share one language-neutral copy.
+     */
+    private static function cache_key($per_language = false) {
         $host = $_SERVER['HTTP_HOST'] ?? '';
 
-        return md5($host . self::cache_key_uri());
+        return md5($host . self::cache_key_uri() . ($per_language ? '|' . visitor_language::current() : ''));
+    }
+
+    /** A fresh cached copy for this request - the visitor's language copy first, else the shared one. */
+    private static function find_cached_file($dir, &$per_language = false) {
+        foreach ([true, false] as $candidate) {
+            $file = $dir . '/' . self::cache_key($candidate) . '.html';
+            if (is_file($file) && (time() - filemtime($file)) < self::TTL) {
+                $per_language = $candidate;
+                return $file;
+            }
+        }
+        $per_language = false;
+        return null;
     }
 
     private function protect_directory($dir) {

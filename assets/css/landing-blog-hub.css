@@ -204,7 +204,7 @@
 	margin-top: var(--wp--preset--spacing--s) !important;
 	overflow: hidden;
 	border-radius: 24px;
-	background: #efeaf6;
+	background: var(--omega-hub-lilac);
 }
 
 .omega-hub-hero__bg {
@@ -226,7 +226,7 @@
 	position: absolute;
 	inset: 0;
 	z-index: -1;
-	background: linear-gradient(90deg, rgba(255, 255, 255, 0.94) 0%, rgba(255, 255, 255, 0.82) 34%, rgba(255, 255, 255, 0) 62%);
+	background: linear-gradient(90deg, color-mix(in srgb, var(--omega-hub-card) 94%, transparent) 0%, color-mix(in srgb, var(--omega-hub-card) 82%, transparent) 34%, transparent 62%);
 }
 
 .omega-hub-hero__text {
@@ -252,8 +252,8 @@
 	width: 8px;
 	height: 8px;
 	border-radius: 50%;
-	background: #7c3aed;
-	box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.15);
+	background: var(--omega-hub-violet);
+	box-shadow: 0 0 0 4px color-mix(in srgb, var(--omega-hub-violet) 15%, transparent);
 }
 
 .omega-hub-hero__title {
@@ -296,7 +296,7 @@
 	background: linear-gradient(135deg, var(--omega-hub-amber), var(--omega-hub-amber-2));
 	color: #fff;
 	font-weight: 700;
-	box-shadow: 0 14px 26px -14px rgba(185, 105, 28, 0.8);
+	box-shadow: 0 14px 26px -14px color-mix(in srgb, var(--omega-hub-amber-2) 80%, transparent);
 }
 
 .omega-hub-btn:not(.omega-hub-btn--ghost) .wp-block-button__link::after {
@@ -304,7 +304,7 @@
 }
 
 .omega-hub-btn--ghost .wp-block-button__link {
-	background: #fff;
+	background: var(--omega-hub-card);
 	color: var(--omega-hub-ink);
 	box-shadow: 0 10px 24px -16px rgba(16, 19, 28, 0.5), inset 0 0 0 1px var(--omega-hub-rule);
 }
@@ -442,7 +442,7 @@
 }
 
 .omega-hub-featured .omega-hub-chip a {
-	background: #4f46e5;
+	background: var(--omega-hub-indigo);
 }
 
 .omega-hub-feature__title {
@@ -633,7 +633,7 @@
 	font-family: var(--omega-hub-serif);
 	font-size: 5rem;
 	line-height: 1;
-	color: #4f46e5;
+	color: var(--omega-hub-indigo);
 }
 
 .omega-hub-quote > * {
@@ -715,8 +715,8 @@
 	position: relative;
 	overflow: hidden;
 	background:
-		radial-gradient(90% 70% at 100% 0%, rgba(217, 138, 43, 0.22), transparent 60%),
-		linear-gradient(160deg, #fff8ef 0%, #ffffff 70%);
+		radial-gradient(90% 70% at 100% 0%, color-mix(in srgb, var(--omega-hub-amber) 22%, transparent), transparent 60%),
+		linear-gradient(160deg, var(--omega-hub-warm) 0%, #ffffff 70%);
 }
 
 .omega-hub-panel--news::after {
@@ -753,7 +753,7 @@
 	padding: 0.75rem 1rem;
 	border: 1px solid var(--omega-hub-rule);
 	border-radius: 12px;
-	background: #fff;
+	background: var(--omega-hub-card);
 	font-size: 16px;
 }
 
@@ -1012,7 +1012,7 @@
 		align-items: stretch;
 		min-height: 0;
 		border-radius: 20px;
-		background: #fff;
+		background: var(--omega-hub-card);
 		box-shadow: 0 1px 0 var(--omega-hub-rule), 0 18px 36px -30px rgba(16, 19, 28, 0.5);
 	}
 
@@ -1215,8 +1215,8 @@
 	aspect-ratio: 16 / 10;
 	border-radius: 12px;
 	background:
-		radial-gradient(80% 90% at 0% 0%, rgba(124, 58, 237, 0.18), transparent 60%),
-		radial-gradient(70% 90% at 100% 100%, rgba(217, 138, 43, 0.2), transparent 60%),
+		radial-gradient(80% 90% at 0% 0%, color-mix(in srgb, var(--omega-hub-violet) 18%, transparent), transparent 60%),
+		radial-gradient(70% 90% at 100% 100%, color-mix(in srgb, var(--omega-hub-amber) 20%, transparent), transparent 60%),
 		var(--omega-hub-soft);
 }
 
@@ -1289,6 +1289,11 @@
 	--omega-hub-card: #ffffff;
 	--omega-hub-soft: #f6f6f8;
 	--omega-hub-bg: #fafafb;
+	--omega-hub-violet: #7c3aed;
+	--omega-hub-indigo: #4f46e5;
+	--omega-hub-amber-3: #f0a54c;
+	--omega-hub-warm: var(--omega-hub-warm);
+	--omega-hub-lilac: #efeaf6;
 	--omega-hub-serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
 	--omega-hub-ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -1578,7 +1583,7 @@
 	border-radius: 50%;
 	background:
 		url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffffff'%3E%3Ccircle cx='12' cy='9' r='4'/%3E%3Cpath d='M4 21a8 8 0 0 1 16 0Z'/%3E%3C/svg%3E") center / 60% no-repeat,
-		linear-gradient(135deg, #f0a54c, #7c3aed);
+		linear-gradient(135deg, var(--omega-hub-amber-3), var(--omega-hub-violet));
 }
 
 .omega-hub-quotes .omega-slider__dots {
@@ -1614,7 +1619,7 @@ body.omega-hub-dark .omega-hub-topic {
 }
 
 body.omega-hub-dark .omega-hub-panel--news {
-	background: radial-gradient(90% 70% at 100% 0%, rgba(217, 138, 43, 0.25), transparent 60%), #161a24;
+	background: radial-gradient(90% 70% at 100% 0%, color-mix(in srgb, var(--omega-hub-amber) 25%, transparent), transparent 60%), #161a24;
 }
 
 body.omega-hub-dark .omega-hub-panel--news .omega-newsletter-form__input,
@@ -1890,4 +1895,28 @@ main.omega-hub-page__main > .wp-block-post-content {
    editor; these cards use the round arrow button instead. */
 .omega-landing--blog-hub .wp-block-post-excerpt__more-text {
 	display: none;
+}
+
+
+/**
+ * Page color scheme (includes/core/color_scheme.php): once a page or its
+ * template is set to Global or Custom colors (.omega-scheme-active on
+ * <body>), this page's own ink/amber identity follows the active palette.
+ * Pages without a scheme keep the original look. The Blog Hub's own dark
+ * toggle (body.omega-hub-dark) still takes precedence over this.
+ */
+.omega-scheme-active .omega-landing--blog-hub {
+	--omega-hub-ink: var(--wp--preset--color--heading);
+	--omega-hub-muted: color-mix(in srgb, var(--wp--preset--color--heading) 60%, transparent);
+	--omega-hub-rule: color-mix(in srgb, var(--wp--preset--color--heading) 9%, transparent);
+	--omega-hub-amber: var(--wp--preset--color--primary);
+	--omega-hub-amber-2: color-mix(in srgb, var(--wp--preset--color--primary) 80%, #000);
+	--omega-hub-amber-3: color-mix(in srgb, var(--wp--preset--color--primary) 70%, #fff);
+	--omega-hub-card: var(--wp--preset--color--surface);
+	--omega-hub-soft: var(--wp--preset--color--page-background);
+	--omega-hub-bg: var(--wp--preset--color--background);
+	--omega-hub-violet: var(--wp--preset--color--accent);
+	--omega-hub-indigo: var(--wp--preset--color--secondary);
+	--omega-hub-warm: color-mix(in srgb, var(--wp--preset--color--primary) 8%, var(--wp--preset--color--surface));
+	--omega-hub-lilac: color-mix(in srgb, var(--wp--preset--color--accent) 12%, var(--wp--preset--color--surface));
 }

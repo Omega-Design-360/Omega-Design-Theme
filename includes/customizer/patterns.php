@@ -172,6 +172,10 @@ class patterns {
         }, $source_files)));
 
         $cached = get_transient($cache_key);
+        if (is_string($cached) && function_exists('gzuncompress')) {
+            $inflated = @gzuncompress((string) base64_decode($cached, true));
+            $cached   = false === $inflated ? false : @unserialize($inflated, ['allowed_classes' => false]);
+        }
         if (is_array($cached)) {
             return $cached;
         }
@@ -244,7 +248,15 @@ class patterns {
         // A day is generous purely as a safety net (in case a pattern file
         // is somehow touched without its mtime changing) - the mtime-based
         // key above is what actually keeps this fresh in the normal case.
-        set_transient($cache_key, $patterns_data, DAY_IN_SECONDS);
+        //
+        // Stored compressed: all patterns' markup together is well over a
+        // megabyte, and MySQL's default max_allowed_packet (1 MB on many
+        // hosts and on XAMPP) rejects a single option that large - the
+        // cache then silently never saved. Compressed it is ~10x smaller.
+        $to_store = function_exists('gzcompress')
+            ? base64_encode(gzcompress(serialize($patterns_data), 6))
+            : $patterns_data;
+        set_transient($cache_key, $to_store, DAY_IN_SECONDS);
 
         return $patterns_data;
     }

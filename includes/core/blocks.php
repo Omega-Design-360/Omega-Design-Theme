@@ -28,6 +28,23 @@ class blocks {
         add_action('init', [$this, 'register']);
         add_filter('register_block_type_args', [$this, 'add_background_support'], 10, 2);
         add_filter('register_block_type_args', [$this, 'add_responsive_attribute'], 10, 2);
+        add_filter('register_block_type_args', [$this, 'add_image_size_attribute'], 10, 2);
+    }
+
+    /**
+     * Server half of editor.js's "Image Size" panel attribute, so the
+     * Image block's REST schema accepts it and render_block sees it.
+     */
+    public function add_image_size_attribute($args, $block_type) {
+        if ('core/image' !== $block_type) {
+            return $args;
+        }
+
+        $args['attributes'] = array_merge($args['attributes'] ?? [], [
+            'omegaImage' => ['type' => 'object'],
+        ]);
+
+        return $args;
     }
 
     /**

@@ -86,7 +86,28 @@ class patterns_cache {
         // returns a different array on the pre-dispatch vs post-dispatch
         // side of the very same request, once WP_REST_Server merges the
         // route's schema defaults in between the two.
-        return 'omega_patterns_rest_' . substr(md5(wp_json_encode($request->get_query_params())), 0, 30);
+        //
+        // The theme's pattern files' mtimes are part of the key, so adding
+        // or editing a pattern (pattern/*.php, or the shop templates those
+        // are built from) shows up in the inserter and the New Page starter
+        // picker straight away - previously a new pattern stayed missing
+        // from both until this 1-hour cache happened to expire.
+        return 'omega_patterns_rest_' . substr(md5(wp_json_encode($request->get_query_params()) . '|' . self::files_version()), 0, 30);
+    }
+
+    /** Changes whenever a theme pattern file is added, removed or edited. */
+    private static function files_version() {
+        static $version = null;
+        if (null === $version) {
+            $dir   = get_template_directory();
+            $files = array_merge((array) glob($dir . '/pattern/*.php'), (array) glob($dir . '/templates/shop-*.html'));
+            $stamp = '';
+            foreach ($files as $file) {
+                $stamp .= $file . ':' . @filemtime($file) . '|';
+            }
+            $version = md5($stamp);
+        }
+        return $version;
     }
 
     public function maybe_serve_cached($result, $server, $request) {

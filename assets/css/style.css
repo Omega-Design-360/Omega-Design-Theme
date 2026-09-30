@@ -937,3 +937,227 @@ body.omega-sidebar-hidden .wp-block-column.omega-sidebar-layout__main {
 		background-attachment: scroll !important;
 	}
 }
+
+/**
+ * Image layout helpers - the technique behind the Beauty Salon hero, as
+ * plain classes anyone can reuse on any page by typing them into a block's
+ * "Additional CSS class(es)" field (Advanced panel):
+ *
+ *   omega-flush-bottom   Section Group: no bottom padding, so an image can
+ *                        sit on its bottom edge. Its other columns keep a
+ *                        normal bottom gap.
+ *   omega-anchor-bottom  Column: pinned to the bottom of the row instead of
+ *                        centered - use on the image's column.
+ *   omega-bleed-right /  Any block: runs past the section's side padding to
+ *   omega-bleed-left     the screen edge (assumes the landing pages' usual
+ *                        "L" side padding; set --omega-bleed to change it).
+ *   omega-overlay-stack  Group holding an image + badges: the positioning
+ *                        box for the overlay classes below.
+ *   omega-overlay-top-left / -top-right / -bottom-left / -bottom-right /
+ *   -center              Any block inside an omega-overlay-stack: floats
+ *                        over the image at that corner.
+ */
+.omega-flush-bottom.omega-flush-bottom {
+	padding-bottom: 0 !important;
+}
+
+.omega-flush-bottom > .wp-block-columns {
+	align-items: stretch !important;
+	margin-bottom: 0 !important;
+}
+
+.omega-flush-bottom > .wp-block-columns > .wp-block-column:not(.omega-anchor-bottom) {
+	align-self: center;
+	padding-bottom: var(--wp--preset--spacing--xl, 3rem);
+}
+
+.wp-block-column.omega-anchor-bottom {
+	align-self: flex-end !important;
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-end;
+}
+
+.omega-anchor-bottom img {
+	display: block;
+}
+
+.omega-bleed-right,
+.omega-bleed-left {
+	max-width: none !important;
+}
+
+.omega-bleed-right {
+	margin-right: calc(-1 * var(--omega-bleed, var(--wp--preset--spacing--l, 2rem))) !important;
+}
+
+.omega-bleed-left {
+	margin-left: calc(-1 * var(--omega-bleed, var(--wp--preset--spacing--l, 2rem))) !important;
+}
+
+.omega-overlay-stack {
+	position: relative;
+}
+
+.omega-overlay-stack > .omega-overlay-top-left,
+.omega-overlay-stack > .omega-overlay-top-right,
+.omega-overlay-stack > .omega-overlay-bottom-left,
+.omega-overlay-stack > .omega-overlay-bottom-right,
+.omega-overlay-stack > .omega-overlay-center {
+	position: absolute;
+	z-index: 2;
+	margin: 0 !important;
+	max-width: 60%;
+}
+
+.omega-overlay-stack > .omega-overlay-top-left { top: 5%; left: 5%; }
+.omega-overlay-stack > .omega-overlay-top-right { top: 5%; right: 5%; }
+.omega-overlay-stack > .omega-overlay-bottom-left { bottom: 8%; left: 5%; }
+.omega-overlay-stack > .omega-overlay-bottom-right { bottom: 8%; right: 5%; }
+.omega-overlay-stack > .omega-overlay-center { top: 50%; left: 50%; transform: translate(-50%, -50%); }
+
+/* Stacked on phones the image goes full width - bleed both sides. */
+@media (max-width: 781px) {
+	.omega-flush-bottom > .wp-block-columns > .wp-block-column:not(.omega-anchor-bottom) {
+		padding-bottom: 0;
+	}
+
+	.omega-bleed-right,
+	.omega-bleed-left {
+		margin-left: calc(-1 * var(--omega-bleed, var(--wp--preset--spacing--l, 2rem))) !important;
+		margin-right: calc(-1 * var(--omega-bleed, var(--wp--preset--spacing--l, 2rem))) !important;
+	}
+}
+
+
+/**
+ * Page / template color scheme (includes/core/color_scheme.php, editor
+ * sidebar panel assets/js/color-scheme-panel.js).
+ *
+ * The global palette is snapshotted here onto <body> - after color-mode.css
+ * has already pointed the live variables at their dark twins when dark
+ * mode is on - so a page set to "Global" can restore the real site colors
+ * inside a landing page's content, which otherwise re-declares its own
+ * built-in scheme on its wrapper. !important is what lets it win over that
+ * wrapper. "Custom" colors are written inline per page by color_scheme.php.
+ */
+body {
+	--omega-global-primary: var(--wp--preset--color--primary);
+	--omega-global-secondary: var(--wp--preset--color--secondary);
+	--omega-global-accent: var(--wp--preset--color--accent);
+	--omega-global-heading: var(--wp--preset--color--heading);
+	--omega-global-body-text: var(--wp--preset--color--body-text);
+	--omega-global-background: var(--wp--preset--color--background);
+	--omega-global-page-background: var(--wp--preset--color--page-background);
+	--omega-global-surface: var(--wp--preset--color--surface);
+	--omega-global-border: var(--wp--preset--color--border);
+	--omega-global-button-text: var(--wp--preset--color--button-text);
+	--omega-global-button-background: var(--wp--preset--color--button-background);
+	--omega-global-success: var(--wp--preset--color--success);
+	--omega-global-warning: var(--wp--preset--color--warning);
+	--omega-global-danger: var(--wp--preset--color--danger);
+}
+
+body.omega-page-scheme-global .omega-landing {
+	--wp--preset--color--primary: var(--omega-global-primary) !important;
+	--wp--preset--color--secondary: var(--omega-global-secondary) !important;
+	--wp--preset--color--accent: var(--omega-global-accent) !important;
+	--wp--preset--color--heading: var(--omega-global-heading) !important;
+	--wp--preset--color--body-text: var(--omega-global-body-text) !important;
+	--wp--preset--color--background: var(--omega-global-background) !important;
+	--wp--preset--color--page-background: var(--omega-global-page-background) !important;
+	--wp--preset--color--surface: var(--omega-global-surface) !important;
+	--wp--preset--color--border: var(--omega-global-border) !important;
+	--wp--preset--color--button-text: var(--omega-global-button-text) !important;
+	--wp--preset--color--button-background: var(--omega-global-button-background) !important;
+	--wp--preset--color--success: var(--omega-global-success) !important;
+	--wp--preset--color--warning: var(--omega-global-warning) !important;
+	--wp--preset--color--danger: var(--omega-global-danger) !important;
+}
+
+/**
+ * Bilingual pages (includes/core/visitor_language.php): in the editor both
+ * language versions are shown one after the other, so each gets a small
+ * label saying who will see it. Editor canvas only - never on the site.
+ */
+.editor-styles-wrapper .omega-lang-en::before,
+.editor-styles-wrapper .omega-lang-ar::before {
+	display: block;
+	padding: 6px 12px;
+	background: #1e1e1e;
+	color: #fff;
+	font: 600 12px/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, sans-serif;
+	text-align: center;
+	direction: ltr;
+	letter-spacing: 0;
+}
+
+.editor-styles-wrapper .omega-lang-en::before {
+	content: 'English version - shown to visitors whose device language is not Arabic';
+}
+
+.editor-styles-wrapper .omega-lang-ar::before {
+	content: 'Arabic version (العربية) - shown to visitors whose device language is Arabic';
+}
+
+/**
+ * Language toggle (includes/core/visitor_language.php render_switcher()) -
+ * a small floating "English | العربية" pill, shown only on pages that have
+ * both language versions. Bottom-left so it stays clear of the usual
+ * bottom-right back-to-top / chat buttons.
+ */
+.omega-lang-switch {
+	position: fixed;
+	left: 16px;
+	bottom: 16px;
+	z-index: 9990;
+	display: flex;
+	gap: 2px;
+	padding: 4px;
+	border-radius: 999px;
+	background: rgba(20, 16, 14, 0.88);
+	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+	backdrop-filter: blur(8px);
+	-webkit-backdrop-filter: blur(8px);
+	direction: ltr;
+}
+
+.omega-lang-switch__link {
+	display: inline-flex;
+	align-items: center;
+	min-height: 36px;
+	padding: 0 14px;
+	border-radius: 999px;
+	color: #fff;
+	font: 600 13px/1 -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, sans-serif;
+	letter-spacing: 0;
+	text-decoration: none;
+	transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.omega-lang-switch__link[lang="ar"] {
+	font-family: 'Tajawal', 'Segoe UI', Tahoma, sans-serif;
+	font-size: 14px;
+}
+
+.omega-lang-switch__link:hover,
+.omega-lang-switch__link:focus-visible {
+	background: rgba(255, 255, 255, 0.16);
+	color: #fff;
+}
+
+.omega-lang-switch__link:focus-visible {
+	outline: 2px solid #fff;
+	outline-offset: 2px;
+}
+
+.omega-lang-switch__link.is-active {
+	background: #fff;
+	color: #14100e;
+}
+
+@media print {
+	.omega-lang-switch {
+		display: none;
+	}
+}

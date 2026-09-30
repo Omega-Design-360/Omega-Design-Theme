@@ -182,6 +182,13 @@ class loader {
             'deps'     => ['hooks'],
             'enabled'  => true,
         ],
+        'visitor_language' => [
+            'class'    => 'OmegaDesign\core\visitor_language',
+            'priority' => 20,
+            'required' => false,
+            'deps'     => ['hooks'],
+            'enabled'  => true,
+        ],
         'color_scheme' => [
             'class'    => 'OmegaDesign\\customizer\\color_scheme',
             'priority' => 19,
@@ -205,6 +212,13 @@ class loader {
         ],
         'responsive_styles' => [
             'class'    => 'OmegaDesign\\core\\responsive_styles',
+            'priority' => 20,
+            'required' => false,
+            'deps'     => ['hooks'],
+            'enabled'  => true,
+        ],
+        'color_scheme' => [
+            'class'    => 'OmegaDesign\\core\\color_scheme',
             'priority' => 20,
             'required' => false,
             'deps'     => ['hooks'],

@@ -1,0 +1,1065 @@
+/**
+ * Page-specific styling for the Beauty Salon landing pattern
+ * (pattern/landing-beauty-salon.php). Loaded only when the page's content
+ * contains the "omega-landing--beauty-salon" marker class - see
+ * enqueue_landing_page_assets() in includes/core/hooks.php.
+ *
+ * Headings use an elegant serif and a handful of accent lines (hero
+ * tagline, "Real Transformations", "Special Offer", ...) use a script
+ * face, both loaded here so the rest of the site is unaffected.
+ *
+ * The Arabic version (pattern/landing-beauty-salon-ar.php) adds
+ * .omega-salon-ar to the same wrapper: right-to-left layout and Arabic
+ * fonts, see the "Arabic / RTL" section at the end. Browsers only
+ * download the font files a page actually uses.
+ */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Great+Vibes&family=El+Messiri:wght@500;600;700&family=Tajawal:wght@400;500;700&family=Aref+Ruqaa:wght@400;700&display=swap');
+
+/**
+ * Brand palette override for this page only - remaps the theme's preset
+ * colors to a cream/blush/gold salon identity, so every block below that
+ * says backgroundColor="surface" / textColor="primary" etc. recolors
+ * without touching the pattern markup.
+ *
+ * This is the page's "Default" scheme. The Group block's Color Scheme panel
+ * can swap it for the site's Global palette or Custom colors - see
+ * .omega-scheme-global in assets/css/style.css. Decorative colors further
+ * down are all derived from these variables (color-mix), so they follow
+ * whichever scheme is active.
+ */
+.omega-landing--beauty-salon {
+	--wp--preset--color--primary: #8a5a2e;
+	--wp--preset--color--secondary: #17110d;
+	--wp--preset--color--accent: #d4a373;
+	--wp--preset--color--heading: #1e1510;
+	--wp--preset--color--background: #fdf9f5;
+	--wp--preset--color--page-background: #f8eee6;
+	--wp--preset--color--surface: #ffffff;
+	--wp--preset--color--body-text: #5b4b42;
+	--wp--preset--color--border: #eaddd2;
+	--wp--preset--color--button-text: #ffffff;
+	--wp--preset--color--button-background: #8a5a2e;
+	--wp--preset--color--warning: #d9a441;
+	--omega-salon-serif: 'Playfair Display', Georgia, 'Times New Roman', serif;
+	--omega-salon-script: 'Great Vibes', 'Brush Script MT', cursive;
+	--omega-salon-shadow: 0 14px 40px color-mix(in srgb, var(--wp--preset--color--primary) 12%, transparent);
+	color: var(--wp--preset--color--body-text);
+}
+
+.omega-landing--beauty-salon h1,
+.omega-landing--beauty-salon h2,
+.omega-landing--beauty-salon h3 {
+	font-family: var(--omega-salon-serif);
+	font-weight: 600;
+	color: var(--wp--preset--color--heading);
+	letter-spacing: -0.01em;
+}
+
+.omega-landing--beauty-salon h1 {
+	font-size: clamp(2.6rem, 5.2vw, 4.4rem);
+	line-height: 1.02;
+	margin-top: 0.5rem;
+}
+
+.omega-landing--beauty-salon h2 {
+	font-size: clamp(1.9rem, 3.2vw, 2.6rem);
+	line-height: 1.15;
+}
+
+.omega-landing--beauty-salon .omega-card__body h3,
+.omega-landing--beauty-salon .omega-salon-card h3 {
+	font-family: inherit;
+	font-weight: 700;
+	letter-spacing: 0;
+	margin: 0;
+}
+
+.omega-landing--beauty-salon p {
+	margin-top: 0;
+}
+
+/* Inline text colour (the gold "Refined.", the rating star) is saved as a
+   <mark> - never let the browser's default yellow highlight show, even if
+   its inline transparent background gets filtered out on save. */
+.omega-landing--beauty-salon mark {
+	background: transparent;
+	color: inherit;
+}
+
+.omega-landing--beauty-salon mark.has-primary-color {
+	color: var(--wp--preset--color--primary);
+}
+
+.omega-landing--beauty-salon mark.has-accent-color {
+	color: var(--wp--preset--color--accent);
+}
+
+.omega-landing--beauty-salon .omega-eyebrow {
+	letter-spacing: 0.18em;
+	font-size: 0.75rem;
+}
+
+.omega-salon-script {
+	font-family: var(--omega-salon-script);
+	font-weight: 400;
+	line-height: 1.05;
+}
+
+.omega-salon-subtitle {
+	max-width: 520px;
+	margin-left: auto !important;
+	margin-right: auto !important;
+}
+
+/* Buttons - pill shaped, gold gradient for the solid ones. */
+.omega-landing--beauty-salon .wp-block-button__link {
+	border-radius: 999px;
+	padding: 0.85em 1.8em;
+	font-weight: 600;
+	font-size: 0.875rem;
+	transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.omega-landing--beauty-salon .wp-block-button__link.has-primary-background-color {
+	background-image: linear-gradient(135deg, var(--wp--preset--color--primary), color-mix(in srgb, var(--wp--preset--color--primary) 72%, #fff));
+	box-shadow: 0 10px 24px color-mix(in srgb, var(--wp--preset--color--primary) 28%, transparent);
+}
+
+.omega-landing--beauty-salon .wp-block-button__link.has-accent-background-color {
+	background-image: linear-gradient(135deg, var(--wp--preset--color--accent), color-mix(in srgb, var(--wp--preset--color--accent) 65%, #fff));
+}
+
+.omega-landing--beauty-salon .wp-block-button__link:hover {
+	transform: translateY(-2px);
+}
+
+.omega-landing--beauty-salon .is-style-outline > .wp-block-button__link {
+	border: 1px solid var(--wp--preset--color--primary);
+	color: var(--wp--preset--color--heading);
+	background: transparent;
+}
+
+/* "Explore Services" - outline pill with a dark round arrow at its end. */
+.omega-salon-btn-circle > .wp-block-button__link {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.75rem;
+	padding-inline-end: 0.4em;
+}
+
+.omega-salon-btn-circle > .wp-block-button__link::after {
+	content: '→';
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 2em;
+	height: 2em;
+	border-radius: 999px;
+	background: var(--wp--preset--color--secondary);
+	color: #fff;
+}
+
+/* Small round arrow link at a card's corner. */
+.omega-salon-arrow {
+	margin: 0;
+	flex-shrink: 0;
+}
+
+.omega-salon-arrow a {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 30px;
+	height: 30px;
+	border-radius: 999px;
+	text-decoration: none;
+	font-size: 0.85rem;
+	line-height: 1;
+	transition: transform 0.25s ease;
+}
+
+.omega-salon-arrow--solid a {
+	background: var(--wp--preset--color--secondary);
+	color: #fff;
+}
+
+.omega-salon-arrow--outline a {
+	border: 1px solid var(--wp--preset--color--accent);
+	color: var(--wp--preset--color--primary);
+}
+
+.omega-salon-arrow a:hover {
+	transform: translateX(3px);
+}
+
+/* ---------------------------------------------------------------- Hero */
+/*
+ * Decorative section gradients below only apply while the section still has
+ * its ORIGINAL color (no color picked, or the pattern's own preset) - once
+ * someone picks a different background in the editor, their color shows
+ * as-is, in the editor and on the live page alike.
+ */
+.omega-salon-hero {
+	position: relative;
+	overflow: hidden;
+}
+
+.omega-salon-hero:not(.has-background) {
+	background:
+		radial-gradient(circle at 78% 30%, color-mix(in srgb, var(--wp--preset--color--accent) 28%, var(--wp--preset--color--background)) 0%, transparent 45%),
+		linear-gradient(120deg, var(--wp--preset--color--background) 0%, var(--wp--preset--color--page-background) 55%, color-mix(in srgb, var(--wp--preset--color--accent) 22%, var(--wp--preset--color--page-background)) 100%);
+}
+
+.omega-salon-stats {
+	margin-top: var(--wp--preset--spacing--l, 2rem) !important;
+	max-width: 440px;
+}
+
+.omega-salon-stat {
+	border-inline-start: 1px solid var(--wp--preset--color--border);
+	padding-inline-start: 1rem;
+}
+
+.omega-salon-stats > .wp-block-column:first-child .omega-salon-stat {
+	border-inline-start: 0;
+	padding-inline-start: 0;
+}
+
+.omega-salon-stat p {
+	margin: 0;
+}
+
+.omega-salon-stat__value {
+	font-family: var(--omega-salon-serif);
+	font-weight: 600;
+	line-height: 1.1;
+}
+
+/* Hero art - frameless and anchored to the hero's bottom edge, so a
+   cut-out portrait (transparent PNG, subject cropped at the bottom) rises
+   straight out of the section like the reference, with no gap under it.
+   The image keeps its own proportions - nothing forces a box shape on it -
+   so any photo swapped in just fills the column width. The hero's bottom
+   padding moves onto the text column so only the image touches the edge. */
+.omega-salon-hero.omega-salon-hero {
+	padding-bottom: 0 !important;
+}
+
+.omega-salon-hero > .wp-block-columns {
+	align-items: stretch !important;
+	margin-bottom: 0 !important;
+}
+
+.omega-salon-hero > .wp-block-columns > .wp-block-column:first-child {
+	align-self: center;
+	padding-bottom: var(--wp--preset--spacing--xl, 3rem);
+}
+
+.omega-salon-hero > .wp-block-columns > .wp-block-column:last-child {
+	align-self: flex-end;
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-end;
+}
+
+.omega-salon-hero-art {
+	position: relative;
+	width: auto !important;
+	max-width: none !important;
+	margin: 0 calc(-1 * var(--wp--preset--spacing--l, 2rem)) 0 0 !important;
+	padding: 0 !important;
+}
+
+.omega-salon-hero-portrait {
+	margin: 0 !important;
+	max-width: none !important;
+}
+
+.omega-salon-hero-portrait img {
+	width: 100%;
+	height: auto;
+	display: block;
+	vertical-align: bottom;
+}
+
+.omega-salon-hero-tagline {
+	position: absolute;
+	top: 4%;
+	right: 6%;
+	font-size: clamp(1.6rem, 2.6vw, 2.4rem);
+	transform: rotate(-8deg);
+	opacity: 0.85;
+	margin: 0;
+	z-index: 2;
+}
+
+.omega-salon-rating-card {
+	position: absolute;
+	right: 5%;
+	bottom: 14%;
+	z-index: 2;
+	width: 190px;
+	padding: 1rem 1.1rem;
+	border-radius: 18px;
+	box-shadow: var(--omega-salon-shadow);
+}
+
+.omega-salon-rating-card > * {
+	margin: 0 !important;
+}
+
+.omega-salon-rating-card__value {
+	font-family: var(--omega-salon-serif);
+	font-weight: 700;
+	line-height: 1.1;
+}
+
+.omega-salon-avatars {
+	margin-top: 0.6rem !important;
+	gap: 0 !important;
+}
+
+.omega-salon-avatars > * {
+	margin: 0 !important;
+	margin-inline-start: -8px !important;
+	border: 2px solid var(--wp--preset--color--surface);
+	border-radius: 999px;
+	flex-shrink: 0;
+}
+
+.omega-salon-avatars > *:first-child {
+	margin-inline-start: 0 !important;
+}
+
+.omega-salon-avatars .omega-avatar-md {
+	width: 34px;
+	height: 34px;
+}
+
+.omega-salon-avatars__more {
+	width: 34px;
+	height: 34px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: var(--wp--preset--color--page-background);
+	color: var(--wp--preset--color--heading);
+	font-weight: 700;
+}
+
+/* ------------------------------------------------ Cards (services, treatments) */
+.omega-salon-section-head {
+	position: relative;
+	margin-bottom: var(--wp--preset--spacing--l, 2rem);
+}
+
+.omega-salon-section-head h2 {
+	margin-bottom: 0.5rem;
+}
+
+.omega-salon-card {
+	height: 100%;
+	border-radius: 18px;
+	overflow: hidden;
+	padding: 0 !important;
+	box-shadow: var(--omega-salon-shadow);
+	transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.omega-salon-card > * {
+	margin-top: 0 !important;
+}
+
+.omega-salon-card:hover {
+	transform: translateY(-6px);
+	box-shadow: 0 22px 50px color-mix(in srgb, var(--wp--preset--color--primary) 18%, transparent);
+}
+
+.omega-salon-card__media {
+	position: relative;
+}
+
+.omega-salon-card__image {
+	margin: 0 !important;
+}
+
+.omega-salon-card__image img {
+	width: 100%;
+	aspect-ratio: 16 / 11;
+	object-fit: cover;
+	display: block;
+	transition: transform 0.5s ease;
+}
+
+.omega-salon-card--treatment .omega-salon-card__image img {
+	aspect-ratio: 16 / 9;
+}
+
+.omega-salon-card:hover .omega-salon-card__image img {
+	transform: scale(1.05);
+}
+
+.omega-salon-card__icon {
+	position: absolute;
+	left: 1rem;
+	bottom: -24px;
+	width: 48px;
+	height: 48px;
+	border-radius: 999px;
+	background: var(--wp--preset--color--surface);
+	box-shadow: 0 6px 18px color-mix(in srgb, var(--wp--preset--color--primary) 20%, transparent);
+	margin: 0 !important;
+	z-index: 1;
+}
+
+.omega-salon-card__body {
+	padding: 1.1rem 1.1rem 1.25rem;
+}
+
+.omega-salon-card__media + .omega-salon-card__body {
+	padding-top: 2rem;
+}
+
+.omega-salon-card__body > * {
+	margin-top: 0.35rem !important;
+	margin-bottom: 0 !important;
+}
+
+.omega-salon-card__body > *:first-child {
+	margin-top: 0 !important;
+}
+
+.omega-salon-price-row {
+	margin-top: 0.75rem !important;
+	gap: 0.75rem !important;
+}
+
+.omega-salon-price-row p {
+	margin: 0;
+}
+
+.omega-salon-price-row .omega-salon-arrow {
+	margin-inline-start: auto;
+}
+
+/* ---------------------------------------------------------------- About */
+.omega-salon-about {
+	overflow: hidden;
+}
+
+.omega-salon-about.has-page-background-background-color {
+	background:
+		radial-gradient(circle at 92% 20%, color-mix(in srgb, var(--wp--preset--color--accent) 18%, transparent), transparent 35%),
+		var(--wp--preset--color--page-background);
+}
+
+/* Photo runs edge to edge: no side padding on the section (it otherwise
+   picks up WordPress's default root padding), and the photo's column is
+   stretched to the full height of the band instead of vertically centered,
+   so there's no gap above, below or beside it. */
+.omega-salon-about.omega-salon-about {
+	padding: 0 !important;
+}
+
+.omega-salon-about > .wp-block-columns {
+	margin: 0 !important;
+	max-width: none !important;
+	align-items: stretch !important;
+}
+
+.omega-salon-about > .wp-block-columns > .wp-block-column:first-child {
+	align-self: stretch !important;
+	display: flex;
+}
+
+.omega-salon-about__image {
+	margin: 0 !important;
+	flex: 1 1 auto;
+	width: 100%;
+	max-width: none !important;
+	min-height: 460px;
+	position: relative;
+}
+
+.omega-salon-about__image img {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+	border-radius: 0 32% 32% 0 / 0 50% 50% 0;
+}
+
+.omega-salon-about__content {
+	padding: var(--wp--preset--spacing--xl, 3rem) var(--wp--preset--spacing--l, 2rem);
+	max-width: 620px;
+}
+
+.omega-salon-about__features {
+	gap: 1.5rem !important;
+	margin: 1.25rem 0 1.5rem !important;
+}
+
+.omega-salon-about__features p {
+	margin: 0;
+}
+
+/* ------------------------------------------------- Real Transformations */
+.omega-salon-transformations.has-secondary-background-color {
+	background:
+		radial-gradient(circle at 10% 50%, color-mix(in srgb, var(--wp--preset--color--accent) 16%, transparent), transparent 40%),
+		var(--wp--preset--color--secondary);
+}
+
+.omega-salon-transformations:not(.has-text-color) {
+	color: color-mix(in srgb, var(--wp--preset--color--background) 85%, var(--wp--preset--color--accent));
+}
+
+.omega-salon-transformations__title {
+	font-size: clamp(2.4rem, 4vw, 3.4rem);
+	margin-bottom: 1rem;
+}
+
+.omega-salon-ba {
+	gap: 4px !important;
+	padding: 4px;
+	border-radius: 14px;
+	border: 1px solid color-mix(in srgb, var(--wp--preset--color--accent) 45%, transparent);
+}
+
+.omega-salon-ba__item {
+	position: relative;
+	flex: 1 1 0;
+	min-width: 0;
+	margin: 0 !important;
+}
+
+.omega-salon-ba__image {
+	margin: 0 !important;
+}
+
+.omega-salon-ba__image img {
+	width: 100%;
+	aspect-ratio: 3 / 4;
+	object-fit: cover;
+	display: block;
+	border-radius: 10px;
+}
+
+.omega-salon-ba__item:first-child .omega-salon-ba__image img {
+	filter: saturate(0.85) brightness(0.92);
+}
+
+.omega-salon-ba__label {
+	position: absolute;
+	left: 50%;
+	bottom: 10px;
+	transform: translateX(-50%);
+	margin: 0 !important;
+	padding: 0.2rem 0.9rem;
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--wp--preset--color--secondary) 70%, transparent);
+	color: #fff;
+	white-space: nowrap;
+}
+
+/* ---------------------------------------------------------- Why Choose */
+.omega-salon-why-section h2 {
+	margin-bottom: var(--wp--preset--spacing--l, 2rem);
+}
+
+.omega-salon-why-row > .wp-block-column + .wp-block-column {
+	border-inline-start: 1px solid var(--wp--preset--color--border);
+	padding-inline-start: var(--wp--preset--spacing--m, 1.5rem);
+}
+
+.omega-salon-why {
+	gap: 1rem !important;
+}
+
+.omega-salon-why p {
+	margin: 0;
+}
+
+.omega-salon-why__icon {
+	width: 60px;
+	height: 60px;
+	flex-shrink: 0;
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--wp--preset--color--accent) 22%, var(--wp--preset--color--surface));
+}
+
+/* Keep the shared landing hover lift from recoloring this page's icons. */
+.omega-landing--beauty-salon .wp-block-columns.alignwide .wp-block-icon {
+	color: var(--wp--preset--color--primary);
+}
+
+/* -------------------------------------------------------- Special Offer */
+.omega-salon-offer {
+	position: relative;
+	overflow: hidden;
+}
+
+.omega-salon-offer:not(.has-background) {
+	background:
+		radial-gradient(circle at 5% 90%, color-mix(in srgb, var(--wp--preset--color--accent) 35%, transparent), transparent 30%),
+		linear-gradient(100deg, var(--wp--preset--color--background) 0%, var(--wp--preset--color--page-background) 55%, color-mix(in srgb, var(--wp--preset--color--accent) 28%, var(--wp--preset--color--page-background)) 100%);
+}
+
+.omega-salon-offer__content {
+	padding: var(--wp--preset--spacing--xl, 3rem) 0;
+}
+
+.omega-salon-offer__eyebrow {
+	font-size: 2rem;
+	margin-bottom: 0;
+}
+
+.omega-salon-offer h2 {
+	font-size: clamp(2.2rem, 4vw, 3.2rem);
+	margin: 0 0 0.5rem;
+}
+
+.omega-salon-offer strong {
+	color: var(--wp--preset--color--heading);
+}
+
+/* Frameless like the hero: runs to the band's right edge and fades into
+   the pink on its left instead of sitting in a curved frame. */
+.omega-salon-offer__art {
+	position: relative;
+	margin-right: calc(-1 * var(--wp--preset--spacing--l, 2rem)) !important;
+}
+
+.omega-salon-offer__image {
+	margin: 0 !important;
+}
+
+.omega-salon-offer__image img {
+	width: 100%;
+	height: 380px;
+	object-fit: cover;
+	display: block;
+	-webkit-mask-image: linear-gradient(to right, transparent 0%, #000 30%);
+	mask-image: linear-gradient(to right, transparent 0%, #000 30%);
+}
+
+.omega-salon-offer__badge {
+	position: absolute;
+	top: 50%;
+	right: 4%;
+	transform: translateY(-50%);
+	width: 130px;
+	height: 130px;
+	border-radius: 999px;
+	background: var(--wp--preset--color--surface);
+	border: 3px solid var(--wp--preset--color--accent);
+	box-shadow: 0 16px 40px color-mix(in srgb, var(--wp--preset--color--primary) 22%, transparent);
+	gap: 0 !important;
+	margin: 0 !important;
+}
+
+.omega-salon-offer__badge p {
+	margin: 0;
+	line-height: 1;
+}
+
+.omega-salon-offer__badge-value {
+	font-family: var(--omega-salon-serif);
+	font-size: 2.4rem;
+	font-weight: 700;
+}
+
+/* --------------------------------------------------------- Testimonials */
+.omega-salon-testimonials .omega-salon-slider {
+	margin-top: var(--wp--preset--spacing--l, 2rem);
+	padding: 0 56px;
+}
+
+.omega-salon-testimonial {
+	height: 100%;
+	border: 1px solid var(--wp--preset--color--border);
+	box-shadow: var(--omega-salon-shadow);
+	border-radius: 18px;
+}
+
+.omega-salon-testimonial p {
+	margin: 0;
+}
+
+.omega-salon-testimonial > p {
+	margin-top: 1rem;
+	line-height: 1.7;
+}
+
+.omega-salon-slider .omega-slider__arrow {
+	width: 38px;
+	height: 38px;
+	background: transparent;
+	border: 1px solid var(--wp--preset--color--accent);
+	color: var(--wp--preset--color--primary);
+	box-shadow: none;
+}
+
+.omega-salon-slider .omega-slider__arrow--prev {
+	left: 0;
+}
+
+.omega-salon-slider .omega-slider__arrow--next {
+	right: 0;
+}
+
+/* ------------------------------------------------------------ Instagram */
+.omega-salon-instagram h3 {
+	margin: 0 0 0.25rem;
+}
+
+.omega-salon-instagram__eyebrow {
+	font-size: 1.5rem;
+	margin-bottom: 0;
+}
+
+.omega-salon-instagram__grid.omega-salon-instagram__grid {
+	gap: 8px;
+}
+
+.omega-salon-instagram__grid .omega-rounded-image {
+	aspect-ratio: 1 / 1.25;
+	border-radius: 8px;
+	margin: 0;
+}
+
+.omega-salon-instagram__grid .omega-rounded-image img {
+	transition: transform 0.4s ease;
+}
+
+.omega-salon-instagram__grid .omega-rounded-image:hover img {
+	transform: scale(1.06);
+}
+
+/* ------------------------------------------------------------------ CTA */
+.omega-salon-cta {
+	position: relative;
+	overflow: hidden;
+}
+
+.omega-salon-cta:not(.has-text-color) {
+	color: color-mix(in srgb, var(--wp--preset--color--background) 85%, var(--wp--preset--color--accent));
+}
+
+.omega-salon-cta__bg {
+	position: absolute !important;
+	inset: 0;
+	margin: 0 !important;
+	max-width: none !important;
+	z-index: 0;
+}
+
+.omega-salon-cta__bg img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+
+.omega-salon-cta__bg::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(90deg, color-mix(in srgb, var(--wp--preset--color--secondary) 92%, transparent) 0%, color-mix(in srgb, var(--wp--preset--color--secondary) 78%, transparent) 55%, color-mix(in srgb, var(--wp--preset--color--secondary) 60%, transparent) 100%);
+}
+
+.omega-salon-cta__content {
+	position: relative;
+	z-index: 1;
+	margin-top: 0 !important;
+}
+
+.omega-salon-cta h2 {
+	margin-top: 0;
+}
+
+.omega-salon-cta:not(.has-text-color) h2:not(.has-text-color) {
+	color: #fff;
+}
+
+.omega-salon-cta-feature {
+	align-items: center;
+	gap: 0.5rem !important;
+}
+
+.omega-salon-cta-feature p {
+	margin: 0;
+}
+
+.omega-salon-cta:not(.has-text-color) .omega-salon-cta-feature p:not(.has-text-color) {
+	color: color-mix(in srgb, var(--wp--preset--color--background) 85%, var(--wp--preset--color--accent));
+}
+
+/* ------------------------------------------------------------ Responsive */
+@media (min-width: 1025px) {
+	.omega-salon-view-all {
+		position: absolute;
+		top: 0.5rem;
+		right: 0;
+		margin: 0 !important;
+	}
+}
+
+@media (max-width: 1024px) {
+	.omega-salon-instagram__grid.omega-salon-instagram__grid {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+
+	.omega-salon-transformations .wp-block-columns .wp-block-columns {
+		flex-wrap: wrap !important;
+	}
+
+	.omega-salon-transformations .wp-block-columns .wp-block-columns > .wp-block-column {
+		flex-basis: calc(50% - 12px) !important;
+	}
+}
+
+@media (max-width: 781px) {
+	/* Stacked under the text: full bleed on both sides, still sitting on the section's bottom edge. */
+	.omega-salon-hero-art {
+		margin-left: calc(-1 * var(--wp--preset--spacing--l, 2rem)) !important;
+	}
+
+	.omega-salon-hero > .wp-block-columns > .wp-block-column:first-child {
+		padding-bottom: 0;
+	}
+
+	.omega-salon-rating-card {
+		width: 150px;
+		padding: 0.75rem 0.85rem;
+		bottom: 8%;
+		right: 4%;
+	}
+
+	.omega-salon-hero-tagline {
+		right: 6%;
+		top: 4%;
+		font-size: 1.5rem;
+	}
+
+	.omega-salon-about__image {
+		min-height: 300px;
+	}
+
+	.omega-salon-about__image img {
+		border-radius: 0 0 40% 40% / 0 0 14% 14%;
+	}
+
+	.omega-salon-about__content {
+		padding: var(--wp--preset--spacing--l, 2rem) var(--wp--preset--spacing--m, 1.5rem);
+	}
+
+	.omega-salon-why-row > .wp-block-column + .wp-block-column {
+		border-inline-start: 0;
+		padding-inline-start: 0;
+	}
+
+	.omega-salon-transformations .wp-block-columns .wp-block-columns > .wp-block-column {
+		flex-basis: 100% !important;
+	}
+
+	.omega-salon-offer__content {
+		padding-bottom: 0;
+	}
+
+	/* Stacked under the text: full bleed, fading in from the top instead. */
+	.omega-salon-offer__art {
+		margin-left: calc(-1 * var(--wp--preset--spacing--l, 2rem)) !important;
+	}
+
+	.omega-salon-offer__image img {
+		height: 280px;
+		-webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 30%);
+		mask-image: linear-gradient(to bottom, transparent 0%, #000 30%);
+	}
+
+	.omega-salon-offer__badge {
+		width: 100px;
+		height: 100px;
+	}
+
+	.omega-salon-offer__badge-value {
+		font-size: 1.8rem;
+	}
+
+	.omega-salon-offer .wp-block-columns {
+		padding-bottom: 0;
+	}
+
+	.omega-salon-testimonials .omega-salon-slider {
+		padding: 0 44px;
+	}
+
+	.omega-salon-instagram__grid.omega-salon-instagram__grid {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+
+	.omega-salon-cta-feature p {
+		font-size: 0.7rem;
+	}
+}
+
+
+/* ======================================================= Arabic / RTL
+ * pattern/landing-beauty-salon-ar.php - the same page in Arabic for GCC
+ * markets. Its wrapper also carries .omega-salon-ar: right-to-left
+ * layout (columns, text and "start/end" spacing flip automatically), Arabic
+ * fonts (Tajawal body, El Messiri headings, Aref Ruqaa calligraphy for the
+ * script lines), no letter-spacing (it breaks joined Arabic letters), and
+ * the left/right-specific details below mirrored.
+ */
+.omega-landing--beauty-salon.omega-salon-ar {
+	--omega-salon-serif: 'El Messiri', 'Tajawal', Tahoma, serif;
+	--omega-salon-script: 'Aref Ruqaa', 'El Messiri', serif;
+	--omega-salon-sans: 'Tajawal', 'Segoe UI', Tahoma, sans-serif;
+	direction: rtl;
+	text-align: start;
+	font-family: var(--omega-salon-sans);
+}
+
+.omega-salon-ar h1,
+.omega-salon-ar h2,
+.omega-salon-ar h3,
+.omega-landing--beauty-salon.omega-salon-ar .omega-eyebrow {
+	letter-spacing: 0;
+}
+
+.omega-salon-ar .wp-block-button__link,
+.omega-salon-ar input,
+.omega-salon-ar button {
+	font-family: var(--omega-salon-sans);
+}
+
+.omega-salon-ar .omega-salon-script {
+	line-height: 1.35;
+}
+
+.omega-salon-ar .omega-salon-btn-circle > .wp-block-button__link::after {
+	content: '←';
+}
+
+.omega-salon-ar .omega-salon-arrow a:hover {
+	transform: translateX(-3px);
+}
+
+/* Hero - photo on the left, bleeding to the left edge. */
+.omega-salon-ar .omega-salon-hero:not(.has-background) {
+	background:
+		radial-gradient(circle at 22% 30%, color-mix(in srgb, var(--wp--preset--color--accent) 28%, var(--wp--preset--color--background)) 0%, transparent 45%),
+		linear-gradient(240deg, var(--wp--preset--color--background) 0%, var(--wp--preset--color--page-background) 55%, color-mix(in srgb, var(--wp--preset--color--accent) 22%, var(--wp--preset--color--page-background)) 100%);
+}
+
+.omega-salon-ar .omega-salon-hero-art {
+	margin: 0 0 0 calc(-1 * var(--wp--preset--spacing--l, 2rem)) !important;
+}
+
+.omega-salon-ar .omega-salon-hero-tagline {
+	right: auto;
+	left: 6%;
+	transform: rotate(6deg);
+}
+
+.omega-salon-ar .omega-salon-rating-card {
+	right: auto;
+	left: 5%;
+}
+
+/* Service cards - icon badge on the right. */
+.omega-salon-ar .omega-salon-card__icon {
+	left: auto;
+	right: 1rem;
+}
+
+/* About - photo on the right, curve on its inner (left) side. */
+.omega-salon-ar .omega-salon-about.has-page-background-background-color {
+	background:
+		radial-gradient(circle at 8% 20%, color-mix(in srgb, var(--wp--preset--color--accent) 18%, transparent), transparent 35%),
+		var(--wp--preset--color--page-background);
+}
+
+.omega-salon-ar .omega-salon-about__image img {
+	border-radius: 32% 0 0 32% / 50% 0 0 50%;
+}
+
+/* Special offer - photo bleeds left and fades in from its right. */
+.omega-salon-ar .omega-salon-offer:not(.has-background) {
+	background:
+		radial-gradient(circle at 95% 90%, color-mix(in srgb, var(--wp--preset--color--accent) 35%, transparent), transparent 30%),
+		linear-gradient(260deg, var(--wp--preset--color--background) 0%, var(--wp--preset--color--page-background) 55%, color-mix(in srgb, var(--wp--preset--color--accent) 28%, var(--wp--preset--color--page-background)) 100%);
+}
+
+.omega-salon-ar .omega-salon-offer__art {
+	margin-right: 0 !important;
+	margin-left: calc(-1 * var(--wp--preset--spacing--l, 2rem)) !important;
+}
+
+.omega-salon-ar .omega-salon-offer__image img {
+	-webkit-mask-image: linear-gradient(to left, transparent 0%, #000 30%);
+	mask-image: linear-gradient(to left, transparent 0%, #000 30%);
+}
+
+.omega-salon-ar .omega-salon-offer__badge {
+	right: auto;
+	left: 4%;
+}
+
+/* Booking band - darkest behind the text, now on the right. */
+.omega-salon-ar .omega-salon-cta__bg::after {
+	background: linear-gradient(270deg, color-mix(in srgb, var(--wp--preset--color--secondary) 92%, transparent) 0%, color-mix(in srgb, var(--wp--preset--color--secondary) 78%, transparent) 55%, color-mix(in srgb, var(--wp--preset--color--secondary) 60%, transparent) 100%);
+}
+
+/* The slider's motion math assumes left-to-right, so its track stays LTR;
+   each testimonial card inside still reads right-to-left. */
+.omega-salon-ar .omega-salon-slider {
+	direction: ltr;
+}
+
+.omega-salon-ar .omega-salon-slider .omega-salon-testimonial {
+	direction: rtl;
+	text-align: start;
+}
+
+@media (min-width: 1025px) {
+	.omega-salon-ar .omega-salon-view-all {
+		right: auto;
+		left: 0;
+	}
+}
+
+@media (max-width: 781px) {
+	.omega-salon-ar .omega-salon-hero-art {
+		margin-left: calc(-1 * var(--wp--preset--spacing--l, 2rem)) !important;
+		margin-right: calc(-1 * var(--wp--preset--spacing--l, 2rem)) !important;
+	}
+
+	.omega-salon-ar .omega-salon-rating-card {
+		right: auto;
+		left: 4%;
+	}
+
+	.omega-salon-ar .omega-salon-hero-tagline {
+		right: auto;
+		left: 6%;
+	}
+
+	.omega-salon-ar .omega-salon-about__image img {
+		border-radius: 0 0 40% 40% / 0 0 14% 14%;
+	}
+
+	.omega-salon-ar .omega-salon-offer__art {
+		margin-left: calc(-1 * var(--wp--preset--spacing--l, 2rem)) !important;
+		margin-right: calc(-1 * var(--wp--preset--spacing--l, 2rem)) !important;
+	}
+
+	.omega-salon-ar .omega-salon-offer__image img {
+		-webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 30%);
+		mask-image: linear-gradient(to bottom, transparent 0%, #000 30%);
+	}
+}
