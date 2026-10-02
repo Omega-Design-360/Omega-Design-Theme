@@ -7,52 +7,42 @@
  * conflict with, and it degrades to "no animation" harmlessly if either
  * selector ever changes upstream.
  */
-(function () {
+( function ( core ) {
 	'use strict';
 
-	function prefersReducedMotion() {
-		return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-	}
-
-	if (prefersReducedMotion()) {
+	if ( ! core || core.prefersReducedMotion() ) {
 		return;
 	}
 
-	function restartAnimation(el, className) {
-		el.classList.remove(className);
-		// Reading offsetWidth forces layout, so re-adding the class in the
-		// same tick still restarts the CSS animation instead of no-op'ing.
-		void el.offsetWidth;
-		el.classList.add(className);
+	const QTY_BUTTON_SELECTOR = '.wc-block-components-quantity-selector__button';
+	const QTY_WRAPPER_SELECTOR = '.wc-block-components-quantity-selector';
+	const QTY_INPUT_SELECTOR = '.wc-block-components-quantity-selector__input';
+	const QTY_POP_CLASS = 'omega-qty-pop';
+	const ATC_SUCCESS_CLASS = 'omega-atc-success';
+	const ATC_SUCCESS_DURATION_MS = 900;
+
+	class ProductPageInteractions extends core.Component {
+		constructor( root ) {
+			super( root );
+			this.on( 'click', QTY_BUTTON_SELECTOR, ( event, button ) => this.popQuantity( button ) );
+			this.on( 'submit', 'form.cart', ( event, form ) => this.celebrateAddToCart( form ) );
+		}
+
+		popQuantity( button ) {
+			const wrapper = button.closest( QTY_WRAPPER_SELECTOR );
+			const input = wrapper && wrapper.querySelector( QTY_INPUT_SELECTOR );
+			if ( input ) {
+				core.restartAnimation( input, QTY_POP_CLASS );
+			}
+		}
+
+		celebrateAddToCart( form ) {
+			const button = form.querySelector( '.single_add_to_cart_button' );
+			if ( button ) {
+				core.flashClass( button, ATC_SUCCESS_CLASS, ATC_SUCCESS_DURATION_MS );
+			}
+		}
 	}
 
-	document.addEventListener('click', function (event) {
-		var button = event.target.closest('.wc-block-components-quantity-selector__button');
-		if (!button) {
-			return;
-		}
-
-		var wrapper = button.closest('.wc-block-components-quantity-selector');
-		var input = wrapper && wrapper.querySelector('.wc-block-components-quantity-selector__input');
-		if (input) {
-			restartAnimation(input, 'omega-qty-pop');
-		}
-	});
-
-	document.addEventListener('submit', function (event) {
-		var form = event.target.closest ? event.target.closest('form.cart') : null;
-		if (!form) {
-			return;
-		}
-
-		var button = form.querySelector('.single_add_to_cart_button');
-		if (!button) {
-			return;
-		}
-
-		restartAnimation(button, 'omega-atc-success');
-		window.setTimeout(function () {
-			button.classList.remove('omega-atc-success');
-		}, 900);
-	});
-})();
+	core.mount( ProductPageInteractions );
+} )( window.OmegaDesign );

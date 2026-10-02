@@ -180,7 +180,7 @@ class menus {
         // Both pages render the same Site Logo form (render_logo_form()),
         // so both need the media modal and admin-logo.js.
         wp_enqueue_media();
-        self::enqueue_script('omega-design-admin-logo', 'js/admin-logo.js', ['media-editor'], true);
+        self::enqueue_script('omega-design-admin-logo', 'js/admin-logo.js', ['media-editor', self::admin_core_script()], true);
 
         if ($hook === $this->settings_hook) {
             $this->enqueue_settings_page_assets();
@@ -188,23 +188,23 @@ class menus {
     }
 
     private function enqueue_settings_page_assets() {
-        self::enqueue_script('omega-design-admin-layout-picker', 'js/admin-layout-picker.js', [], true);
-        self::enqueue_script('omega-design-admin-settings-tabs', 'js/admin-settings-tabs.js', [], true);
+        self::enqueue_script('omega-design-admin-layout-picker', 'js/admin-layout-picker.js', [self::admin_core_script()], true);
+        self::enqueue_script('omega-design-admin-settings-tabs', 'js/admin-settings-tabs.js', [self::admin_core_script()], true);
 
         // The real front-end announcement-bar stylesheet, reused as-is so
         // the Announcement Bar form's live preview strip renders
         // pixel-identical to what actually shows on the front end - see
         // render_announcement_form() and admin-announcement-preview.js.
         self::enqueue_style('omega-design-announcement-bar', 'css/announcement-bar.css', ['omega-design-admin-pages']);
-        self::enqueue_script('omega-design-admin-announcement-preview', 'js/admin-announcement-preview.js', [], true);
+        self::enqueue_script('omega-design-admin-announcement-preview', 'js/admin-announcement-preview.js', [self::admin_core_script()], true);
 
         // Header Navigation form's own live preview - see
         // render_header_nav_form() and admin-header-nav-preview.js.
-        self::enqueue_script('omega-design-admin-header-nav-preview', 'js/admin-header-nav-preview.js', [], true);
+        self::enqueue_script('omega-design-admin-header-nav-preview', 'js/admin-header-nav-preview.js', [self::admin_core_script()], true);
 
         // Typography form's dropdown + single preview card - see
         // render_typography_form() and admin-typography-preview.js.
-        self::enqueue_script('omega-design-admin-typography-preview', 'js/admin-typography-preview.js', [], true);
+        self::enqueue_script('omega-design-admin-typography-preview', 'js/admin-typography-preview.js', [self::admin_core_script()], true);
     }
 
     /**

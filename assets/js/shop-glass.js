@@ -11,134 +11,123 @@
  * no server-side wishlist, so a heart marks a product for the visitor on
  * this device.
  */
-( function () {
-	var root = document.querySelector( '.omega-shop-layout--glass' );
-	if ( ! root ) {
+( function ( core ) {
+	'use strict';
+
+	if ( ! core ) {
 		return;
 	}
 
-	function read( key, fallback ) {
-		try {
-			var value = window.localStorage.getItem( key );
-			return null === value ? fallback : JSON.parse( value );
-		} catch ( e ) {
-			return fallback;
-		}
-	}
-
-	function write( key, value ) {
-		try {
-			window.localStorage.setItem( key, JSON.stringify( value ) );
-		} catch ( e ) {}
-	}
-
-	var view = read( 'omegaShopView', 'grid' );
-	var wishlist = read( 'omegaWishlist', [] );
-	var collapsed = read( 'omegaFilterCollapsed', {} );
+	const STORAGE_KEYS = {
+		view: 'omegaShopView',
+		wishlist: 'omegaWishlist',
+		collapsed: 'omegaFilterCollapsed',
+	};
+	const VIEW_BUTTON_SELECTOR = '.omega-view-toggle__btn';
+	const WISH_SELECTOR = '.omega-glass-wish';
+	const FILTER_HEADING_SELECTOR = '.omega-glass-filters h3.wp-block-heading';
+	const WISH_POP_CLASS = 'is-popping';
+	const WISH_POP_MS = 400;
 
 	/** A toggle button's active look plus its aria-pressed state. */
-	function setPressed( btn, isPressed ) {
-		btn.classList.toggle( 'is-active', isPressed );
-		btn.setAttribute( 'aria-pressed', isPressed ? 'true' : 'false' );
+	function setPressed( button, isPressed ) {
+		core.setToggleState( button, isPressed, 'aria-pressed' );
 	}
 
-	function applyView() {
-		root.classList.toggle( 'is-list-view', 'list' === view );
-		root.querySelectorAll( '.omega-view-toggle__btn' ).forEach( function ( btn ) {
-			setPressed( btn, btn.getAttribute( 'data-view' ) === view );
-		} );
-	}
+	class GlassShop extends core.Component {
+		constructor( root ) {
+			super( root );
 
-	function applyWishlist() {
-		root.querySelectorAll( '.omega-glass-wish' ).forEach( function ( btn ) {
-			setPressed( btn, wishlist.indexOf( btn.getAttribute( 'data-product' ) ) !== -1 );
-		} );
-	}
+			this.view = core.storage.get( STORAGE_KEYS.view, 'grid' );
+			this.wishlist = core.storage.get( STORAGE_KEYS.wishlist, [] );
+			this.collapsed = core.storage.get( STORAGE_KEYS.collapsed, {} );
 
-	function groupKey( heading ) {
-		return heading.textContent.trim().toLowerCase();
-	}
+			this.on( 'click', VIEW_BUTTON_SELECTOR, ( event, button ) => this.setView( button.getAttribute( 'data-view' ) ) );
+			this.on( 'click', WISH_SELECTOR, ( event, button ) => {
+				event.preventDefault();
+				this.toggleWish( button );
+			} );
+			this.on( 'click', FILTER_HEADING_SELECTOR, ( event, heading ) => this.toggleGroup( heading ) );
+			this.on( 'keydown', FILTER_HEADING_SELECTOR, ( event, heading ) => {
+				if ( core.isActivationKey( event ) ) {
+					event.preventDefault();
+					this.toggleGroup( heading );
+				}
+			} );
 
-	function applyCollapsed() {
-		root.querySelectorAll( '.omega-glass-filters h3.wp-block-heading' ).forEach( function ( heading ) {
-			var group = heading.parentElement;
-			var isCollapsed = !! collapsed[ groupKey( heading ) ];
-			group.classList.add( 'omega-filter-group' );
-			group.classList.toggle( 'is-collapsed', isCollapsed );
-			if ( ! heading.hasAttribute( 'tabindex' ) ) {
-				heading.setAttribute( 'tabindex', '0' );
-				heading.setAttribute( 'role', 'button' );
-			}
-			heading.setAttribute( 'aria-expanded', isCollapsed ? 'false' : 'true' );
-		} );
-	}
-
-	function applyAll() {
-		applyView();
-		applyWishlist();
-		applyCollapsed();
-	}
-
-	function toggleGroup( heading ) {
-		var key = groupKey( heading );
-		collapsed[ key ] = ! collapsed[ key ];
-		write( 'omegaFilterCollapsed', collapsed );
-		applyCollapsed();
-	}
-
-	root.addEventListener( 'click', function ( event ) {
-		var viewBtn = event.target.closest( '.omega-view-toggle__btn' );
-		if ( viewBtn ) {
-			view = viewBtn.getAttribute( 'data-view' );
-			write( 'omegaShopView', view );
-			applyView();
-			return;
+			core.observeMutations( root, () => this.applyAll() );
+			this.applyAll();
 		}
 
-		var wish = event.target.closest( '.omega-glass-wish' );
-		if ( wish ) {
-			event.preventDefault();
-			var id = wish.getAttribute( 'data-product' );
-			var index = wishlist.indexOf( id );
-			if ( -1 === index ) {
-				wishlist.push( id );
-				wish.classList.add( 'is-popping' );
-				setTimeout( function () {
-					wish.classList.remove( 'is-popping' );
-				}, 400 );
+		static groupKey( heading ) {
+			return heading.textContent.trim().toLowerCase();
+		}
+
+		applyAll() {
+			this.applyView();
+			this.applyWishlist();
+			this.applyCollapsed();
+		}
+
+		applyView() {
+			this.root.classList.toggle( 'is-list-view', 'list' === this.view );
+			this.findAll( VIEW_BUTTON_SELECTOR ).forEach( ( button ) => {
+				setPressed( button, button.getAttribute( 'data-view' ) === this.view );
+			} );
+		}
+
+		applyWishlist() {
+			this.findAll( WISH_SELECTOR ).forEach( ( button ) => {
+				setPressed( button, this.isWished( button.getAttribute( 'data-product' ) ) );
+			} );
+		}
+
+		applyCollapsed() {
+			this.findAll( FILTER_HEADING_SELECTOR ).forEach( ( heading ) => {
+				const group = heading.parentElement;
+				const isCollapsed = !! this.collapsed[ GlassShop.groupKey( heading ) ];
+
+				group.classList.add( 'omega-filter-group' );
+				group.classList.toggle( 'is-collapsed', isCollapsed );
+				if ( ! heading.hasAttribute( 'tabindex' ) ) {
+					heading.setAttribute( 'tabindex', '0' );
+					heading.setAttribute( 'role', 'button' );
+				}
+				heading.setAttribute( 'aria-expanded', isCollapsed ? 'false' : 'true' );
+			} );
+		}
+
+		setView( view ) {
+			this.view = view;
+			core.storage.set( STORAGE_KEYS.view, view );
+			this.applyView();
+		}
+
+		isWished( productId ) {
+			return -1 !== this.wishlist.indexOf( productId );
+		}
+
+		toggleWish( button ) {
+			const productId = button.getAttribute( 'data-product' );
+
+			if ( this.isWished( productId ) ) {
+				this.wishlist.splice( this.wishlist.indexOf( productId ), 1 );
 			} else {
-				wishlist.splice( index, 1 );
+				this.wishlist.push( productId );
+				core.flashClass( button, WISH_POP_CLASS, WISH_POP_MS );
 			}
-			write( 'omegaWishlist', wishlist );
-			applyWishlist();
-			return;
+
+			core.storage.set( STORAGE_KEYS.wishlist, this.wishlist );
+			this.applyWishlist();
 		}
 
-		var heading = event.target.closest( '.omega-glass-filters h3.wp-block-heading' );
-		if ( heading ) {
-			toggleGroup( heading );
+		toggleGroup( heading ) {
+			const key = GlassShop.groupKey( heading );
+			this.collapsed[ key ] = ! this.collapsed[ key ];
+			core.storage.set( STORAGE_KEYS.collapsed, this.collapsed );
+			this.applyCollapsed();
 		}
-	} );
+	}
 
-	root.addEventListener( 'keydown', function ( event ) {
-		var heading = event.target.closest && event.target.closest( '.omega-glass-filters h3.wp-block-heading' );
-		if ( heading && ( 'Enter' === event.key || ' ' === event.key ) ) {
-			event.preventDefault();
-			toggleGroup( heading );
-		}
-	} );
-
-	var scheduled = false;
-	new MutationObserver( function () {
-		if ( scheduled ) {
-			return;
-		}
-		scheduled = true;
-		window.requestAnimationFrame( function () {
-			scheduled = false;
-			applyAll();
-		} );
-	} ).observe( root, { childList: true, subtree: true } );
-
-	applyAll();
-} )();
+	core.mountAll( '.omega-shop-layout--glass', GlassShop );
+} )( window.OmegaDesign );

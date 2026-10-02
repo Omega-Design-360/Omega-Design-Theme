@@ -182,7 +182,7 @@ class hooks {
         // with scroll reveal - assets/css/blog-cards.css, assets/js/blog-cards.js.
         if (is_home() || is_category() || is_tag() || is_author() || is_date()) {
             self::enqueue_style('omega-design-blog-cards', 'css/blog-cards.css', ['omega-design-style']);
-            self::enqueue_script('omega-design-blog-cards', 'js/blog-cards.js', [], ['in_footer' => true, 'strategy' => 'defer']);
+            self::enqueue_script('omega-design-blog-cards', 'js/blog-cards.js', [self::core_script()], ['in_footer' => true, 'strategy' => 'defer']);
         }
 
         // The "Blog Hub" page template (templates/blog-hub.html) widens its
@@ -272,7 +272,7 @@ class hooks {
      */
     private static function enqueue_page_assets($handle, $css, $js) {
         self::enqueue_style($handle, $css);
-        self::enqueue_script($handle, $js, [], true);
+        self::enqueue_script($handle, $js, [self::core_script()], true);
     }
 
     /**
@@ -282,13 +282,7 @@ class hooks {
      * instead. See assets/js/checkout-auth-notice.js.
      */
     private function enqueue_checkout_auth_notice() {
-        wp_enqueue_script(
-            'omega-design-checkout-auth-notice',
-            self::asset_uri('js/checkout-auth-notice.js'),
-            [],
-            self::asset_version('js/checkout-auth-notice.js'),
-            true
-        );
+        self::enqueue_script('omega-design-checkout-auth-notice', 'js/checkout-auth-notice.js', [self::core_script()], true);
 
         // The "My Login Form" plugin (if active) replaces WooCommerce's native
         // account/login/register pages with its own; wp_login_url() already

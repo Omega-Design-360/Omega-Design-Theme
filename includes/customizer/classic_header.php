@@ -288,7 +288,7 @@ class classic_header {
             }
         }
 
-        self::enqueue_script('omega-design-classic-header', 'js/classic-header.js', [], true);
+        self::enqueue_script('omega-design-classic-header', 'js/classic-header.js', [self::core_script()], true);
     }
 
     /**

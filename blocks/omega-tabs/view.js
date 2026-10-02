@@ -4,56 +4,59 @@
  * this just wires up click-to-switch and keeps everything keyboard-
  * accessible.
  */
-(function () {
+( function ( core ) {
 	'use strict';
 
-	function init(root) {
-		var buttons = Array.prototype.slice.call(root.querySelectorAll(':scope > .omega-tabs__list > .omega-tabs__tab'));
-		var panels = Array.prototype.slice.call(root.querySelectorAll(':scope > .omega-tabs__panels > .omega-tabs__panel'));
-
-		if (!buttons.length || !panels.length) {
-			return;
-		}
-
-		function activate(idx) {
-			buttons.forEach(function (btn, i) {
-				var active = i === idx;
-				btn.classList.toggle('is-active', active);
-				btn.setAttribute('aria-selected', active ? 'true' : 'false');
-				btn.setAttribute('tabindex', active ? '0' : '-1');
-			});
-			panels.forEach(function (panel, i) {
-				panel.classList.toggle('is-active', i === idx);
-			});
-		}
-
-		buttons.forEach(function (btn, i) {
-			btn.addEventListener('click', function () { activate(i); });
-			btn.addEventListener('keydown', function (e) {
-				var next = null;
-				if (e.key === 'ArrowRight') { next = (i + 1) % buttons.length; }
-				if (e.key === 'ArrowLeft') { next = (i - 1 + buttons.length) % buttons.length; }
-				if (next !== null) {
-					e.preventDefault();
-					buttons[next].focus();
-					activate(next);
-				}
-			});
-		});
-
-		activate(0);
+	if ( ! core ) {
+		return;
 	}
 
-	function ready() {
-		var groups = document.querySelectorAll('.omega-tabs');
-		for (var i = 0; i < groups.length; i++) {
-			init(groups[i]);
+	const ACTIVE_CLASS = 'is-active';
+	const ARROW_STEPS = { ArrowRight: 1, ArrowLeft: -1 };
+
+	class Tabs extends core.Component {
+		constructor( root ) {
+			super( root );
+			this.buttons = this.findAll( ':scope > .omega-tabs__list > .omega-tabs__tab' );
+			this.panels = this.findAll( ':scope > .omega-tabs__panels > .omega-tabs__panel' );
+
+			if ( ! this.buttons.length || ! this.panels.length ) {
+				return;
+			}
+
+			this.buttons.forEach( ( button, index ) => {
+				button.addEventListener( 'click', () => this.activate( index ) );
+				button.addEventListener( 'keydown', ( event ) => this.onKeydown( event, index ) );
+			} );
+
+			this.activate( 0 );
+		}
+
+		activate( activeIndex ) {
+			this.buttons.forEach( ( button, index ) => {
+				const isActive = index === activeIndex;
+				core.setToggleState( button, isActive, 'aria-selected' );
+				button.setAttribute( 'tabindex', isActive ? '0' : '-1' );
+			} );
+			this.panels.forEach( ( panel, index ) => {
+				panel.classList.toggle( ACTIVE_CLASS, index === activeIndex );
+			} );
+		}
+
+		/** Left/Right arrows move focus (and selection) to the neighbouring tab, wrapping around. */
+		onKeydown( event, index ) {
+			const step = ARROW_STEPS[ event.key ];
+			if ( ! step ) {
+				return;
+			}
+
+			const count = this.buttons.length;
+			const next = ( index + step + count ) % count;
+			event.preventDefault();
+			this.buttons[ next ].focus();
+			this.activate( next );
 		}
 	}
 
-	if (document.readyState === 'loading') {
-		document.addEventListener('DOMContentLoaded', ready);
-	} else {
-		ready();
-	}
-})();
+	core.mountAll( '.omega-tabs', Tabs );
+} )( window.OmegaDesign );

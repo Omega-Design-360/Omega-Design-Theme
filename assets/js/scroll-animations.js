@@ -6,66 +6,69 @@
  * assets/css/scroll-animations.css and reveals once it actually scrolls
  * into view.
  */
-(function () {
+( function ( core ) {
 	'use strict';
 
-	var prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+	if ( ! core ) {
+		return;
+	}
 
-	function ready() {
-		var all = document.querySelectorAll('.omega-animate');
-		if (!all.length) {
-			return;
+	const ANIMATE_SELECTOR = '.omega-animate';
+	const ANIMATED_IN_CLASS = 'omega-animate--in';
+	const DEFAULT_DURATION_MS = '600';
+	const DEFAULT_DELAY_MS = '0';
+	const OBSERVER_OPTIONS = { threshold: 0.15, rootMargin: '0px 0px -8% 0px' };
+
+	class ScrollAnimations {
+		constructor( elements ) {
+			this.revealImmediately = ! core.canRevealOnScroll();
+
+			const toObserve = elements.filter( ( el ) => this.prepare( el ) );
+			if ( toObserve.length ) {
+				core.revealOnScroll( toObserve, ScrollAnimations.reveal, OBSERVER_OPTIONS );
+			}
 		}
 
-		var revealImmediately = prefersReducedMotion || !('IntersectionObserver' in window);
-		var toObserve = [];
+		static reveal( el ) {
+			el.classList.add( ANIMATED_IN_CLASS );
+		}
 
-		for (var i = 0; i < all.length; i++) {
-			var el = all[i];
+		/**
+		 * The slider clips its slides with overflow:hidden on
+		 * .omega-slider__track so only the active slide shows - per the
+		 * IntersectionObserver spec that clipping ancestor makes any slide's
+		 * *content* (even the currently visible slide's) always compute as
+		 * non-intersecting, so it would otherwise sit invisible forever.
+		 * Only content nested INSIDE a slider is affected - starting the
+		 * search at the parent (not el itself) means the slider block's own
+		 * wrapper can still play a normal scroll-reveal for the section as a
+		 * whole.
+		 */
+		static isInsideSlider( el ) {
+			return !! ( el.parentElement && el.parentElement.closest( '.omega-slider' ) );
+		}
 
-			// The slider clips its slides with overflow:hidden on
-			// .omega-slider__track so only the active slide shows - per the
-			// IntersectionObserver spec that clipping ancestor makes any
-			// slide's *content* (even the currently visible slide's) always
-			// compute as non-intersecting, so it would otherwise sit
-			// invisible forever. Only content nested INSIDE a slider is
-			// affected - starting the search at the parent (not el itself)
-			// means the slider block's own wrapper can still play a normal
-			// scroll-reveal for the section as a whole.
-			var insideSlider = el.parentElement && el.parentElement.closest('.omega-slider');
-			if (revealImmediately || insideSlider) {
-				el.classList.add('omega-animate--in');
-				continue;
+		/**
+		 * Reveals el right away when it can't (or shouldn't) wait for
+		 * scrolling, otherwise applies its timing and returns true so it
+		 * gets observed.
+		 */
+		prepare( el ) {
+			if ( this.revealImmediately || ScrollAnimations.isInsideSlider( el ) ) {
+				ScrollAnimations.reveal( el );
+				return false;
 			}
 
-			var duration = el.getAttribute('data-omega-animate-duration') || '600';
-			var delay = el.getAttribute('data-omega-animate-delay') || '0';
-			el.style.setProperty('--omega-animate-duration', duration + 'ms');
-			el.style.setProperty('--omega-animate-delay', delay + 'ms');
-			toObserve.push(el);
-		}
-
-		if (!toObserve.length) {
-			return;
-		}
-
-		var observer = new IntersectionObserver(function (entries) {
-			entries.forEach(function (entry) {
-				if (entry.isIntersecting) {
-					entry.target.classList.add('omega-animate--in');
-					observer.unobserve(entry.target);
-				}
-			});
-		}, { threshold: 0.15, rootMargin: '0px 0px -8% 0px' });
-
-		for (var k = 0; k < toObserve.length; k++) {
-			observer.observe(toObserve[k]);
+			el.style.setProperty( '--omega-animate-duration', ( el.getAttribute( 'data-omega-animate-duration' ) || DEFAULT_DURATION_MS ) + 'ms' );
+			el.style.setProperty( '--omega-animate-delay', ( el.getAttribute( 'data-omega-animate-delay' ) || DEFAULT_DELAY_MS ) + 'ms' );
+			return true;
 		}
 	}
 
-	if (document.readyState === 'loading') {
-		document.addEventListener('DOMContentLoaded', ready);
-	} else {
-		ready();
-	}
-})();
+	core.ready( () => {
+		const elements = core.all( ANIMATE_SELECTOR );
+		if ( elements.length ) {
+			new ScrollAnimations( elements );
+		}
+	} );
+} )( window.OmegaDesign );

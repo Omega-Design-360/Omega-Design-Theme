@@ -6,100 +6,92 @@
  * titles as JSON so this file never needs an AJAX round trip to redraw the
  * nav items.
  */
-(function () {
+( function ( admin ) {
 	'use strict';
 
-	function init() {
-		var bar = document.getElementById('omega-header-preview-bar');
-		var inner = document.getElementById('omega-header-preview-inner');
-		var navEl = document.getElementById('omega-header-preview-nav');
-		var dataEl = document.getElementById('omega-header-preview-menus-data');
-		if (!bar || !inner || !navEl || !dataEl) {
-			return;
-		}
-
-		var menusData = {};
-		try {
-			menusData = JSON.parse(dataEl.textContent || '{}');
-		} catch (e) {
-			menusData = {};
-		}
-
-		var DEFAULT_ITEMS = ['Home', 'About', 'Services', 'Contact'];
-
-		// Mirrors classic_header::custom_style_css()'s own font_size_map/
-		// height_map exactly, so the preview lands on the same steps as
-		// what actually ships to the front end.
-		var FONT_SIZE_MAP = { small: '0.875rem', medium: '1rem', large: '1.25rem', 'x-large': '1.75rem' };
-		var HEIGHT_MAP = { compact: '0.55rem', regular: '1rem', spacious: '1.6rem' };
-
-		var menuField = document.getElementById('omega_classic_menu_id');
-		var bgField = document.getElementById('omega_header_bg_color');
-		var textColorField = document.getElementById('omega_header_text_color');
-		var fontFamilyField = document.getElementById('omega_header_font_family');
-		var fontSizeField = document.getElementById('omega_header_font_size');
-		var heightField = document.getElementById('omega_header_height');
-
-		/** A field's current value, or '' when the field is missing or empty. */
-		function fieldValue(field) {
-			return field && field.value ? field.value : '';
-		}
-
-		/** map[field's value], or '' when the field is missing or the value isn't mapped. */
-		function mappedValue(field, map) {
-			return field && map[field.value] ? map[field.value] : '';
-		}
-
-		/** Binds handler to a field's event - fields a given form omits are skipped. */
-		function listen(field, eventName, handler) {
-			if (field) {
-				field.addEventListener(eventName, handler);
-			}
-		}
-
-		function renderNavItems() {
-			var items = DEFAULT_ITEMS;
-			if (menuField && menuField.value && menusData[menuField.value] && menusData[menuField.value].length) {
-				items = menusData[menuField.value];
-			}
-			navEl.innerHTML = '';
-			items.forEach(function (label) {
-				var span = document.createElement('span');
-				span.className = 'omega-header-preview__nav-item';
-				span.textContent = label;
-				navEl.appendChild(span);
-			});
-		}
-
-		function updateColors() {
-			bar.style.background = fieldValue(bgField);
-			bar.style.color = fieldValue(textColorField);
-			bar.style.fontFamily = fieldValue(fontFamilyField);
-		}
-
-		function updateFontSize() {
-			navEl.style.fontSize = mappedValue(fontSizeField, FONT_SIZE_MAP);
-		}
-
-		function updateHeight() {
-			var pad = mappedValue(heightField, HEIGHT_MAP);
-			inner.style.paddingTop = pad;
-			inner.style.paddingBottom = pad;
-		}
-
-		renderNavItems();
-
-		listen(menuField, 'change', renderNavItems);
-		listen(bgField, 'input', updateColors);
-		listen(textColorField, 'input', updateColors);
-		listen(fontFamilyField, 'input', updateColors);
-		listen(fontSizeField, 'change', updateFontSize);
-		listen(heightField, 'change', updateHeight);
+	if ( ! admin ) {
+		return;
 	}
 
-	if (document.readyState === 'loading') {
-		document.addEventListener('DOMContentLoaded', init);
-	} else {
-		init();
+	const PREVIEW_IDS = {
+		bar: 'omega-header-preview-bar',
+		inner: 'omega-header-preview-inner',
+		nav: 'omega-header-preview-nav',
+		data: 'omega-header-preview-menus-data',
+	};
+	const FIELD_IDS = {
+		menu: 'omega_classic_menu_id',
+		background: 'omega_header_bg_color',
+		textColor: 'omega_header_text_color',
+		fontFamily: 'omega_header_font_family',
+		fontSize: 'omega_header_font_size',
+		height: 'omega_header_height',
+	};
+	const DEFAULT_ITEMS = [ 'Home', 'About', 'Services', 'Contact' ];
+
+	// Mirrors classic_header::custom_style_css()'s own font_size_map/
+	// height_map exactly, so the preview lands on the same steps as what
+	// actually ships to the front end.
+	const FONT_SIZE_MAP = { small: '0.875rem', medium: '1rem', large: '1.25rem', 'x-large': '1.75rem' };
+	const HEIGHT_MAP = { compact: '0.55rem', regular: '1rem', spacious: '1.6rem' };
+
+	class HeaderNavPreview {
+		constructor( preview ) {
+			this.preview = preview;
+			this.fields = admin.elementsById( FIELD_IDS );
+			this.menusData = admin.jsonFromElement( PREVIEW_IDS.data, {} );
+
+			const updateColors = () => this.updateColors();
+			admin.listen( this.fields.menu, 'change', () => this.renderNavItems() );
+			admin.listen( this.fields.background, 'input', updateColors );
+			admin.listen( this.fields.textColor, 'input', updateColors );
+			admin.listen( this.fields.fontFamily, 'input', updateColors );
+			admin.listen( this.fields.fontSize, 'change', () => this.updateFontSize() );
+			admin.listen( this.fields.height, 'change', () => this.updateHeight() );
+
+			this.renderNavItems();
+		}
+
+		/** The picked classic menu's top-level titles, or placeholder items. */
+		navItems() {
+			const items = this.menusData[ admin.fieldValue( this.fields.menu ) ];
+			return items && items.length ? items : DEFAULT_ITEMS;
+		}
+
+		renderNavItems() {
+			const nav = this.preview.nav;
+			nav.innerHTML = '';
+			this.navItems().forEach( ( label ) => {
+				const item = document.createElement( 'span' );
+				item.className = 'omega-header-preview__nav-item';
+				item.textContent = label;
+				nav.appendChild( item );
+			} );
+		}
+
+		updateColors() {
+			const style = this.preview.bar.style;
+			style.background = admin.fieldValue( this.fields.background );
+			style.color = admin.fieldValue( this.fields.textColor );
+			style.fontFamily = admin.fieldValue( this.fields.fontFamily );
+		}
+
+		updateFontSize() {
+			this.preview.nav.style.fontSize = admin.mappedValue( this.fields.fontSize, FONT_SIZE_MAP );
+		}
+
+		updateHeight() {
+			const padding = admin.mappedValue( this.fields.height, HEIGHT_MAP );
+			const style = this.preview.inner.style;
+			style.paddingTop = padding;
+			style.paddingBottom = padding;
+		}
 	}
-})();
+
+	admin.ready( () => {
+		const preview = admin.elementsById( PREVIEW_IDS );
+		if ( admin.hasAll( preview, Object.keys( PREVIEW_IDS ) ) ) {
+			new HeaderNavPreview( preview );
+		}
+	} );
+} )( window.OmegaDesignAdmin );

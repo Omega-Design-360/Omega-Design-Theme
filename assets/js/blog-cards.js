@@ -4,36 +4,39 @@
    .wp-block-post) as they enter the viewport. Styles in
    assets/css/blog-cards.css.
    ============================================================ */
-( function () {
-	const loops = document.querySelectorAll( '.omega-post-cards' );
-	const cards = document.querySelectorAll( '.omega-post-cards .wp-block-post' );
-	if ( ! cards.length ) {
+( function ( core ) {
+	'use strict';
+
+	// Reduced motion or no IntersectionObserver: cards simply stay visible.
+	if ( ! core || ! core.canRevealOnScroll() ) {
 		return;
 	}
 
-	// Reduced motion or no IntersectionObserver: show everything immediately.
-	if ( window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches || ! ( 'IntersectionObserver' in window ) ) {
-		return;
-	}
-
-	// Only now hide the cards for the reveal (see blog-cards.css).
-	loops.forEach( ( loop ) => loop.classList.add( 'is-reveal-ready' ) );
-
-	const observer = new IntersectionObserver( ( entries, obs ) => {
-		let batch = 0;
-		entries.forEach( ( entry ) => {
-			if ( ! entry.isIntersecting ) {
-				return;
-			}
-			// Stagger cards that enter in the same batch.
-			const delay = batch++ * 100;
-			setTimeout( () => entry.target.classList.add( 'is-revealed' ), delay );
-			obs.unobserve( entry.target ); // reveal once, then stop watching
-		} );
-	}, {
+	const CARD_SELECTOR = '.wp-block-post';
+	const STAGGER_MS = 100;
+	const OBSERVER_OPTIONS = {
 		threshold: 0.15,
 		rootMargin: '0px 0px -40px 0px', // fire slightly before fully in view
-	} );
+	};
 
-	cards.forEach( ( card ) => observer.observe( card ) );
-} )();
+	class BlogCardsReveal extends core.Component {
+		constructor( root ) {
+			super( root );
+
+			const cards = this.findAll( CARD_SELECTOR );
+			if ( ! cards.length ) {
+				return;
+			}
+
+			// Only now hide the cards for the reveal (see blog-cards.css).
+			root.classList.add( 'is-reveal-ready' );
+
+			// Stagger cards that enter in the same batch.
+			core.revealOnScroll( cards, ( card, batchIndex ) => {
+				window.setTimeout( () => card.classList.add( 'is-revealed' ), batchIndex * STAGGER_MS );
+			}, OBSERVER_OPTIONS );
+		}
+	}
+
+	core.mountAll( '.omega-post-cards', BlogCardsReveal );
+} )( window.OmegaDesign );

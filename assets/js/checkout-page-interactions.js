@@ -4,25 +4,28 @@
  * preventDefault()/stopPropagation(), so it can't interfere with the real
  * order submission.
  */
-(function () {
+( function ( core ) {
 	'use strict';
 
-	function prefersReducedMotion() {
-		return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-	}
-
-	if (prefersReducedMotion()) {
+	if ( ! core || core.prefersReducedMotion() ) {
 		return;
 	}
 
-	document.addEventListener('click', function (event) {
-		var button = event.target.closest('.wc-block-components-checkout-place-order-button');
-		if (!button || button.disabled) {
-			return;
+	const PLACE_ORDER_SELECTOR = '.wc-block-components-checkout-place-order-button';
+	const PRESS_CLASS = 'omega-checkout-press';
+
+	class CheckoutInteractions extends core.Component {
+		constructor( root ) {
+			super( root );
+			this.on( 'click', PLACE_ORDER_SELECTOR, ( event, button ) => this.press( button ) );
 		}
 
-		button.classList.remove('omega-checkout-press');
-		void button.offsetWidth;
-		button.classList.add('omega-checkout-press');
-	});
-})();
+		press( button ) {
+			if ( ! button.disabled ) {
+				core.restartAnimation( button, PRESS_CLASS );
+			}
+		}
+	}
+
+	core.mount( CheckoutInteractions );
+} )( window.OmegaDesign );

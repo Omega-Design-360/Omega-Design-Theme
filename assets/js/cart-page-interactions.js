@@ -6,86 +6,97 @@
  * update - worst case it silently does nothing if a selector ever changes
  * upstream.
  */
-(function () {
+( function ( core ) {
 	'use strict';
 
-	function prefersReducedMotion() {
-		return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-	}
-
-	if (prefersReducedMotion()) {
+	if ( ! core || core.prefersReducedMotion() ) {
 		return;
 	}
 
-	function restartAnimation(el, className) {
-		el.classList.remove(className);
-		// Reading offsetWidth forces layout, so re-adding the class in the
-		// same tick still restarts the CSS animation instead of no-op'ing.
-		void el.offsetWidth;
-		el.classList.add(className);
-	}
+	const QTY_BUTTON_SELECTOR = '.wc-block-components-quantity-selector__button';
+	const QTY_WRAPPER_SELECTOR = '.wc-block-components-quantity-selector';
+	const QTY_INPUT_SELECTOR = '.wc-block-components-quantity-selector__input';
+	const TOTAL_VALUE_SELECTOR = '.wc-block-components-totals-footer-item .wc-block-components-totals-item__value';
+	const TOTAL_MOUNT_POLL_MS = 500;
+	const TOTAL_MOUNT_TIMEOUT_MS = 15000;
 
-	document.addEventListener('click', function (event) {
-		var button = event.target.closest('.wc-block-components-quantity-selector__button');
-		if (!button) {
-			return;
+	class CartInteractions extends core.Component {
+		constructor( root ) {
+			super( root );
+			this.totalsObserver = null;
+
+			this.on( 'click', QTY_BUTTON_SELECTOR, ( event, button ) => this.popQuantity( button ) );
+
+			// Optimistic fade the instant "Remove" is clicked - see the CSS
+			// comment on .omega-cart-row-removing. Never calls
+			// preventDefault(), so WooCommerce's own click handler (and the
+			// actual removal) still runs.
+			this.on( 'click', '.wc-block-cart-item__remove-link', ( event, link ) => this.fadeRow( link ) );
+
+			this.waitForTotal();
 		}
 
-		var wrapper = button.closest('.wc-block-components-quantity-selector');
-		var input = wrapper && wrapper.querySelector('.wc-block-components-quantity-selector__input');
-		if (!input) {
-			return;
+		popQuantity( button ) {
+			const wrapper = button.closest( QTY_WRAPPER_SELECTOR );
+			const input = wrapper && wrapper.querySelector( QTY_INPUT_SELECTOR );
+			if ( input ) {
+				core.restartAnimation( input, 'omega-cart-qty-pop' );
+			}
 		}
 
-		restartAnimation(input, 'omega-cart-qty-pop');
-	});
-
-	// Optimistic fade the instant "Remove" is clicked - see the CSS comment
-	// on .omega-cart-row-removing. Never calls preventDefault(), so
-	// WooCommerce's own click handler (and the actual removal) still runs.
-	document.addEventListener('click', function (event) {
-		var removeLink = event.target.closest('.wc-block-cart-item__remove-link');
-		if (!removeLink) {
-			return;
+		fadeRow( removeLink ) {
+			const row = removeLink.closest( '.wc-block-cart-items__row' );
+			if ( row ) {
+				row.classList.add( 'omega-cart-row-removing' );
+			}
 		}
 
-		var row = removeLink.closest('.wc-block-cart-items__row');
-		if (row) {
-			row.classList.add('omega-cart-row-removing');
-		}
-	});
+		/**
+		 * Pulses the grand total whenever its text actually changes
+		 * (quantity update, coupon applied, item removed) - read-only
+		 * observation, so it can't interfere with the real update either.
+		 * Returns whether the total was found and is now being watched.
+		 */
+		watchTotal() {
+			if ( this.totalsObserver ) {
+				return true;
+			}
 
-	// Pulse the grand total whenever its text actually changes (quantity
-	// update, coupon applied, item removed) - read-only observation, so it
-	// can't interfere with the real update either.
-	var totalsObserver = null;
-	function watchTotal() {
-		var totalValue = document.querySelector('.wc-block-components-totals-footer-item .wc-block-components-totals-item__value');
-		if (!totalValue || totalsObserver) {
-			return;
+			const totalValue = document.querySelector( TOTAL_VALUE_SELECTOR );
+			if ( ! totalValue ) {
+				return false;
+			}
+
+			let lastText = totalValue.textContent;
+			this.totalsObserver = new MutationObserver( () => {
+				if ( totalValue.textContent === lastText ) {
+					return;
+				}
+				lastText = totalValue.textContent;
+				core.restartAnimation( totalValue, 'omega-cart-total-pulse' );
+			} );
+			this.totalsObserver.observe( totalValue, { childList: true, characterData: true, subtree: true } );
+			return true;
 		}
 
-		var lastText = totalValue.textContent;
-		totalsObserver = new MutationObserver(function () {
-			if (totalValue.textContent === lastText) {
+		/**
+		 * The totals block itself mounts asynchronously (Store API fetch),
+		 * so keep checking until it exists rather than assuming it's there
+		 * at load - giving up after a while either way.
+		 */
+		waitForTotal() {
+			if ( this.watchTotal() ) {
 				return;
 			}
-			lastText = totalValue.textContent;
-			restartAnimation(totalValue, 'omega-cart-total-pulse');
-		});
-		totalsObserver.observe(totalValue, { childList: true, characterData: true, subtree: true });
+
+			const mountCheck = window.setInterval( () => {
+				if ( this.watchTotal() ) {
+					window.clearInterval( mountCheck );
+				}
+			}, TOTAL_MOUNT_POLL_MS );
+			window.setTimeout( () => window.clearInterval( mountCheck ), TOTAL_MOUNT_TIMEOUT_MS );
+		}
 	}
 
-	watchTotal();
-	// The totals block itself mounts asynchronously (Store API fetch), so
-	// keep checking until it exists rather than assuming it's there at load.
-	var mountCheck = window.setInterval(function () {
-		watchTotal();
-		if (totalsObserver) {
-			window.clearInterval(mountCheck);
-		}
-	}, 500);
-	window.setTimeout(function () {
-		window.clearInterval(mountCheck);
-	}, 15000);
-})();
+	core.mount( CartInteractions );
+} )( window.OmegaDesign );

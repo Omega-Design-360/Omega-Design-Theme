@@ -4,78 +4,100 @@
  * page reload. omegaNewsletter (ajaxUrl/nonce) is localized in
  * includes/core/blocks.php when this script is registered.
  */
-(function () {
+( function ( core ) {
 	'use strict';
 
-	function setState(form, state, message) {
-		var msg = form.querySelector('.omega-newsletter-form__message');
-		form.classList.remove('is-success', 'is-error', 'is-loading');
-		form.classList.add('is-' + state);
-		if (msg) {
-			msg.textContent = message || '';
+	if ( ! core ) {
+		return;
+	}
+
+	const STATES = [ 'success', 'error', 'loading' ];
+	const MESSAGES = {
+		missingEmail: 'Please enter your email address.',
+		unavailable: 'Something went wrong. Please try again later.',
+		failed: 'Something went wrong. Please try again.',
+		success: 'Thanks — you\'re on the list!',
+	};
+
+	class NewsletterForm extends core.Component {
+		constructor( form ) {
+			super( form );
+			this.wrapper = form.closest( '.omega-newsletter-form-block' );
+			this.emailField = this.find( 'input[name="omega_newsletter_email"]' );
+			this.honeypot = this.find( 'input[name="omega_newsletter_company"]' );
+			this.submitButton = this.find( '.omega-newsletter-form__submit' );
+			this.message = this.find( '.omega-newsletter-form__message' );
+
+			form.addEventListener( 'submit', ( event ) => this.onSubmit( event ) );
+		}
+
+		setState( state, message ) {
+			const classList = this.root.classList;
+			classList.remove.apply( classList, STATES.map( ( name ) => 'is-' + name ) );
+			classList.add( 'is-' + state );
+			if ( this.message ) {
+				this.message.textContent = message || '';
+			}
+		}
+
+		setBusy( isBusy ) {
+			if ( this.submitButton ) {
+				this.submitButton.disabled = isBusy;
+			}
+		}
+
+		successMessage() {
+			return ( this.wrapper && this.wrapper.dataset.successMessage ) || MESSAGES.success;
+		}
+
+		requestBody( config ) {
+			const body = new FormData();
+			body.append( 'action', 'omega_newsletter_subscribe' );
+			body.append( 'nonce', config.nonce );
+			body.append( 'email', this.emailField.value );
+			body.append( 'company', this.honeypot ? this.honeypot.value : '' );
+			body.append( 'source_url', window.location.href );
+			return body;
+		}
+
+		onSubmit( event ) {
+			event.preventDefault();
+
+			if ( ! this.emailField || ! this.emailField.value ) {
+				this.setState( 'error', MESSAGES.missingEmail );
+				return;
+			}
+
+			const config = window.omegaNewsletter;
+			if ( ! config ) {
+				this.setState( 'error', MESSAGES.unavailable );
+				return;
+			}
+
+			this.setBusy( true );
+			this.setState( 'loading', '' );
+
+			fetch( config.ajaxUrl, {
+				method: 'POST',
+				credentials: 'same-origin',
+				body: this.requestBody( config ),
+			} )
+				.then( ( response ) => response.json() )
+				.then( ( json ) => this.onResponse( json ) )
+				.catch( () => this.onResponse( null ) );
+		}
+
+		onResponse( json ) {
+			this.setBusy( false );
+
+			if ( json && json.success ) {
+				this.setState( 'success', this.successMessage() );
+				this.root.reset();
+			} else {
+				this.setState( 'error', ( json && json.data && json.data.message ) || MESSAGES.failed );
+			}
 		}
 	}
 
-	function handleSubmit(e) {
-		e.preventDefault();
-		var form = e.target;
-		var wrapper = form.closest('.omega-newsletter-form-block');
-		var emailField = form.querySelector('input[name="omega_newsletter_email"]');
-		var honeypot = form.querySelector('input[name="omega_newsletter_company"]');
-		var submitBtn = form.querySelector('.omega-newsletter-form__submit');
-
-		if (!emailField || !emailField.value) {
-			setState(form, 'error', 'Please enter your email address.');
-			return;
-		}
-
-		if (typeof window.omegaNewsletter === 'undefined') {
-			setState(form, 'error', 'Something went wrong. Please try again later.');
-			return;
-		}
-
-		if (submitBtn) { submitBtn.disabled = true; }
-		setState(form, 'loading', '');
-
-		var body = new FormData();
-		body.append('action', 'omega_newsletter_subscribe');
-		body.append('nonce', window.omegaNewsletter.nonce);
-		body.append('email', emailField.value);
-		body.append('company', honeypot ? honeypot.value : '');
-		body.append('source_url', window.location.href);
-
-		fetch(window.omegaNewsletter.ajaxUrl, {
-			method: 'POST',
-			credentials: 'same-origin',
-			body: body
-		})
-			.then(function (res) { return res.json(); })
-			.then(function (json) {
-				if (submitBtn) { submitBtn.disabled = false; }
-				if (json && json.success) {
-					var successMessage = (wrapper && wrapper.dataset.successMessage) || 'Thanks — you\'re on the list!';
-					setState(form, 'success', successMessage);
-					form.reset();
-				} else {
-					setState(form, 'error', (json && json.data && json.data.message) || 'Something went wrong. Please try again.');
-				}
-			})
-			.catch(function () {
-				if (submitBtn) { submitBtn.disabled = false; }
-				setState(form, 'error', 'Something went wrong. Please try again.');
-			});
-	}
-
-	function ready() {
-		var forms = document.querySelectorAll('.omega-newsletter-form');
-		for (var i = 0; i < forms.length; i++) {
-			forms[i].addEventListener('submit', handleSubmit);
-		}
-	}
-
-	if (document.readyState === 'loading') {
-		document.addEventListener('DOMContentLoaded', ready);
-	} else {
-		ready();
-	}
-})();
+	core.mountAll( '.omega-newsletter-form', NewsletterForm );
+} )( window.OmegaDesign );

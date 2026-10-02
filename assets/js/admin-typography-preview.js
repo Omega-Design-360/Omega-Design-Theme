@@ -12,23 +12,32 @@
  * would silently find no elements there. Delegation only needs `document`
  * itself to exist, so it keeps working no matter when the select shows up.
  */
-(function () {
+( function ( admin ) {
 	'use strict';
 
-	document.addEventListener('change', function (event) {
-		var select = event.target;
-		if (!select || !select.classList || !select.classList.contains('omega-font-select')) {
-			return;
+	if ( ! admin ) {
+		return;
+	}
+
+	class TypographyPreview extends admin.Component {
+		constructor( root ) {
+			super( root );
+			this.on( 'change', '.omega-font-select', ( event, select ) => TypographyPreview.update( select ) );
 		}
 
-		var previewId = select.getAttribute('data-preview');
-		var preview = previewId ? document.getElementById(previewId) : null;
-		if (!preview) {
-			return;
+		static selectedFontFamily( select ) {
+			const option = select.options[ select.selectedIndex ];
+			return option ? option.getAttribute( 'data-font-family' ) : '';
 		}
 
-		var option = select.options[select.selectedIndex];
-		var fontFamily = option ? option.getAttribute('data-font-family') : '';
-		preview.style.fontFamily = fontFamily || '';
-	});
-})();
+		static update( select ) {
+			const previewId = select.getAttribute( 'data-preview' );
+			const preview = previewId ? document.getElementById( previewId ) : null;
+			if ( preview ) {
+				preview.style.fontFamily = TypographyPreview.selectedFontFamily( select ) || '';
+			}
+		}
+	}
+
+	new TypographyPreview( document );
+} )( window.OmegaDesignAdmin );

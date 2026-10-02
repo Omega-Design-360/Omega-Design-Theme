@@ -55,7 +55,7 @@ class scroll_animations {
 
     public function enqueue_frontend() {
         self::enqueue_style('omega-design-scroll-animations', 'css/scroll-animations.css');
-        self::enqueue_script('omega-design-scroll-animations', 'js/scroll-animations.js', [], true);
+        self::enqueue_script('omega-design-scroll-animations', 'js/scroll-animations.js', [self::core_script()], true);
     }
 
     public function enqueue_editor() {

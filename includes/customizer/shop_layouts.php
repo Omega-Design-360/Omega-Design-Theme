@@ -360,7 +360,7 @@ class shop_layouts {
 
     /** Grid/list toggle, wishlist hearts and collapsible filter groups. */
     private function enqueue_glass_script() {
-        self::enqueue_script('omega-design-shop-glass', 'js/shop-glass.js', [], ['in_footer' => true, 'strategy' => 'defer']);
+        self::enqueue_script('omega-design-shop-glass', 'js/shop-glass.js', [self::core_script()], ['in_footer' => true, 'strategy' => 'defer']);
     }
 
     /**

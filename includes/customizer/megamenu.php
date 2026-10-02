@@ -316,7 +316,7 @@ class megamenu {
         self::enqueue_style('omega-design-megamenu', 'css/megamenu.css');
 
         if (!is_admin()) {
-            self::enqueue_script('omega-design-megamenu', 'js/megamenu.js', [], true);
+            self::enqueue_script('omega-design-megamenu', 'js/megamenu.js', [self::core_script()], true);
         }
     }
 

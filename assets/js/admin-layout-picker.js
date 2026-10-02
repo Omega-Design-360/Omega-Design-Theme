@@ -4,24 +4,28 @@
  * click updates the radio input but the card itself never highlights until
  * the form is saved and the page reloads.
  */
-(function () {
+( function ( admin ) {
 	'use strict';
 
-	document.querySelectorAll('.omega-layout-picker').forEach(function (picker) {
-		picker.addEventListener('change', function (event) {
-			var input = event.target;
-			if (!input.matches('input[type="radio"]')) {
-				return;
-			}
+	if ( ! admin ) {
+		return;
+	}
 
-			picker.querySelectorAll('.omega-layout-card').forEach(function (card) {
-				card.classList.remove('is-selected');
-			});
+	const CARD_SELECTOR = '.omega-layout-card';
+	const SELECTED_CLASS = 'is-selected';
 
-			var card = input.closest('.omega-layout-card');
-			if (card) {
-				card.classList.add('is-selected');
-			}
-		});
-	});
-})();
+	class LayoutPicker extends admin.Component {
+		constructor( root ) {
+			super( root );
+			this.on( 'change', 'input[type="radio"]', ( event, input ) => this.select( input.closest( CARD_SELECTOR ) ) );
+		}
+
+		select( selectedCard ) {
+			this.findAll( CARD_SELECTOR ).forEach( ( card ) => {
+				card.classList.toggle( SELECTED_CLASS, card === selectedCard );
+			} );
+		}
+	}
+
+	admin.mountAll( '.omega-layout-picker', LayoutPicker );
+} )( window.OmegaDesignAdmin );

@@ -147,7 +147,7 @@ class typography {
         // it inherited.
         self::enqueue_admin_pages_style(true);
 
-        self::enqueue_script('omega-design-admin-typography-preview', 'js/admin-typography-preview.js', [], true);
+        self::enqueue_script('omega-design-admin-typography-preview', 'js/admin-typography-preview.js', [self::admin_core_script()], true);
     }
 
     public function register_customizer($wp_customize) {

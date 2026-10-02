@@ -44,7 +44,7 @@ class announcement_bar {
         self::enqueue_style('omega-design-announcement-bar', 'css/announcement-bar.css');
 
         if (self::is_dismissible()) {
-            self::enqueue_script('omega-design-announcement-bar', 'js/announcement-bar.js', [], true);
+            self::enqueue_script('omega-design-announcement-bar', 'js/announcement-bar.js', [self::core_script()], true);
         }
     }
 

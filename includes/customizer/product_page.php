@@ -56,7 +56,7 @@ class product_page {
         }
 
         self::enqueue_style('omega-design-product-page', 'css/product-page-layouts.css');
-        self::enqueue_script('omega-design-product-page', 'js/product-page-interactions.js', [], true);
+        self::enqueue_script('omega-design-product-page', 'js/product-page-interactions.js', [self::core_script()], true);
 
         // The Related Products carousel reuses the theme's own slider engine
         // (blocks/omega-slider/view.js + style.css) directly - registered

@@ -326,11 +326,16 @@ class page_cache {
      * Bilingual pages (includes/core/visitor_language.php) render
      * differently per visitor language, so they're cached per language;
      * all other pages share one language-neutral copy.
+     *
+     * Keyed by theme version too: a page cached before a theme update
+     * references the old set of scripts (e.g. without a newly added
+     * shared dependency), so it must never be served after the update -
+     * however the update was deployed.
      */
     private static function cache_key($per_language = false) {
         $host = $_SERVER['HTTP_HOST'] ?? '';
 
-        return md5($host . self::cache_key_uri() . ($per_language ? '|' . visitor_language::current() : ''));
+        return md5(OMEGA_DESIGN_VERSION . '|' . $host . self::cache_key_uri() . ($per_language ? '|' . visitor_language::current() : ''));
     }
 
     /** A fresh cached copy for this request - the visitor's language copy first, else the shared one. */

@@ -5,79 +5,75 @@
  * Mode/Sidebar/Header Style cards), so a re-rendering preview is the
  * equivalent instead of a static one.
  */
-(function () {
+( function ( admin ) {
 	'use strict';
 
-	function init() {
-		var bar = document.getElementById('omega-announcement-preview-bar');
-		var contentEl = document.getElementById('omega-announcement-preview-content');
-		var dismissBtn = document.getElementById('omega-announcement-preview-dismiss');
-		if (!bar || !contentEl || !dismissBtn) {
-			return;
+	if ( ! admin ) {
+		return;
+	}
+
+	const PREVIEW_IDS = {
+		bar: 'omega-announcement-preview-bar',
+		content: 'omega-announcement-preview-content',
+		dismiss: 'omega-announcement-preview-dismiss',
+	};
+	const FIELD_IDS = {
+		content: 'omega_announcement_content',
+		background: 'omega_announcement_bg',
+		textColor: 'omega_announcement_text_color',
+	};
+
+	class AnnouncementPreview {
+		constructor( preview ) {
+			this.preview = preview;
+			this.fields = admin.elementsById( FIELD_IDS );
+			this.fields.dismissible = document.querySelector( 'input[name="omega_announcement_dismissible"]' );
+			this.emptyPlaceholder = preview.content.getAttribute( 'data-empty-text' ) || preview.content.textContent;
+
+			admin.listen( this.fields.content, 'input', () => this.updateContent() );
+			admin.listen( this.fields.background, 'input', () => this.updateColors() );
+			admin.listen( this.fields.textColor, 'input', () => this.updateColors() );
+			admin.listen( this.fields.dismissible, 'change', () => this.updateDismissible() );
 		}
 
-		var contentField = document.getElementById('omega_announcement_content');
-		var bgField = document.getElementById('omega_announcement_bg');
-		var textColorField = document.getElementById('omega_announcement_text_color');
-		var dismissibleField = document.querySelector('input[name="omega_announcement_dismissible"]');
-
-		var emptyPlaceholder = contentEl.getAttribute('data-empty-text') || contentEl.textContent;
-
-		/** A field's current value, or '' when the field is missing or empty. */
-		function fieldValue(field) {
-			return field && field.value ? field.value : '';
+		static isBlankHtml( html ) {
+			return '' === html.replace( /<[^>]*>/g, '' ).trim();
 		}
 
-		/** Binds handler to a field's event - fields a given form omits are skipped. */
-		function listen(field, eventName, handler) {
-			if (field) {
-				field.addEventListener(eventName, handler);
-			}
-		}
-
-		function updateContent() {
-			if (!contentField) {
-				return;
-			}
-			var html = contentField.value;
-			if ('' === html.replace(/<[^>]*>/g, '').trim()) {
-				contentEl.textContent = emptyPlaceholder;
+		updateContent() {
+			const html = admin.fieldValue( this.fields.content );
+			if ( AnnouncementPreview.isBlankHtml( html ) ) {
+				this.preview.content.textContent = this.emptyPlaceholder;
 			} else {
-				// Trusted the same way the live front-end bar trusts it
-				// (see announcement_bar.php's own render_bar() docblock) -
-				// this textarea is only ever reachable by a manage_options
-				// user in the first place.
-				contentEl.innerHTML = html;
+				// Trusted the same way the live front-end bar trusts it (see
+				// announcement_bar.php's own render_bar() docblock) - this
+				// textarea is only ever reachable by a manage_options user in
+				// the first place.
+				this.preview.content.innerHTML = html;
 			}
 		}
 
-		function updateColors() {
-			bar.style.backgroundColor = fieldValue(bgField);
-			bar.style.color = fieldValue(textColorField);
+		updateColors() {
+			const bar = this.preview.bar;
+			bar.style.backgroundColor = admin.fieldValue( this.fields.background );
+			bar.style.color = admin.fieldValue( this.fields.textColor );
 		}
 
-		function updateDismissible() {
-			if (!dismissibleField) {
-				return;
-			}
+		updateDismissible() {
 			// The real front-end stylesheet (announcement-bar.css, reused
-			// here for pixel parity) sets display:flex on this button via
-			// a plain class selector - the `hidden` attribute's own
-			// implicit display:none loses to that (author styles beat the
-			// UA stylesheet), so toggling display directly here is what
+			// here for pixel parity) sets display:flex on this button via a
+			// plain class selector - the `hidden` attribute's own implicit
+			// display:none loses to that (author styles beat the UA
+			// stylesheet), so toggling display directly here is what
 			// actually wins the cascade instead.
-			dismissBtn.style.display = dismissibleField.checked ? '' : 'none';
+			this.preview.dismiss.style.display = this.fields.dismissible.checked ? '' : 'none';
 		}
-
-		listen(contentField, 'input', updateContent);
-		listen(bgField, 'input', updateColors);
-		listen(textColorField, 'input', updateColors);
-		listen(dismissibleField, 'change', updateDismissible);
 	}
 
-	if (document.readyState === 'loading') {
-		document.addEventListener('DOMContentLoaded', init);
-	} else {
-		init();
-	}
-})();
+	admin.ready( () => {
+		const preview = admin.elementsById( PREVIEW_IDS );
+		if ( admin.hasAll( preview, Object.keys( PREVIEW_IDS ) ) ) {
+			new AnnouncementPreview( preview );
+		}
+	} );
+} )( window.OmegaDesignAdmin );

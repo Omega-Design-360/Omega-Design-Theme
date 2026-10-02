@@ -2,32 +2,44 @@
  * Omega Design - Announcement Bar dismiss button.
  * Remembers the dismissal in localStorage so it stays closed on later
  * page loads until the admin changes the bar's content (a different
- * message re-shows automatically - see the storage key below).
+ * message re-shows automatically - see storageKey below).
  */
-(function () {
+( function ( core ) {
 	'use strict';
 
-	var bar = document.getElementById('omega-announcement-bar');
-	if (!bar) return;
+	if ( ! core ) {
+		return;
+	}
 
-	var button = bar.querySelector('.omega-announcement-bar__dismiss');
-	if (!button) return;
+	const STORAGE_PREFIX = 'omega-announcement-dismissed:';
+	const STORAGE_KEY_LENGTH = 100;
+	const DISMISSED_CLASS = 'is-dismissed';
 
-	// Keyed by the bar's own content, not a static key, so editing the
-	// message (e.g. a new promo) makes it reappear for visitors who
-	// already dismissed a previous one.
-	var storageKey = 'omega-announcement-dismissed:' + bar.textContent.trim().slice(0, 100);
+	class AnnouncementBar extends core.Component {
+		constructor( root ) {
+			super( root );
 
-	try {
-		if (window.localStorage.getItem(storageKey) === '1') {
-			bar.classList.add('is-dismissed');
+			// Keyed by the bar's own content, not a static key, so editing
+			// the message (e.g. a new promo) makes it reappear for visitors
+			// who already dismissed a previous one.
+			this.storageKey = STORAGE_PREFIX + root.textContent.trim().slice( 0, STORAGE_KEY_LENGTH );
+
+			if ( core.storage.get( this.storageKey, false ) ) {
+				this.hide();
+			}
+
+			this.on( 'click', '.omega-announcement-bar__dismiss', () => this.dismiss() );
 		}
-	} catch (e) {}
 
-	button.addEventListener('click', function () {
-		bar.classList.add('is-dismissed');
-		try {
-			window.localStorage.setItem(storageKey, '1');
-		} catch (e) {}
-	});
-})();
+		hide() {
+			this.root.classList.add( DISMISSED_CLASS );
+		}
+
+		dismiss() {
+			this.hide();
+			core.storage.set( this.storageKey, 1 );
+		}
+	}
+
+	core.mountAll( '#omega-announcement-bar', AnnouncementBar );
+} )( window.OmegaDesign );

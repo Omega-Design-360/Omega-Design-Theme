@@ -149,7 +149,7 @@ class blocks {
             wp_set_script_translations($handles['editor'], 'omega-design');
         }
 
-        self::register_block_script($dir, 'view.js', $handles['view'] ?? '', []);
+        self::register_block_script($dir, 'view.js', $handles['view'] ?? '', [self::core_script()]);
 
         $style_path = $dir . '/style.css';
         if (file_exists($style_path) && !empty($handles['style'])) {

@@ -5,39 +5,43 @@
  * back on the right panel after a form save redirects to #<tab> (see
  * menus.php's $tab_url helper) - one code path, no state to keep in sync.
  */
-(function () {
+( function ( admin ) {
 	'use strict';
 
-	var tabs = document.querySelectorAll('.omega-settings-nav__item');
-	var panels = document.querySelectorAll('.omega-settings-panel');
-	if (!tabs.length || !panels.length) {
+	if ( ! admin ) {
 		return;
 	}
 
-	var validTabs = [];
-	tabs.forEach(function (tab) {
-		validTabs.push(tab.dataset.tab);
-	});
+	const ACTIVE_CLASS = 'is-active';
 
-	function activate(tab) {
-		if (validTabs.indexOf(tab) === -1) {
-			tab = validTabs[0];
+	class SettingsTabs {
+		constructor( tabs, panels ) {
+			this.tabs = tabs;
+			this.panels = panels;
+			this.validTabs = tabs.map( ( tab ) => tab.dataset.tab );
+
+			this.activate( SettingsTabs.tabFromHash() );
+			window.addEventListener( 'hashchange', () => this.activate( SettingsTabs.tabFromHash() ) );
 		}
 
-		tabs.forEach(function (t) {
-			t.classList.toggle('is-active', t.dataset.tab === tab);
-		});
-		panels.forEach(function (p) {
-			p.classList.toggle('is-active', p.dataset.panel === tab);
-		});
+		static tabFromHash() {
+			return ( window.location.hash || '' ).replace( '#', '' );
+		}
+
+		/** Shows the named tab, or the first tab when the name isn't one of them. */
+		activate( tab ) {
+			const activeTab = -1 === this.validTabs.indexOf( tab ) ? this.validTabs[ 0 ] : tab;
+
+			this.tabs.forEach( ( el ) => el.classList.toggle( ACTIVE_CLASS, el.dataset.tab === activeTab ) );
+			this.panels.forEach( ( el ) => el.classList.toggle( ACTIVE_CLASS, el.dataset.panel === activeTab ) );
+		}
 	}
 
-	function tabFromHash() {
-		return (window.location.hash || '').replace('#', '');
-	}
-
-	activate(tabFromHash());
-	window.addEventListener('hashchange', function () {
-		activate(tabFromHash());
-	});
-})();
+	admin.ready( () => {
+		const tabs = admin.all( '.omega-settings-nav__item' );
+		const panels = admin.all( '.omega-settings-panel' );
+		if ( tabs.length && panels.length ) {
+			new SettingsTabs( tabs, panels );
+		}
+	} );
+} )( window.OmegaDesignAdmin );

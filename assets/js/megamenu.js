@@ -1,103 +1,138 @@
-(function () {
+/**
+ * Block-Navigation Mega Menu panels: open on hover/click/Enter, close on
+ * leaving, outside click or Escape.
+ */
+( function ( core ) {
 	'use strict';
 
-	var header = document.querySelector('.site-header');
-	if (!header) return;
-
-	var triggers = header.querySelectorAll('.omega-megamenu-trigger');
-	var panels   = header.querySelectorAll('.omega-megamenu-panel');
-	var closeTimer = null;
-
-	function getPanelClass(triggerEl) {
-		var classes = triggerEl.className.split(' ');
-		for (var i = 0; i < classes.length; i++) {
-			if (classes[i].indexOf('omega-panel--') === 0) return classes[i];
-		}
-		return null;
+	if ( ! core ) {
+		return;
 	}
 
-	function findPanel(panelClass) {
-		return header.querySelector('.omega-megamenu-panel.' + panelClass);
-	}
+	const TRIGGER_SELECTOR = '.omega-megamenu-trigger';
+	const PANEL_SELECTOR = '.omega-megamenu-panel';
+	const PANEL_CLASS_PREFIX = 'omega-panel--';
+	const ACTIVE_CLASS = 'is-active';
+	const CLOSE_DELAY_MS = 150;
 
-	function hideAll() {
-		panels.forEach(function (p) { p.classList.remove('is-active'); });
-	}
+	class MegaMenu extends core.Component {
+		constructor( header ) {
+			super( header );
+			this.panels = this.findAll( PANEL_SELECTOR );
+			this.closeTimer = null;
 
-	function showPanel(panelClass) {
-		hideAll();
-		var panel = findPanel(panelClass);
-		if (panel) panel.classList.add('is-active');
-	}
+			this.findAll( TRIGGER_SELECTOR ).forEach( ( trigger ) => this.bindTrigger( trigger ) );
+			this.panels.forEach( ( panel ) => this.bindHoverIntent( panel ) );
 
-	/** Opens the trigger's panel - or closes everything if it's already the open one. */
-	function togglePanel(panelClass) {
-		if (!panelClass) return;
-		var panel = findPanel(panelClass);
-		if (panel && panel.classList.contains('is-active')) {
-			hideAll();
-		} else {
-			showPanel(panelClass);
-		}
-	}
-
-	function scheduleHide() {
-		closeTimer = setTimeout(function () {
-			var hovered = header.querySelector('.omega-megamenu-panel:hover');
-			if (!hovered) hideAll();
-		}, 150);
-	}
-
-	triggers.forEach(function (trigger) {
-		// Classic headers (assets/css/classic-header.css) reveal Mega Menu
-		// panels with hover/focus-within CSS instead, the same way their
-		// plain sub-menus already work with no JS at all - so the trigger's
-		// own link stays a normal, navigable link. Wiring this same
-		// click-intercepting JS to them would permanently block that link
-		// (e.preventDefault() below runs on every click, unconditionally),
-		// since a classic top-level item generally has a real destination
-		// page as well as a Mega Menu, unlike a block Navigation trigger.
-		if (trigger.closest('.omega-classic-header')) {
-			return;
+			document.addEventListener( 'click', ( event ) => {
+				if ( ! header.contains( event.target ) ) {
+					this.hideAll();
+				}
+			} );
+			core.onEscape( () => this.hideAll() );
 		}
 
-		var panelClass = getPanelClass(trigger);
+		/** The trigger's "omega-panel--{slug}" class, naming the panel it opens. */
+		static panelClassOf( trigger ) {
+			return Array.prototype.find.call( trigger.classList, ( name ) => 0 === name.indexOf( PANEL_CLASS_PREFIX ) ) || null;
+		}
 
-		trigger.addEventListener('mouseenter', function () {
-			clearTimeout(closeTimer);
-			if (panelClass) showPanel(panelClass);
-		});
+		findPanel( panelClass ) {
+			return this.find( PANEL_SELECTOR + '.' + panelClass );
+		}
 
-		trigger.addEventListener('mouseleave', scheduleHide);
+		hideAll() {
+			this.panels.forEach( ( panel ) => panel.classList.remove( ACTIVE_CLASS ) );
+		}
 
-		trigger.addEventListener('click', function (e) {
-			if (!panelClass) return;
-			togglePanel(panelClass);
-			e.preventDefault();
-		});
-
-		// Keyboard: open on Enter/Space, close on Escape
-		trigger.addEventListener('keydown', function (e) {
-			if (e.key === 'Enter' || e.key === ' ') {
-				e.preventDefault();
-				togglePanel(panelClass);
+		showPanel( panelClass ) {
+			this.hideAll();
+			const panel = this.findPanel( panelClass );
+			if ( panel ) {
+				panel.classList.add( ACTIVE_CLASS );
 			}
-			if (e.key === 'Escape') hideAll();
-		});
-	});
+		}
 
-	panels.forEach(function (panel) {
-		panel.addEventListener('mouseenter', function () { clearTimeout(closeTimer); });
-		panel.addEventListener('mouseleave', scheduleHide);
-	});
+		/** Opens the trigger's panel - or closes everything if it's already the open one. */
+		togglePanel( panelClass ) {
+			if ( ! panelClass ) {
+				return;
+			}
+			const panel = this.findPanel( panelClass );
+			if ( panel && panel.classList.contains( ACTIVE_CLASS ) ) {
+				this.hideAll();
+			} else {
+				this.showPanel( panelClass );
+			}
+		}
 
-	// Close on outside click
-	document.addEventListener('click', function (e) {
-		if (!header.contains(e.target)) hideAll();
-	});
+		cancelHide() {
+			clearTimeout( this.closeTimer );
+		}
 
-	// Close on Escape anywhere
-	document.addEventListener('keydown', function (e) {
-		if (e.key === 'Escape') hideAll();
-	});
-})();
+		scheduleHide() {
+			this.closeTimer = setTimeout( () => {
+				if ( ! this.find( PANEL_SELECTOR + ':hover' ) ) {
+					this.hideAll();
+				}
+			}, CLOSE_DELAY_MS );
+		}
+
+		/** Keeps a panel/trigger open while hovered, closing shortly after leaving. */
+		bindHoverIntent( el, onEnter ) {
+			el.addEventListener( 'mouseenter', () => {
+				this.cancelHide();
+				if ( onEnter ) {
+					onEnter();
+				}
+			} );
+			el.addEventListener( 'mouseleave', () => this.scheduleHide() );
+		}
+
+		bindTrigger( trigger ) {
+			// Classic headers (assets/css/classic-header.css) reveal Mega Menu
+			// panels with hover/focus-within CSS instead, the same way their
+			// plain sub-menus already work with no JS at all - so the
+			// trigger's own link stays a normal, navigable link. Wiring this
+			// same click-intercepting JS to them would permanently block that
+			// link (preventDefault() below runs on every click,
+			// unconditionally), since a classic top-level item generally has
+			// a real destination page as well as a Mega Menu, unlike a block
+			// Navigation trigger.
+			if ( trigger.closest( '.omega-classic-header' ) ) {
+				return;
+			}
+
+			const panelClass = MegaMenu.panelClassOf( trigger );
+
+			this.bindHoverIntent( trigger, () => {
+				if ( panelClass ) {
+					this.showPanel( panelClass );
+				}
+			} );
+
+			trigger.addEventListener( 'click', ( event ) => {
+				if ( ! panelClass ) {
+					return;
+				}
+				this.togglePanel( panelClass );
+				event.preventDefault();
+			} );
+
+			// Keyboard: open on Enter/Space, close on Escape.
+			trigger.addEventListener( 'keydown', ( event ) => {
+				if ( core.isActivationKey( event ) ) {
+					event.preventDefault();
+					this.togglePanel( panelClass );
+				}
+			} );
+		}
+	}
+
+	core.ready( () => {
+		const header = document.querySelector( '.site-header' );
+		if ( header ) {
+			new MegaMenu( header );
+		}
+	} );
+} )( window.OmegaDesign );

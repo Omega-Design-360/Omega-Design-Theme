@@ -62,16 +62,38 @@ trait assets {
     }
 
     /**
-     * Handle of assets/js/editor-shared.js (window.OmegaDesignEditor), the
-     * helpers every Omega Design block editor script builds on - registered
-     * on first use, for a script to list as a dependency.
+     * Registers a shared helper script from assets/ on first use and
+     * returns its handle, for other scripts to list as a dependency.
      */
-    protected static function editor_shared_script() {
-        $handle = 'omega-design-editor-shared';
+    private static function shared_script($handle, $relative, $deps = []) {
         if (!wp_script_is($handle, 'registered')) {
-            wp_register_script($handle, self::asset_uri('js/editor-shared.js'), [], self::asset_version('js/editor-shared.js'), true);
+            wp_register_script($handle, self::asset_uri($relative), $deps, self::asset_version($relative), true);
         }
         return $handle;
+    }
+
+    /**
+     * Handle of assets/js/editor-shared.js (window.OmegaDesignEditor), the
+     * helpers every Omega Design block editor script builds on.
+     */
+    protected static function editor_shared_script() {
+        return self::shared_script('omega-design-editor-shared', 'js/editor-shared.js');
+    }
+
+    /**
+     * Handle of assets/js/omega-core.js (window.OmegaDesign), the helpers
+     * and Component base class every front-end script builds on.
+     */
+    protected static function core_script() {
+        return self::shared_script('omega-design-core', 'js/omega-core.js');
+    }
+
+    /**
+     * Handle of assets/js/admin-core.js (window.OmegaDesignAdmin), the
+     * form helpers the theme's own admin screens build on.
+     */
+    protected static function admin_core_script() {
+        return self::shared_script('omega-design-admin-core', 'js/admin-core.js', [self::core_script()]);
     }
 
     /**
