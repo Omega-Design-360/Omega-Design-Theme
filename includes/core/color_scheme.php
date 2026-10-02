@@ -242,7 +242,7 @@ class color_scheme {
         $enqueued = self::enqueue_script(
             'omega-design-color-scheme-panel',
             'js/color-scheme-panel.js',
-            ['wp-plugins', 'wp-editor', 'wp-data', 'wp-core-data', 'wp-components', 'wp-element', 'wp-i18n'],
+            ['wp-plugins', 'wp-editor', 'wp-data', 'wp-core-data', 'wp-components', 'wp-element', 'wp-i18n', self::editor_shared_script()],
             true
         );
         if (!$enqueued) {

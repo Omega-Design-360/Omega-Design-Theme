@@ -10,7 +10,7 @@ class core {
     use singleton;
 
     const MIN_PHP = '7.4';
-    const MIN_WP  = '5.8';
+    const MIN_WP  = '6.7';
 
     private $loader = null;
     private $initialized = false;

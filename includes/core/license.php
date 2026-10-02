@@ -452,8 +452,8 @@ class license {
      * and omega-settings screens - not on core wp-admin (Dashboard/Home,
      * Posts, Plugins, Users, ...) and not on the other "Omega Design" menu
      * items either, since most of those (Site Builder, Appearance, Menus,
-     * Mega Menus, Widgets) just point straight at core screens
-     * (site-editor.php, customize.php, nav-menus.php, widgets.php) rather
+     * Mega Menus, Sidebar) just point straight at core screens
+     * (site-editor.php, customize.php, nav-menus.php) rather
      * than a page this theme renders itself. admin_notice()'s persistent
      * nag still shows everywhere, so an unlicensed site is never silently
      * un-nagged elsewhere - it's only the popup that's scoped this

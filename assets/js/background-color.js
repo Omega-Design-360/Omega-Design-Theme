@@ -4,7 +4,7 @@
 	}
 
 	var registerPlugin = wp.plugins.registerPlugin;
-	var PluginDocumentSettingPanel = wp.editPost.PluginDocumentSettingPanel;
+	var PluginDocumentSettingPanel = editor.documentSettingPanel();
 	var TextControl = wp.components.TextControl;
 	var createElement = wp.element.createElement;
 	var useEffect = wp.element.useEffect;

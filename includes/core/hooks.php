@@ -465,7 +465,7 @@ class hooks {
         wp_enqueue_script(
             'omega-design-editor',
             self::asset_uri('js/editor.js'),
-            ['wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-compose', 'wp-hooks', 'wp-i18n', 'wp-dom-ready', 'wp-data', 'wp-core-data'],
+            ['wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-compose', 'wp-hooks', 'wp-i18n', 'wp-dom-ready', 'wp-data', 'wp-core-data', self::editor_shared_script()],
             self::asset_version('js/editor.js'),
             true
         );

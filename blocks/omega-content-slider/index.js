@@ -38,7 +38,7 @@
 	var TextControl = wp.components.TextControl;
 	var TextareaControl = wp.components.TextareaControl;
 	var Button = wp.components.Button;
-	var ButtonGroup = wp.components.ButtonGroup;
+	var ButtonGroup = editor.ButtonGroup;
 	var __ = wp.i18n.__;
 
 	var EFFECT_OPTIONS = [

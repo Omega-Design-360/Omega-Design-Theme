@@ -188,7 +188,29 @@
 		return { checked: !! binding.value, onChange: binding.onChange };
 	}
 
+	/**
+	 * Drop-in for wp.components.ButtonGroup (deprecated since WP 6.8),
+	 * which only ever rendered this same <div role="group"> wrapper - so
+	 * existing rows of Buttons keep their exact look without the
+	 * deprecation warning.
+	 */
+	function ButtonGroup( props ) {
+		var className = 'components-button-group' + ( props.className ? ' ' + props.className : '' );
+		return window.wp.element.createElement( 'div', Object.assign( {}, props, { className: className, role: 'group' } ) );
+	}
+
+	/**
+	 * PluginDocumentSettingPanel from wp.editor (WP 6.6+), falling back to
+	 * the deprecated wp.editPost copy on older versions.
+	 */
+	function documentSettingPanel() {
+		var wp = window.wp;
+		return ( wp.editor && wp.editor.PluginDocumentSettingPanel ) || ( wp.editPost && wp.editPost.PluginDocumentSettingPanel ) || null;
+	}
+
 	window.OmegaDesignEditor = {
+		ButtonGroup: ButtonGroup,
+		documentSettingPanel: documentSettingPanel,
 		bindAttribute: bindAttribute,
 		bindToggle: bindToggle,
 		canvasDocument: canvasDocument,

@@ -7,6 +7,7 @@
 
 namespace OmegaDesign\customizer;
 
+use OmegaDesign\core\core;
 use OmegaDesign\traits\assets;
 use OmegaDesign\traits\singleton;
 
@@ -112,7 +113,7 @@ class menus {
         self::add_submenu(__('Appearance', 'omega-design'), 'customize.php');
         self::add_submenu(__('Menus', 'omega-design'), 'nav-menus.php');
         self::add_submenu(__('Mega Menus', 'omega-design'), 'edit.php?post_type=mega_menu');
-        self::add_submenu(__('Widgets', 'omega-design'), 'widgets.php');
+        self::add_submenu(__('Sidebar', 'omega-design'), self::sidebar_editor_path());
     }
 
     /**
@@ -150,6 +151,15 @@ class menus {
         }
     }
 
+    /**
+     * Site Editor path for the sidebar template part. The theme registers no
+     * classic widget areas (its sidebars are block template parts), so
+     * widgets.php would only show WordPress's "not widget-aware" error.
+     */
+    private static function sidebar_editor_path() {
+        return 'site-editor.php?postType=wp_template_part&postId=' . rawurlencode(get_stylesheet() . '//sidebar') . '&canvas=edit';
+    }
+
     /** Admin bar node id => [title, admin path], in display order. */
     private static function admin_bar_links() {
         return [
@@ -157,7 +167,7 @@ class menus {
             'omega-settings'     => ['Settings', 'admin.php?page=omega-settings'],
             'omega-appearance'   => ['Appearance', 'customize.php'],
             'omega-menus'        => ['Menus', 'nav-menus.php'],
-            'omega-widgets'      => ['Widgets', 'widgets.php'],
+            'omega-sidebar'      => ['Sidebar', self::sidebar_editor_path()],
         ];
     }
 
@@ -481,9 +491,9 @@ class menus {
 
         return [
             'woocommerce_active'   => class_exists('WooCommerce'),
-            'php_ok'               => version_compare(PHP_VERSION, '7.4', '>='),
+            'php_ok'               => core::meets_php_requirement(),
             'php_version'          => PHP_VERSION,
-            'wp_ok'                => version_compare($wp_version, '5.8', '>='),
+            'wp_ok'                => core::meets_wp_requirement(),
             'wp_version'           => $wp_version,
             'megamenu_published'   => $megamenu_count > 0,
             'megamenu_count'       => $megamenu_count,
@@ -635,7 +645,7 @@ class menus {
                             <a href="<?php echo esc_url(admin_url('customize.php')); ?>"><span class="dashicons dashicons-admin-customizer"></span><?php esc_html_e('Customizer', 'omega-design'); ?></a>
                             <a href="<?php echo esc_url(admin_url('site-editor.php?p=/navigation')); ?>"><span class="dashicons dashicons-menu-alt"></span><?php esc_html_e('Navigation', 'omega-design'); ?></a>
                             <a href="<?php echo esc_url(admin_url('edit.php?post_type=mega_menu')); ?>"><span class="dashicons dashicons-grid-view"></span><?php esc_html_e('Mega Menus', 'omega-design'); ?></a>
-                            <a href="<?php echo esc_url(admin_url('widgets.php')); ?>"><span class="dashicons dashicons-screenoptions"></span><?php esc_html_e('Widgets', 'omega-design'); ?></a>
+                            <a href="<?php echo esc_url(admin_url(self::sidebar_editor_path())); ?>"><span class="dashicons dashicons-screenoptions"></span><?php esc_html_e('Sidebar', 'omega-design'); ?></a>
                             <a href="<?php echo esc_url(admin_url('site-editor.php?path=%2Fstyles')); ?>"><span class="dashicons dashicons-art"></span><?php esc_html_e('Global Styles', 'omega-design'); ?></a>
                         </div>
                     </div>
@@ -670,7 +680,7 @@ class menus {
                     <span class="dashicons dashicons-screenoptions"></span>
                     <h3><?php esc_html_e('Sidebar', 'omega-design'); ?></h3>
                     <span class="omega-badge omega-badge--neutral"><?php esc_html_e('Block-based', 'omega-design'); ?></span>
-                    <a class="omega-status-card__link" href="<?php echo esc_url(admin_url('site-editor.php?postType=wp_template_part&postId=' . rawurlencode(get_stylesheet() . '//sidebar') . '&canvas=edit')); ?>"><?php esc_html_e('Edit in Site Editor', 'omega-design'); ?></a>
+                    <a class="omega-status-card__link" href="<?php echo esc_url(admin_url(self::sidebar_editor_path())); ?>"><?php esc_html_e('Edit in Site Editor', 'omega-design'); ?></a>
                 </div>
 
                 <div class="omega-status-card">

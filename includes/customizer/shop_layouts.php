@@ -399,7 +399,7 @@ class shop_layouts {
         $enqueued = self::enqueue_script(
             'omega-design-shop-layout',
             'js/shop-layout.js',
-            ['wp-plugins', 'wp-editor', 'wp-element', 'wp-components', 'wp-data', 'wp-i18n'],
+            ['wp-plugins', 'wp-editor', 'wp-element', 'wp-components', 'wp-data', 'wp-i18n', self::editor_shared_script()],
             true
         );
         if (!$enqueued) {

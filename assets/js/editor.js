@@ -23,7 +23,7 @@
 	var ColorPalette = wp.blockEditor.ColorPalette;
 	var PanelBody = wp.components.PanelBody;
 	var Button = wp.components.Button;
-	var ButtonGroup = wp.components.ButtonGroup;
+	var ButtonGroup = window.OmegaDesignEditor.ButtonGroup;
 	var RangeControl = wp.components.RangeControl;
 	var TabPanel = wp.components.TabPanel;
 	var BaseControl = wp.components.BaseControl;

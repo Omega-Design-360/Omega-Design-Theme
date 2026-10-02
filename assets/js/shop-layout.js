@@ -8,7 +8,7 @@
 		return;
 	}
 
-	var PluginDocumentSettingPanel = ( wp.editor && wp.editor.PluginDocumentSettingPanel ) || ( wp.editPost && wp.editPost.PluginDocumentSettingPanel );
+	var PluginDocumentSettingPanel = window.OmegaDesignEditor && window.OmegaDesignEditor.documentSettingPanel();
 	if ( ! PluginDocumentSettingPanel ) {
 		return;
 	}

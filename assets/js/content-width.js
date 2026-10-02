@@ -5,7 +5,7 @@
 
 	var BaseControl = wp.components.BaseControl;
 	var Button = wp.components.Button;
-	var ButtonGroup = wp.components.ButtonGroup;
+	var ButtonGroup = editor.ButtonGroup;
 	var createElement = wp.element.createElement;
 	var useEffect = wp.element.useEffect;
 	var __ = wp.i18n.__;

@@ -25,7 +25,7 @@
 	var useEntityProp = wp.coreData.useEntityProp;
 	var components = wp.components;
 	var __ = wp.i18n.__;
-	var PluginDocumentSettingPanel = (wp.editor && wp.editor.PluginDocumentSettingPanel) || (wp.editPost && wp.editPost.PluginDocumentSettingPanel);
+	var PluginDocumentSettingPanel = window.OmegaDesignEditor && window.OmegaDesignEditor.documentSettingPanel();
 
 	if (!PluginDocumentSettingPanel || !components.Dropdown || !components.ColorPicker) {
 		return;
