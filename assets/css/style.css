@@ -556,6 +556,12 @@ li.wc-block-product .wc-block-components-product-image img {
 /**
  * Site header (parts/header.html).
  */
+
+/* Sticky comes from the block's own Position setting; keep it above page content (core's sticky z-index is 10). */
+.wp-block-group.site-header.is-position-sticky {
+	z-index: 100;
+}
+
 .site-header .site-navigation a {
 	transition: color 0.15s ease, opacity 0.15s ease;
 }
@@ -804,6 +810,18 @@ li.wc-block-product .wc-block-components-product-image img {
 	display: block !important;
 }
 
+/*
+ * The templates (page, single, index, home, archive, category, search) put
+ * the aside column BEFORE the main column in source order, unlike a typical
+ * editor-built two-column layout: a float can only reflow content that
+ * comes AFTER it in the DOM, so main has to follow it for the
+ * reflow-around-the-sidebar behavior to work at all. This does mean a
+ * screen reader or keyboard-only visitor reaches the sidebar (Search,
+ * Categories, ...) before the page's own content - a known trade-off of
+ * float-based layout, not an oversight. (Documented here rather than in
+ * the templates: a plain HTML comment inside block markup makes the editor
+ * flag the block as invalid.)
+ */
 .wp-block-column.omega-sidebar-layout__aside {
 	float: right;
 	width: var(--omega-sidebar-width, 30%) !important;

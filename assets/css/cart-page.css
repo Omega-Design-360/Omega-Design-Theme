@@ -22,7 +22,7 @@ body.woocommerce-cart .wp-block-post-content {
 
 .wp-block-woocommerce-cart {
 	margin-top: var(--wp--preset--spacing--m);
-	margin-bottom: var(--wp--preset--spacing--2xl);
+	margin-bottom: var(--wp--preset--spacing--2-xl);
 	max-width: none !important;
 }
 
@@ -320,7 +320,7 @@ body.woocommerce-cart .wp-block-post-content {
 /* Cross-sells ("You may be interested in...") - matches the product card
    treatment used on the shop archive and related-products sections. */
 .wc-block-cart-items .wp-block-woocommerce-product-collection {
-	margin-top: var(--wp--preset--spacing--2xl);
+	margin-top: var(--wp--preset--spacing--2-xl);
 	padding-top: var(--wp--preset--spacing--l);
 	border-top: 1px solid var(--wp--preset--color--border);
 }

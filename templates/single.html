@@ -4,16 +4,6 @@
 <main class="wp-block-group">
 	<!-- wp:columns {"className":"omega-sidebar-layout"} -->
 	<div class="wp-block-columns omega-sidebar-layout">
-		<!--
-		The aside comes BEFORE main in source order (unlike a typical
-		editor-built two-column layout) because the sidebar is now a CSS
-		float (see assets/css/style.css) - a float can only reflow content
-		that comes AFTER it in the DOM, so main has to follow it here for
-		that reflow-around-the-sidebar behavior to work at all. This does
-		mean a screen reader or keyboard-only visitor now reaches the
-		sidebar (Search, Categories, ...) before this page's own content -
-		a real, known trade-off of float-based layout, not an oversight.
-		-->
 		<!-- wp:column {"className":"omega-sidebar-layout__aside"} -->
 		<div class="wp-block-column omega-sidebar-layout__aside">
 			<!-- wp:template-part {"slug":"sidebar"} /-->

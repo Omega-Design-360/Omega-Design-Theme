@@ -1,0 +1,19 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "omega-design/product-layout",
+	"title": "Omega Product Layout",
+	"category": "omega-design",
+	"icon": "products",
+	"description": "Renders the single product page in the layout chosen under Omega Design > Settings > Product Page.",
+	"keywords": ["product", "layout", "woocommerce"],
+	"textdomain": "omega-design",
+	"attributes": {},
+	"supports": {
+		"html": false,
+		"multiple": false,
+		"reusable": false
+	},
+	"editorScript": "omega-product-layout-block-editor",
+	"render": "file:./render.php"
+}

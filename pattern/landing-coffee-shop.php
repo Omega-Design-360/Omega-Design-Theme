@@ -176,7 +176,7 @@ $build_product_collection = function ($query_id, $order_by, $on_sale = false) {
 <!-- /wp:buttons -->
 
 <!-- wp:columns {"style":{"spacing":{"blockGap":{"left":"var:preset|spacing|l"},"margin":{"top":"var:preset|spacing|m"}}}} -->
-<div class="wp-block-columns">
+<div class="wp-block-columns" style="margin-top:var(--wp--preset--spacing--m)">
 <?php foreach ([['100%', __('Premium Beans', 'omega-design')], ['50+', __('Unique Recipes', 'omega-design')], ['10K+', __('Happy Customers', 'omega-design')]] as $stat) : ?>
 <!-- wp:column -->
 <div class="wp-block-column">

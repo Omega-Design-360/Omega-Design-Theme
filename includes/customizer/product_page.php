@@ -82,14 +82,28 @@ class product_page {
         if (strpos($block_content, 'data-omega-product-layout') === false) {
             return $block_content;
         }
+
+        $layout = $this->render_current_layout();
+        return '' !== $layout ? $layout : $block_content;
+    }
+
+    /**
+     * The active layout's markup for the product being viewed, or '' when
+     * this isn't a singular product view. Used by the omega-design/
+     * product-layout block (templates/single-product.html) and by
+     * maybe_render_layout() for single-product templates saved in the
+     * Site Editor before that block existed, which still carry the old
+     * core/html marker.
+     */
+    public function render_current_layout() {
         if (!function_exists('is_product') || !is_product()) {
-            return $block_content;
+            return '';
         }
 
         $product_id = get_the_ID();
         $product    = $product_id ? wc_get_product($product_id) : null;
         if (!$product) {
-            return $block_content;
+            return '';
         }
 
         $method = 'render_' . str_replace('-', '_', self::active_layout());

@@ -18,7 +18,7 @@
 .omega-shop-layout {
 	--omega-shop-radius: 14px;
 	--omega-shop-image-bg: var(--wp--preset--color--surface);
-	padding-bottom: var(--wp--preset--spacing--2xl);
+	padding-bottom: var(--wp--preset--spacing--2-xl);
 }
 
 .omega-shop-head {
@@ -2042,24 +2042,34 @@
 	border-left: 1px solid var(--omega-glass-rule);
 }
 
+/* Block layout margins (flow/flex children) would otherwise stack up inside the strip. */
+.omega-glass-trust > *,
+.omega-glass-trust__text > * {
+	margin: 0 !important;
+}
+
+/* The core/icon block's own <svg>: a 26px glyph inside a 52px ring. */
 .omega-glass-trust__icon {
-	display: inline-flex;
 	flex: none;
-	align-items: center;
-	justify-content: center;
+	box-sizing: border-box;
 	width: 52px;
 	height: 52px;
+	padding: 11px;
 	border: 2px solid var(--omega-glass-ink);
 	border-radius: 50%;
+	fill: currentColor;
 }
 
-.omega-glass-trust__item strong {
-	display: block;
+.omega-glass-trust__title {
 	font-size: 0.9375rem;
+	font-weight: 700;
+	line-height: 1.3;
 }
 
-.omega-glass-trust__item small {
+.omega-glass-trust__meta {
 	color: var(--omega-glass-muted);
+	font-size: 0.875rem;
+	line-height: 1.4;
 }
 
 .omega-glass-news {

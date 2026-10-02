@@ -44,9 +44,7 @@
 			<div class="wp-block-group omega-shop-toolbar__end">
 				<!-- wp:woocommerce/product-results-count /-->
 				<!-- wp:woocommerce/catalog-sorting /-->
-				<!-- wp:html -->
-				<div class="omega-view-toggle" role="group" aria-label="Product view"><button type="button" class="omega-view-toggle__btn is-active" data-view="grid" aria-pressed="true" aria-label="Grid view"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M3 3h8v8H3zm10 0h8v8h-8zM3 13h8v8H3zm10 0h8v8h-8z"/></svg></button><button type="button" class="omega-view-toggle__btn" data-view="list" aria-pressed="false" aria-label="List view"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M3 5h3v3H3zm5 0h13v3H8zM3 10.5h3v3H3zm5 0h13v3H8zM3 16h3v3H3zm5 0h13v3H8z"/></svg></button></div>
-				<!-- /wp:html -->
+				<!-- wp:omega-design/view-toggle /-->
 			</div>
 			<!-- /wp:group -->
 		</div>
@@ -170,9 +168,81 @@
 	</div>
 	<!-- /wp:woocommerce/product-collection -->
 
-	<!-- wp:html -->
-	<div class="alignwide omega-glass-trust"><div class="omega-glass-trust__item"><span class="omega-glass-trust__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26"><path fill="currentColor" d="M3 5h11v3h3.5L21 12v5h-2a3 3 0 0 1-6 0H9a3 3 0 0 1-6 0H1V7a2 2 0 0 1 2-2Zm11 5v2h5l-1.6-2ZM6 16a1 1 0 1 0 0 2 1 1 0 0 0 0-2Zm10 0a1 1 0 1 0 0 2 1 1 0 0 0 0-2Z"/></svg></span><span><strong>Free Shipping</strong><small>On orders over $50</small></span></div><div class="omega-glass-trust__item"><span class="omega-glass-trust__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26"><path fill="currentColor" d="M12 2 3 6.5v11L12 22l9-4.5v-11Zm0 2.2 6.3 3.1L12 10.5 5.7 7.3ZM5 9l6 3v7.6l-6-3Zm8 10.6V12l6-3v7.6Z"/></svg></span><span><strong>Easy Returns</strong><small>30 day return policy</small></span></div><div class="omega-glass-trust__item"><span class="omega-glass-trust__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26"><path fill="currentColor" d="M12 1a5 5 0 0 0-5 5v3H5v14h14V9h-2V6a5 5 0 0 0-5-5Zm-3 5a3 3 0 0 1 6 0v3H9Zm3 7a2 2 0 0 1 1 3.7V19h-2v-2.3A2 2 0 0 1 12 13Z"/></svg></span><span><strong>Secure Payment</strong><small>100% secure checkout</small></span></div><div class="omega-glass-trust__item"><span class="omega-glass-trust__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26"><path fill="currentColor" d="M12 2a8 8 0 0 0-8 8v5a3 3 0 0 0 3 3h2v-7H6v-1a6 6 0 0 1 12 0v1h-3v7h2.1A4 4 0 0 1 13 21h-2v2h2a6 6 0 0 0 6-5.3A3 3 0 0 0 20 15v-5a8 8 0 0 0-8-8Z"/></svg></span><span><strong>24/7 Support</strong><small>Dedicated support</small></span></div></div>
-	<!-- /wp:html -->
+	<!-- wp:group {"align":"wide","className":"omega-glass-trust","layout":{"type":"default"}} -->
+	<div class="wp-block-group alignwide omega-glass-trust">
+		<!-- wp:group {"className":"omega-glass-trust__item","layout":{"type":"flex","flexWrap":"nowrap"}} -->
+		<div class="wp-block-group omega-glass-trust__item">
+			<!-- wp:icon {"icon":"omega-icons/local-shipping","className":"omega-glass-trust__icon"} /-->
+
+			<!-- wp:group {"className":"omega-glass-trust__text","layout":{"type":"default"}} -->
+			<div class="wp-block-group omega-glass-trust__text">
+				<!-- wp:paragraph {"className":"omega-glass-trust__title"} -->
+				<p class="omega-glass-trust__title">Free Shipping</p>
+				<!-- /wp:paragraph -->
+
+				<!-- wp:paragraph {"className":"omega-glass-trust__meta"} -->
+				<p class="omega-glass-trust__meta">On orders over $50</p>
+				<!-- /wp:paragraph -->
+			</div>
+			<!-- /wp:group -->
+		</div>
+		<!-- /wp:group -->
+
+		<!-- wp:group {"className":"omega-glass-trust__item","layout":{"type":"flex","flexWrap":"nowrap"}} -->
+		<div class="wp-block-group omega-glass-trust__item">
+			<!-- wp:icon {"icon":"omega-icons/assignment-return","className":"omega-glass-trust__icon"} /-->
+
+			<!-- wp:group {"className":"omega-glass-trust__text","layout":{"type":"default"}} -->
+			<div class="wp-block-group omega-glass-trust__text">
+				<!-- wp:paragraph {"className":"omega-glass-trust__title"} -->
+				<p class="omega-glass-trust__title">Easy Returns</p>
+				<!-- /wp:paragraph -->
+
+				<!-- wp:paragraph {"className":"omega-glass-trust__meta"} -->
+				<p class="omega-glass-trust__meta">30 day return policy</p>
+				<!-- /wp:paragraph -->
+			</div>
+			<!-- /wp:group -->
+		</div>
+		<!-- /wp:group -->
+
+		<!-- wp:group {"className":"omega-glass-trust__item","layout":{"type":"flex","flexWrap":"nowrap"}} -->
+		<div class="wp-block-group omega-glass-trust__item">
+			<!-- wp:icon {"icon":"omega-icons/lock","className":"omega-glass-trust__icon"} /-->
+
+			<!-- wp:group {"className":"omega-glass-trust__text","layout":{"type":"default"}} -->
+			<div class="wp-block-group omega-glass-trust__text">
+				<!-- wp:paragraph {"className":"omega-glass-trust__title"} -->
+				<p class="omega-glass-trust__title">Secure Payment</p>
+				<!-- /wp:paragraph -->
+
+				<!-- wp:paragraph {"className":"omega-glass-trust__meta"} -->
+				<p class="omega-glass-trust__meta">100% secure checkout</p>
+				<!-- /wp:paragraph -->
+			</div>
+			<!-- /wp:group -->
+		</div>
+		<!-- /wp:group -->
+
+		<!-- wp:group {"className":"omega-glass-trust__item","layout":{"type":"flex","flexWrap":"nowrap"}} -->
+		<div class="wp-block-group omega-glass-trust__item">
+			<!-- wp:icon {"icon":"omega-icons/support-agent","className":"omega-glass-trust__icon"} /-->
+
+			<!-- wp:group {"className":"omega-glass-trust__text","layout":{"type":"default"}} -->
+			<div class="wp-block-group omega-glass-trust__text">
+				<!-- wp:paragraph {"className":"omega-glass-trust__title"} -->
+				<p class="omega-glass-trust__title">24/7 Support</p>
+				<!-- /wp:paragraph -->
+
+				<!-- wp:paragraph {"className":"omega-glass-trust__meta"} -->
+				<p class="omega-glass-trust__meta">Dedicated support</p>
+				<!-- /wp:paragraph -->
+			</div>
+			<!-- /wp:group -->
+		</div>
+		<!-- /wp:group -->
+	</div>
+	<!-- /wp:group -->
 
 	<!-- wp:group {"align":"wide","className":"omega-glass-news","layout":{"type":"flex","flexWrap":"wrap","justifyContent":"space-between","verticalAlignment":"center"}} -->
 	<div class="wp-block-group alignwide omega-glass-news">

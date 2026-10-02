@@ -1,0 +1,18 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "omega-design/view-toggle",
+	"title": "Omega Product View Toggle",
+	"category": "omega-design",
+	"icon": "grid-view",
+	"description": "Grid/list switch for the Glass shop layouts' product grid. The choice is remembered per visitor (assets/js/shop-glass.js).",
+	"keywords": ["grid", "list", "view", "shop"],
+	"textdomain": "omega-design",
+	"attributes": {},
+	"supports": {
+		"html": false,
+		"reusable": false
+	},
+	"editorScript": "omega-view-toggle-block-editor",
+	"render": "file:./render.php"
+}

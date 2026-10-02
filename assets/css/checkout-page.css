@@ -22,12 +22,12 @@ body.woocommerce-checkout .wp-block-post-content {
 
 .wp-block-woocommerce-checkout {
 	margin-top: var(--wp--preset--spacing--l);
-	margin-bottom: var(--wp--preset--spacing--2xl);
+	margin-bottom: var(--wp--preset--spacing--2-xl);
 	max-width: none !important;
 }
 
 .wc-block-checkout {
-	gap: var(--wp--preset--spacing--2xl);
+	gap: var(--wp--preset--spacing--2-xl);
 	align-items: start;
 }
 

@@ -104,6 +104,8 @@ class blocks {
         $this->register_omega_content_slider();
         $this->register_omega_tabs();
         $this->register_omega_newsletter();
+        $this->register_server_rendered_block('omega-view-toggle', ['wp-server-side-render']);
+        $this->register_server_rendered_block('omega-product-layout');
     }
 
     private function register_omega_icon() {
@@ -269,6 +271,17 @@ class blocks {
             );
         }
         return $tab_list . '</div>';
+    }
+
+    /**
+     * A block rendered entirely by its own render.php (block.json "render"),
+     * with only a small editor script - omega-design/view-toggle and
+     * omega-design/product-layout. Its editor handle is "{dir}-block-editor".
+     */
+    private function register_server_rendered_block($slug, array $extra_editor_deps = []) {
+        $dir = OMEGA_DESIGN_BLOCKS . '/' . $slug;
+        $this->register_block_assets($dir, ['editor' => $slug . '-block-editor'], array_merge(self::EDITOR_DEPS, $extra_editor_deps));
+        register_block_type($dir);
     }
 
     private function register_omega_newsletter() {
