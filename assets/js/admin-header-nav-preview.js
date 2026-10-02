@@ -40,6 +40,23 @@
 		var fontSizeField = document.getElementById('omega_header_font_size');
 		var heightField = document.getElementById('omega_header_height');
 
+		/** A field's current value, or '' when the field is missing or empty. */
+		function fieldValue(field) {
+			return field && field.value ? field.value : '';
+		}
+
+		/** map[field's value], or '' when the field is missing or the value isn't mapped. */
+		function mappedValue(field, map) {
+			return field && map[field.value] ? map[field.value] : '';
+		}
+
+		/** Binds handler to a field's event - fields a given form omits are skipped. */
+		function listen(field, eventName, handler) {
+			if (field) {
+				field.addEventListener(eventName, handler);
+			}
+		}
+
 		function renderNavItems() {
 			var items = DEFAULT_ITEMS;
 			if (menuField && menuField.value && menusData[menuField.value] && menusData[menuField.value].length) {
@@ -55,41 +72,29 @@
 		}
 
 		function updateColors() {
-			bar.style.background = bgField && bgField.value ? bgField.value : '';
-			bar.style.color = textColorField && textColorField.value ? textColorField.value : '';
-			bar.style.fontFamily = fontFamilyField && fontFamilyField.value ? fontFamilyField.value : '';
+			bar.style.background = fieldValue(bgField);
+			bar.style.color = fieldValue(textColorField);
+			bar.style.fontFamily = fieldValue(fontFamilyField);
 		}
 
 		function updateFontSize() {
-			navEl.style.fontSize = fontSizeField && FONT_SIZE_MAP[fontSizeField.value] ? FONT_SIZE_MAP[fontSizeField.value] : '';
+			navEl.style.fontSize = mappedValue(fontSizeField, FONT_SIZE_MAP);
 		}
 
 		function updateHeight() {
-			var pad = heightField && HEIGHT_MAP[heightField.value] ? HEIGHT_MAP[heightField.value] : '';
+			var pad = mappedValue(heightField, HEIGHT_MAP);
 			inner.style.paddingTop = pad;
 			inner.style.paddingBottom = pad;
 		}
 
 		renderNavItems();
 
-		if (menuField) {
-			menuField.addEventListener('change', renderNavItems);
-		}
-		if (bgField) {
-			bgField.addEventListener('input', updateColors);
-		}
-		if (textColorField) {
-			textColorField.addEventListener('input', updateColors);
-		}
-		if (fontFamilyField) {
-			fontFamilyField.addEventListener('input', updateColors);
-		}
-		if (fontSizeField) {
-			fontSizeField.addEventListener('change', updateFontSize);
-		}
-		if (heightField) {
-			heightField.addEventListener('change', updateHeight);
-		}
+		listen(menuField, 'change', renderNavItems);
+		listen(bgField, 'input', updateColors);
+		listen(textColorField, 'input', updateColors);
+		listen(fontFamilyField, 'input', updateColors);
+		listen(fontSizeField, 'change', updateFontSize);
+		listen(heightField, 'change', updateHeight);
 	}
 
 	if (document.readyState === 'loading') {

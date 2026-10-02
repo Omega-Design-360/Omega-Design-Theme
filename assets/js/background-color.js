@@ -1,21 +1,14 @@
-( function ( wp ) {
-	if ( ! wp || ! wp.plugins || ! wp.editPost ) {
+( function ( wp, editor ) {
+	if ( ! wp || ! wp.plugins || ! wp.editPost || ! editor ) {
 		return;
 	}
 
 	var registerPlugin = wp.plugins.registerPlugin;
 	var PluginDocumentSettingPanel = wp.editPost.PluginDocumentSettingPanel;
 	var TextControl = wp.components.TextControl;
-	var withSelect = wp.data.withSelect;
-	var withDispatch = wp.data.withDispatch;
-	var compose = wp.compose.compose;
 	var createElement = wp.element.createElement;
 	var useEffect = wp.element.useEffect;
 	var __ = wp.i18n.__;
-
-	var META_KEY = 'omega_background_color';
-	var DARK_META_KEY = 'omega_background_color_dark';
-	var PREVIEW_STYLE_ID = 'omega-background-color-preview';
 
 	/**
 	 * Mirrors background_color.php's enqueue_front_style(): the dark value
@@ -35,73 +28,21 @@
 		return css;
 	}
 
+	function orEmpty( value ) {
+		return value || '';
+	}
+
 	/**
 	 * The standalone editor canvas is a separate iframe document, so the
 	 * front end's inline style never reaches it. Preview live by pushing
 	 * the same rules straight into the canvas iframe's own stylesheet.
 	 */
-	function previewColorInCanvas( light, dark ) {
-		var css = buildCss( light, dark );
-
-		function apply() {
-			var iframe = document.querySelector( 'iframe[name="editor-canvas"]' );
-			var doc = iframe && iframe.contentDocument;
-			if ( ! doc || ! doc.head ) {
-				return false;
-			}
-			var styleTag = doc.getElementById( PREVIEW_STYLE_ID );
-			if ( ! styleTag ) {
-				styleTag = doc.createElement( 'style' );
-				styleTag.id = PREVIEW_STYLE_ID;
-				doc.head.appendChild( styleTag );
-			}
-			styleTag.textContent = css;
-			return true;
-		}
-
-		if ( apply() ) {
-			return function () {};
-		}
-
-		// The iframe may not have mounted yet on first load; keep trying briefly.
-		var attempts = 0;
-		var intervalId = setInterval( function () {
-			attempts++;
-			if ( apply() || attempts > 20 ) {
-				clearInterval( intervalId );
-			}
-		}, 250 );
-
-		return function () {
-			clearInterval( intervalId );
-		};
-	}
-
-	var BackgroundColorControl = compose(
-		withSelect( function ( select ) {
-			var meta = select( 'core/editor' ).getEditedPostAttribute( 'meta' ) || {};
-			return {
-				light: meta[ META_KEY ] || '',
-				dark: meta[ DARK_META_KEY ] || '',
-			};
-		} ),
-		withDispatch( function ( dispatch ) {
-			return {
-				setLight: function ( value ) {
-					var meta = {};
-					meta[ META_KEY ] = value || '';
-					dispatch( 'core/editor' ).editPost( { meta: meta } );
-				},
-				setDark: function ( value ) {
-					var meta = {};
-					meta[ DARK_META_KEY ] = value || '';
-					dispatch( 'core/editor' ).editPost( { meta: meta } );
-				},
-			};
-		} )
-	)( function ( props ) {
+	var BackgroundColorControl = editor.withPostMeta( {
+		light: editor.textMeta( 'omega_background_color', orEmpty ),
+		dark: editor.textMeta( 'omega_background_color_dark', orEmpty ),
+	} )( function ( props ) {
 		useEffect( function () {
-			return previewColorInCanvas( props.light, props.dark );
+			return editor.previewCanvasStyle( 'omega-background-color-preview', buildCss( props.light, props.dark ) );
 		}, [ props.light, props.dark ] );
 
 		return createElement(
@@ -150,44 +91,47 @@
 		return panel.parentElement;
 	}
 
+	/**
+	 * The panel may not have mounted into the DOM yet on first load
+	 * (Slot/Fill renders a tick after this component does), so this keeps
+	 * trying briefly, then attaches the observer once it exists.
+	 */
 	function keepAtTop() {
-		var parent = moveToTop();
-
-		if ( parent ) {
-			var observer = new MutationObserver( moveToTop );
-			observer.observe( parent, { childList: true } );
-			return function () {
-				observer.disconnect();
-			};
-		}
-
-		// The panel may not have mounted into the DOM yet on first load
-		// (Slot/Fill renders a tick after this component does); keep
-		// trying briefly, then attach the observer once it exists.
-		var attempts = 0;
-		var intervalId = setInterval( function () {
-			attempts++;
-			var found = moveToTop();
-			if ( found ) {
-				clearInterval( intervalId );
-				var observer = new MutationObserver( moveToTop );
-				observer.observe( found, { childList: true } );
-			} else if ( attempts > 20 ) {
-				clearInterval( intervalId );
+		var observer = null;
+		var stopRetrying = editor.retryUntilApplied( function () {
+			var parent = moveToTop();
+			if ( ! parent ) {
+				return false;
 			}
-		}, 250 );
+			observer = new MutationObserver( moveToTop );
+			observer.observe( parent, { childList: true } );
+			return true;
+		} );
 
 		return function () {
-			clearInterval( intervalId );
+			stopRetrying();
+			if ( observer ) {
+				observer.disconnect();
+			}
 		};
 	}
+
+	/** Every control registered on the shared Page Settings namespace, in panel order. */
+	var PANEL_CONTROLS = [
+		'HideTitleControl',
+		'HideHeaderControl',
+		'HideFooterControl',
+		'FeaturedImageControl',
+		'ContentWidthControl',
+		'SidebarControl',
+	];
 
 	function PageSettingsPanel() {
 		var settings = window.OmegaDesignPageSettings || {};
 
 		useEffect( keepAtTop, [] );
 
-		return createElement(
+		return createElement.apply( null, [
 			PluginDocumentSettingPanel,
 			{
 				name: 'omega-design-page-settings',
@@ -195,14 +139,9 @@
 				className: PANEL_CLASS,
 				initialOpen: true,
 			},
-			settings.HideTitleControl ? createElement( settings.HideTitleControl ) : null,
-			settings.HideHeaderControl ? createElement( settings.HideHeaderControl ) : null,
-			settings.HideFooterControl ? createElement( settings.HideFooterControl ) : null,
-			settings.FeaturedImageControl ? createElement( settings.FeaturedImageControl ) : null,
-			settings.ContentWidthControl ? createElement( settings.ContentWidthControl ) : null,
-			settings.SidebarControl ? createElement( settings.SidebarControl ) : null,
-			createElement( BackgroundColorControl )
-		);
+		].concat( PANEL_CONTROLS.map( function ( name ) {
+			return settings[ name ] ? createElement( settings[ name ] ) : null;
+		} ), [ createElement( BackgroundColorControl ) ] ) );
 	}
 
 	// This script is enqueued last in the dependency chain (title-toggle ->
@@ -213,4 +152,4 @@
 	registerPlugin( 'omega-design-page-settings', {
 		render: PageSettingsPanel,
 	} );
-} )( window.wp );
+} )( window.wp, window.OmegaDesignEditor );

@@ -7,12 +7,12 @@
  * Keywords: shop, products, woocommerce, store, editorial, lookbook, grid
  * Viewport Width: 1400
  *
- * Built from templates/shop-editorial.html by omega_pattern_shop_section(), so it
+ * Built from templates/shop-editorial.html by pattern_helpers::shop_section(), so it
  * always matches the "Editorial Grid" Shop Layout.
  */
 
 defined('ABSPATH') || exit;
 
-require_once OMEGA_DESIGN_DIR . '/includes/patterns/pattern-helpers.php';
+use OmegaDesign\patterns\pattern_helpers;
 
-echo omega_pattern_shop_section('shop-editorial', 84, __('The Collection', 'omega-design'));
+echo pattern_helpers::shop_section('shop-editorial', 84, __('The Collection', 'omega-design'));

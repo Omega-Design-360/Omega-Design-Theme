@@ -36,20 +36,22 @@
 	var wishlist = read( 'omegaWishlist', [] );
 	var collapsed = read( 'omegaFilterCollapsed', {} );
 
+	/** A toggle button's active look plus its aria-pressed state. */
+	function setPressed( btn, isPressed ) {
+		btn.classList.toggle( 'is-active', isPressed );
+		btn.setAttribute( 'aria-pressed', isPressed ? 'true' : 'false' );
+	}
+
 	function applyView() {
 		root.classList.toggle( 'is-list-view', 'list' === view );
 		root.querySelectorAll( '.omega-view-toggle__btn' ).forEach( function ( btn ) {
-			var active = btn.getAttribute( 'data-view' ) === view;
-			btn.classList.toggle( 'is-active', active );
-			btn.setAttribute( 'aria-pressed', active ? 'true' : 'false' );
+			setPressed( btn, btn.getAttribute( 'data-view' ) === view );
 		} );
 	}
 
 	function applyWishlist() {
 		root.querySelectorAll( '.omega-glass-wish' ).forEach( function ( btn ) {
-			var on = wishlist.indexOf( btn.getAttribute( 'data-product' ) ) !== -1;
-			btn.classList.toggle( 'is-active', on );
-			btn.setAttribute( 'aria-pressed', on ? 'true' : 'false' );
+			setPressed( btn, wishlist.indexOf( btn.getAttribute( 'data-product' ) ) !== -1 );
 		} );
 	}
 

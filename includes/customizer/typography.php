@@ -14,21 +14,20 @@
 
 namespace OmegaDesign\customizer;
 
+use OmegaDesign\traits\assets;
+use OmegaDesign\traits\customizer_section;
+use OmegaDesign\traits\singleton;
+
 defined('ABSPATH') || exit;
 
 class typography {
 
+    use singleton;
+    use assets;
+    use customizer_section;
+
     const HEADING_MOD = 'omega_heading_font';
     const BODY_MOD     = 'omega_body_font';
-
-    private static $instance = null;
-
-    public static function get_instance() {
-        if (null === self::$instance) {
-            self::$instance = new self();
-        }
-        return self::$instance;
-    }
 
     private function __construct() {
         // Priority 20 (after the mysite-editor plugin's own default-
@@ -40,8 +39,6 @@ class typography {
         add_action('customize_controls_enqueue_scripts', [$this, 'enqueue_control_assets']);
         add_action('wp_enqueue_scripts', [$this, 'enqueue_front_style']);
     }
-
-    public function init() {}
 
     /**
      * '' ("Theme Default") plus every registered font family - reading it
@@ -57,6 +54,22 @@ class typography {
      * particular shape.
      */
     public static function get_font_choices() {
+        // Built once per request (after init, once translations and every
+        // origin's font families are in place) - the font picker alone
+        // asks for this once per <option>.
+        static $cached = null;
+        if (null !== $cached) {
+            return $cached;
+        }
+
+        $choices = self::build_font_choices();
+        if (did_action('init')) {
+            $cached = $choices;
+        }
+        return $choices;
+    }
+
+    private static function build_font_choices() {
         $choices  = ['' => __('Theme Default', 'omega-design')];
         $families = wp_get_global_settings(['typography', 'fontFamilies']);
 
@@ -64,26 +77,38 @@ class typography {
             return $choices;
         }
 
-        $flat = [];
-        foreach ($families as $value) {
-            if (is_array($value) && isset($value['slug'])) {
-                $flat[] = $value;
-            } elseif (is_array($value)) {
-                foreach ($value as $item) {
-                    if (is_array($item) && isset($item['slug'])) {
-                        $flat[] = $item;
-                    }
-                }
-            }
-        }
-
-        foreach ($flat as $family) {
+        foreach (self::flatten_font_families($families) as $family) {
             if (!empty($family['slug']) && !empty($family['name'])) {
                 $choices[$family['slug']] = $family['name'];
             }
         }
 
         return $choices;
+    }
+
+    /**
+     * Every font family entry from either a flat list or a list grouped
+     * by origin.
+     */
+    private static function flatten_font_families(array $families) {
+        $flat = [];
+        foreach ($families as $value) {
+            if (!is_array($value)) {
+                continue;
+            }
+
+            if (isset($value['slug'])) {
+                $flat[] = $value;
+                continue;
+            }
+
+            foreach ($value as $item) {
+                if (is_array($item) && isset($item['slug'])) {
+                    $flat[] = $item;
+                }
+            }
+        }
+        return $flat;
     }
 
     /**
@@ -103,9 +128,7 @@ class typography {
     }
 
     public function sanitize_font($value) {
-        $value   = sanitize_key((string) $value);
-        $choices = self::get_font_choices();
-        return isset($choices[$value]) ? $value : '';
+        return self::sanitize_key_choice($value, self::get_font_choices(), '');
     }
 
     /**
@@ -118,32 +141,13 @@ class typography {
      * live as the dropdown changes, in both places.
      */
     public function enqueue_control_assets() {
-        $css_path = OMEGA_DESIGN_ASSETS . '/css/admin-pages.css';
-        wp_enqueue_style(
-            'omega-design-admin-pages',
-            OMEGA_DESIGN_CSS_URI . '/admin-pages.css',
-            [],
-            file_exists($css_path) ? filemtime($css_path) : OMEGA_DESIGN_ASSET_VERSION
-        );
+        // With the --wp--preset--font-family--* variables: every preview
+        // card's var(--wp--preset--font-family--{slug}) has no fallback,
+        // so without them the card would just keep showing whatever font
+        // it inherited.
+        self::enqueue_admin_pages_style(true);
 
-        // The Customizer's controls pane is a plain wp-admin page like the
-        // Settings page (see menus.php's own enqueue_admin_page_assets()),
-        // and never prints the theme.json-derived --wp--preset--font-
-        // family--* variables on its own - without this, every preview
-        // card's var(--wp--preset--font-family--{slug}) (no fallback, so a
-        // wrong font is immediately obvious rather than silently matching
-        // by coincidence) would resolve to nothing and the card would just
-        // keep showing whatever font it inherited.
-        wp_add_inline_style('omega-design-admin-pages', wp_get_global_stylesheet(['variables']));
-
-        $js_path = OMEGA_DESIGN_ASSETS . '/js/admin-typography-preview.js';
-        wp_enqueue_script(
-            'omega-design-admin-typography-preview',
-            OMEGA_DESIGN_JS_URI . '/admin-typography-preview.js',
-            [],
-            file_exists($js_path) ? filemtime($js_path) : OMEGA_DESIGN_ASSET_VERSION,
-            true
-        );
+        self::enqueue_script('omega-design-admin-typography-preview', 'js/admin-typography-preview.js', [], true);
     }
 
     public function register_customizer($wp_customize) {
@@ -159,13 +163,7 @@ class typography {
             $wp_customize->remove_section('theme_typography');
         }
 
-        if (!$wp_customize->get_panel('omega_design_panel')) {
-            $wp_customize->add_panel('omega_design_panel', [
-                'title'       => __('Omega Design', 'omega-design'),
-                'description' => __('Theme-specific options for Omega Design. General site identity, colors and layout are managed in Global Styles via the Site Editor.', 'omega-design'),
-                'priority'    => 30,
-            ]);
-        }
+        self::ensure_design_panel($wp_customize);
 
         $wp_customize->add_section('omega_typography_settings', [
             'title'       => __('Typography', 'omega-design'),
@@ -185,24 +183,26 @@ class typography {
             'transport'         => 'refresh',
         ]);
 
-        // WP_Customize_Control only exists once the Customizer's own class
-        // files have loaded, right before 'customize_register' fires - see
-        // omega_define_typography_controls()'s own comment for why this is
-        // called here rather than the classes being declared at this
-        // file's top level.
-        omega_define_typography_controls();
-
-        $wp_customize->add_control(new omega_heading_font_control($wp_customize, self::HEADING_MOD, [
+        self::add_font_control($wp_customize, self::HEADING_MOD, 'omega_heading_font', 'heading', __('Build Your Dream', 'omega-design'), [
             'label'    => __('Heading Font', 'omega-design'),
             'section'  => 'omega_typography_settings',
             'priority' => 10,
-        ]));
+        ]);
 
-        $wp_customize->add_control(new omega_body_font_control($wp_customize, self::BODY_MOD, [
+        self::add_font_control($wp_customize, self::BODY_MOD, 'omega_body_font', 'body', __('The quick brown fox jumps over the lazy dog.', 'omega-design'), [
             'label'    => __('Body Font', 'omega-design'),
             'section'  => 'omega_typography_settings',
             'priority' => 20,
-        ]));
+        ]);
+    }
+
+    /**
+     * A card_control drawing render_font_picker() for $setting_id.
+     */
+    private static function add_font_control($wp_customize, $setting_id, $type, $variant, $sample, array $args) {
+        self::add_card_control($wp_customize, $setting_id, $type, function ($current, $link_callback, $control) use ($variant, $sample) {
+            self::render_font_picker($current, [$control, 'print_link'], $sample, $variant, $control->id);
+        }, $args);
     }
 
     /**
@@ -272,73 +272,6 @@ class typography {
             $css .= 'h1,h2,h3,h4,h5,h6{font-family:' . self::get_font_family_css($heading) . ' !important;}';
         }
 
-        wp_register_style('omega-design-typography', false, [], OMEGA_DESIGN_ASSET_VERSION);
-        wp_enqueue_style('omega-design-typography');
-        wp_add_inline_style('omega-design-typography', $css);
-    }
-}
-
-/**
- * Declared lazily (called from register_customizer(), which only ever runs
- * on 'customize_register') rather than at this file's top level, since
- * WP_Customize_Control doesn't exist yet when this file is first required
- * during theme bootstrap - the same fatal-error trap the color_mode
- * control hit before this pattern was established (see
- * includes/customizer/color_mode.php's own version of this function).
- */
-function omega_define_typography_controls() {
-    if (class_exists(__NAMESPACE__ . '\\omega_heading_font_control')) {
-        return;
-    }
-
-    class omega_heading_font_control extends \WP_Customize_Control {
-        public $type = 'omega_heading_font';
-
-        public function render_content() {
-            ?>
-            <?php if ($this->label) : ?>
-                <span class="customize-control-title"><?php echo esc_html($this->label); ?></span>
-            <?php endif; ?>
-            <?php if ($this->description) : ?>
-                <span class="description customize-control-description"><?php echo esc_html($this->description); ?></span>
-            <?php endif; ?>
-            <?php
-            $control = $this;
-            typography::render_font_picker(
-                $this->value(),
-                function () use ($control) {
-                    $control->link();
-                },
-                __('Build Your Dream', 'omega-design'),
-                'heading',
-                $this->id
-            );
-            ?>
-            <?php
-        }
-    }
-
-    class omega_body_font_control extends \WP_Customize_Control {
-        public $type = 'omega_body_font';
-
-        public function render_content() {
-            ?>
-            <?php if ($this->label) : ?>
-                <span class="customize-control-title"><?php echo esc_html($this->label); ?></span>
-            <?php endif; ?>
-            <?php
-            $control = $this;
-            typography::render_font_picker(
-                $this->value(),
-                function () use ($control) {
-                    $control->link();
-                },
-                __('The quick brown fox jumps over the lazy dog.', 'omega-design'),
-                'body',
-                $this->id
-            );
-            ?>
-            <?php
-        }
+        self::enqueue_inline_style('omega-design-typography', $css);
     }
 }

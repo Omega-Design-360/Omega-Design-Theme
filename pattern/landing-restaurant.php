@@ -5,7 +5,6 @@
  * Categories: omega-design-general
  * Description: A full restaurant landing page - photo hero, a menu-category icon row, a special-offer split, an about section, a signature dishes grid, testimonials + a reservation card, and a blog + newsletter row. Every image, heading and line of copy is editable after inserting.
  * Keywords: landing page, restaurant, dining, menu, reservation, hero
- * Block Types: core/post-content
  * Viewport Width: 1400
  *
  * Every block below sticks to a small, deliberately boring vocabulary of

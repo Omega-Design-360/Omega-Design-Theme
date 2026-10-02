@@ -9,7 +9,7 @@
 
 defined('ABSPATH') || exit;
 
-require_once OMEGA_DESIGN_INCLUDES . '/patterns/pattern-helpers.php';
+use OmegaDesign\patterns\pattern_helpers;
 ?>
 <!-- wp:group {"align":"wide","style":{"spacing":{"padding":{"top":"var:preset|spacing|l","bottom":"var:preset|spacing|l"}}}} -->
 <div class="wp-block-group alignwide" style="padding-top:var(--wp--preset--spacing--l);padding-bottom:var(--wp--preset--spacing--l)">
@@ -29,7 +29,7 @@ $brands = [
 ];
 foreach ($brands as $brand) :
 	?>
-<!-- wp:image {"className":"omega-brand-row__item","sizeSlug":"thumbnail"} --><figure class="wp-block-image size-thumbnail omega-brand-row__item"><img src="<?php echo esc_url(omega_pattern_fashion_asset('brands/' . $brand['file'])); ?>" alt="<?php echo esc_attr($brand['name']); ?>"/></figure><!-- /wp:image -->
+<!-- wp:image {"className":"omega-brand-row__item","sizeSlug":"thumbnail"} --><figure class="wp-block-image size-thumbnail omega-brand-row__item"><img src="<?php echo esc_url(pattern_helpers::fashion_asset('brands/' . $brand['file'])); ?>" alt="<?php echo esc_attr($brand['name']); ?>"/></figure><!-- /wp:image -->
 <?php endforeach; ?>
 </div>
 <!-- /wp:group -->

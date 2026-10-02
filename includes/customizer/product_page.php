@@ -18,27 +18,22 @@
 
 namespace OmegaDesign\customizer;
 
+use OmegaDesign\traits\assets;
+use OmegaDesign\traits\singleton;
+
 defined('ABSPATH') || exit;
 
 class product_page {
 
-    private static $instance = null;
+    use singleton;
+    use assets;
 
     const LAYOUTS = ['gallery-feature', 'command-deck', 'split-stage', 'spec-sheet', 'boutique'];
-
-    public static function get_instance() {
-        if (null === self::$instance) {
-            self::$instance = new self();
-        }
-        return self::$instance;
-    }
 
     private function __construct() {
         add_filter('render_block', [$this, 'maybe_render_layout'], 10, 2);
         add_action('wp_enqueue_scripts', [$this, 'enqueue_assets']);
     }
-
-    public function init() {}
 
     public static function style_choices() {
         return [
@@ -60,26 +55,8 @@ class product_page {
             return;
         }
 
-        $css_path = get_template_directory() . '/assets/css/product-page-layouts.css';
-        if (file_exists($css_path)) {
-            wp_enqueue_style(
-                'omega-design-product-page',
-                get_template_directory_uri() . '/assets/css/product-page-layouts.css',
-                [],
-                filemtime($css_path)
-            );
-        }
-
-        $js_path = get_template_directory() . '/assets/js/product-page-interactions.js';
-        if (file_exists($js_path)) {
-            wp_enqueue_script(
-                'omega-design-product-page',
-                get_template_directory_uri() . '/assets/js/product-page-interactions.js',
-                [],
-                filemtime($js_path),
-                true
-            );
-        }
+        self::enqueue_style('omega-design-product-page', 'css/product-page-layouts.css');
+        self::enqueue_script('omega-design-product-page', 'js/product-page-interactions.js', [], true);
 
         // The Related Products carousel reuses the theme's own slider engine
         // (blocks/omega-slider/view.js + style.css) directly - registered

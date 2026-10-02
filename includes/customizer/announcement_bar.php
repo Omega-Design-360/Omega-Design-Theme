@@ -13,28 +13,27 @@
 
 namespace OmegaDesign\customizer;
 
+use OmegaDesign\traits\assets;
+use OmegaDesign\traits\singleton;
+
 defined('ABSPATH') || exit;
 
 class announcement_bar {
 
-    private static $instance = null;
-
-    public static function get_instance() {
-        if (null === self::$instance) {
-            self::$instance = new self();
-        }
-        return self::$instance;
-    }
+    use singleton;
+    use assets;
 
     private function __construct() {
         add_action('wp_body_open', [$this, 'render_bar']);
         add_action('wp_enqueue_scripts', [$this, 'enqueue_assets']);
     }
 
-    public function init() {}
-
     public static function is_enabled() {
         return (bool) get_theme_mod('omega_announcement_enabled', false);
+    }
+
+    private static function is_dismissible() {
+        return (bool) get_theme_mod('omega_announcement_dismissible', true);
     }
 
     public function enqueue_assets() {
@@ -42,27 +41,10 @@ class announcement_bar {
             return;
         }
 
-        $css_path = get_template_directory() . '/assets/css/announcement-bar.css';
-        if (file_exists($css_path)) {
-            wp_enqueue_style(
-                'omega-design-announcement-bar',
-                get_template_directory_uri() . '/assets/css/announcement-bar.css',
-                [],
-                filemtime($css_path)
-            );
-        }
+        self::enqueue_style('omega-design-announcement-bar', 'css/announcement-bar.css');
 
-        if (get_theme_mod('omega_announcement_dismissible', true)) {
-            $js_path = get_template_directory() . '/assets/js/announcement-bar.js';
-            if (file_exists($js_path)) {
-                wp_enqueue_script(
-                    'omega-design-announcement-bar',
-                    get_template_directory_uri() . '/assets/js/announcement-bar.js',
-                    [],
-                    filemtime($js_path),
-                    true
-                );
-            }
+        if (self::is_dismissible()) {
+            self::enqueue_script('omega-design-announcement-bar', 'js/announcement-bar.js', [], true);
         }
     }
 
@@ -82,10 +64,24 @@ class announcement_bar {
             return;
         }
 
-        $bg          = get_theme_mod('omega_announcement_bg', '');
-        $text_color  = get_theme_mod('omega_announcement_text_color', '');
-        $dismissible = (bool) get_theme_mod('omega_announcement_dismissible', true);
+        $style = self::bar_style(
+            get_theme_mod('omega_announcement_bg', ''),
+            get_theme_mod('omega_announcement_text_color', '')
+        );
 
+        echo '<div id="omega-announcement-bar" class="omega-announcement-bar"' . ($style ? ' style="' . esc_attr($style) . '"' : '') . '>';
+        echo '<div class="omega-announcement-bar__inner">';
+        echo $content; // phpcs:ignore -- trusted admin-authored HTML, see docblock.
+        if (self::is_dismissible()) {
+            echo self::dismiss_button_html();
+        }
+        echo '</div></div>';
+    }
+
+    /**
+     * Inline background/text color declarations for the admin-set colors.
+     */
+    private static function bar_style($bg, $text_color) {
         $style = '';
         if ($bg) {
             $style .= 'background-color:' . esc_attr($bg) . ';';
@@ -93,14 +89,11 @@ class announcement_bar {
         if ($text_color) {
             $style .= 'color:' . esc_attr($text_color) . ';';
         }
+        return $style;
+    }
 
-        echo '<div id="omega-announcement-bar" class="omega-announcement-bar"' . ($style ? ' style="' . esc_attr($style) . '"' : '') . '>';
-        echo '<div class="omega-announcement-bar__inner">';
-        echo $content; // phpcs:ignore -- trusted admin-authored HTML, see docblock.
-        if ($dismissible) {
-            echo '<button type="button" class="omega-announcement-bar__dismiss" aria-label="' . esc_attr__('Dismiss', 'omega-design') . '">&times;</button>';
-        }
-        echo '</div></div>';
+    private static function dismiss_button_html() {
+        return '<button type="button" class="omega-announcement-bar__dismiss" aria-label="' . esc_attr__('Dismiss', 'omega-design') . '">&times;</button>';
     }
 }
 

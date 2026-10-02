@@ -17,6 +17,14 @@
 		return;
 	}
 
+	function restartAnimation(el, className) {
+		el.classList.remove(className);
+		// Reading offsetWidth forces layout, so re-adding the class in the
+		// same tick still restarts the CSS animation instead of no-op'ing.
+		void el.offsetWidth;
+		el.classList.add(className);
+	}
+
 	document.addEventListener('click', function (event) {
 		var button = event.target.closest('.wc-block-components-quantity-selector__button');
 		if (!button) {
@@ -29,9 +37,7 @@
 			return;
 		}
 
-		input.classList.remove('omega-cart-qty-pop');
-		void input.offsetWidth;
-		input.classList.add('omega-cart-qty-pop');
+		restartAnimation(input, 'omega-cart-qty-pop');
 	});
 
 	// Optimistic fade the instant "Remove" is clicked - see the CSS comment
@@ -65,9 +71,7 @@
 				return;
 			}
 			lastText = totalValue.textContent;
-			totalValue.classList.remove('omega-cart-total-pulse');
-			void totalValue.offsetWidth;
-			totalValue.classList.add('omega-cart-total-pulse');
+			restartAnimation(totalValue, 'omega-cart-total-pulse');
 		});
 		totalsObserver.observe(totalValue, { childList: true, characterData: true, subtree: true });
 	}

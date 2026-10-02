@@ -23,6 +23,18 @@
 
 		var emptyPlaceholder = contentEl.getAttribute('data-empty-text') || contentEl.textContent;
 
+		/** A field's current value, or '' when the field is missing or empty. */
+		function fieldValue(field) {
+			return field && field.value ? field.value : '';
+		}
+
+		/** Binds handler to a field's event - fields a given form omits are skipped. */
+		function listen(field, eventName, handler) {
+			if (field) {
+				field.addEventListener(eventName, handler);
+			}
+		}
+
 		function updateContent() {
 			if (!contentField) {
 				return;
@@ -40,8 +52,8 @@
 		}
 
 		function updateColors() {
-			bar.style.backgroundColor = bgField && bgField.value ? bgField.value : '';
-			bar.style.color = textColorField && textColorField.value ? textColorField.value : '';
+			bar.style.backgroundColor = fieldValue(bgField);
+			bar.style.color = fieldValue(textColorField);
 		}
 
 		function updateDismissible() {
@@ -57,18 +69,10 @@
 			dismissBtn.style.display = dismissibleField.checked ? '' : 'none';
 		}
 
-		if (contentField) {
-			contentField.addEventListener('input', updateContent);
-		}
-		if (bgField) {
-			bgField.addEventListener('input', updateColors);
-		}
-		if (textColorField) {
-			textColorField.addEventListener('input', updateColors);
-		}
-		if (dismissibleField) {
-			dismissibleField.addEventListener('change', updateDismissible);
-		}
+		listen(contentField, 'input', updateContent);
+		listen(bgField, 'input', updateColors);
+		listen(textColorField, 'input', updateColors);
+		listen(dismissibleField, 'change', updateDismissible);
 	}
 
 	if (document.readyState === 'loading') {

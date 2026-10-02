@@ -1,18 +1,12 @@
-( function ( wp ) {
-	if ( ! wp || ! wp.plugins || ! wp.editPost ) {
+( function ( wp, editor ) {
+	if ( ! wp || ! wp.plugins || ! wp.editPost || ! editor ) {
 		return;
 	}
 
 	var SelectControl = wp.components.SelectControl;
 	var BaseControl = wp.components.BaseControl;
-	var withSelect = wp.data.withSelect;
-	var withDispatch = wp.data.withDispatch;
-	var compose = wp.compose.compose;
 	var createElement = wp.element.createElement;
 	var __ = wp.i18n.__;
-
-	var MODE_META_KEY = 'omega_sidebar_mode';
-	var TEMPLATE_META_KEY = 'omega_sidebar_template';
 
 	var MODE_OPTIONS = [
 		{ label: __( 'Use site default', 'omega-design' ), value: '' },
@@ -42,29 +36,10 @@
 	 * post/page editor canvas never shows it, so there's nothing to live-
 	 * preview here. The help text says so plainly instead of pretending.
 	 */
-	var SidebarControl = compose(
-		withSelect( function ( select ) {
-			var meta = select( 'core/editor' ).getEditedPostAttribute( 'meta' ) || {};
-			return {
-				mode: meta[ MODE_META_KEY ] || '',
-				template: meta[ TEMPLATE_META_KEY ] || '',
-			};
-		} ),
-		withDispatch( function ( dispatch ) {
-			return {
-				setMode: function ( value ) {
-					var meta = {};
-					meta[ MODE_META_KEY ] = value;
-					dispatch( 'core/editor' ).editPost( { meta: meta } );
-				},
-				setTemplate: function ( value ) {
-					var meta = {};
-					meta[ TEMPLATE_META_KEY ] = value;
-					dispatch( 'core/editor' ).editPost( { meta: meta } );
-				},
-			};
-		} )
-	)( function ( props ) {
+	var SidebarControl = editor.withPostMeta( {
+		mode: editor.textMeta( 'omega_sidebar_mode' ),
+		template: editor.textMeta( 'omega_sidebar_template' ),
+	} )( function ( props ) {
 		return createElement(
 			BaseControl,
 			{ label: __( 'Sidebar', 'omega-design' ), __nextHasNoMarginBottom: true },
@@ -92,6 +67,5 @@
 		);
 	} );
 
-	window.OmegaDesignPageSettings = window.OmegaDesignPageSettings || {};
-	window.OmegaDesignPageSettings.SidebarControl = SidebarControl;
-} )( window.wp );
+	editor.registerPageSetting( 'SidebarControl', SidebarControl );
+} )( window.wp, window.OmegaDesignEditor );

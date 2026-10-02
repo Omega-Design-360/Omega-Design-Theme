@@ -19,11 +19,20 @@
 
 namespace OmegaDesign\customizer;
 
+use OmegaDesign\core\dark_logo;
+use OmegaDesign\traits\assets;
+use OmegaDesign\traits\classic_template_part;
+use OmegaDesign\traits\customizer_section;
+use OmegaDesign\traits\singleton;
+
 defined('ABSPATH') || exit;
 
 class classic_header {
 
-    private static $instance = null;
+    use singleton;
+    use assets;
+    use customizer_section;
+    use classic_template_part;
 
     const STYLES = ['classic-1', 'classic-2', 'classic-3', 'classic-4', 'classic-5'];
 
@@ -65,12 +74,20 @@ class classic_header {
         'spacious' => 'Spacious',
     ];
 
-    public static function get_instance() {
-        if (null === self::$instance) {
-            self::$instance = new self();
-        }
-        return self::$instance;
-    }
+    /** Font-size choice => CSS value (theme.json presets, with fallbacks). */
+    const FONT_SIZE_VALUES = [
+        'small'   => 'var(--wp--preset--font-size--small, 0.875rem)',
+        'medium'  => 'var(--wp--preset--font-size--medium, 1rem)',
+        'large'   => 'var(--wp--preset--font-size--large, 1.25rem)',
+        'x-large' => 'var(--wp--preset--font-size--x-large, 1.75rem)',
+    ];
+
+    /** Height choice => vertical padding of the header's inner row. */
+    const HEIGHT_VALUES = [
+        'compact'  => '0.55rem',
+        'regular'  => '1rem',
+        'spacious' => '1.6rem',
+    ];
 
     private function __construct() {
         add_filter('render_block_core/template-part', [$this, 'maybe_render_classic_header'], 10, 2);
@@ -84,8 +101,6 @@ class classic_header {
         add_action('customize_controls_enqueue_scripts', [$this, 'enqueue_control_assets']);
     }
 
-    public function init() {}
-
     /**
      * The theme's own Settings page (menus.php) draws the same preview
      * cards with this same markup/CSS (.omega-header-style-grid, admin-
@@ -94,13 +109,7 @@ class classic_header {
      * as Settings, matching the Color Scheme/Color Mode/Sidebar pickers.
      */
     public function enqueue_control_assets() {
-        $css_path = OMEGA_DESIGN_ASSETS . '/css/admin-pages.css';
-        wp_enqueue_style(
-            'omega-design-admin-pages',
-            OMEGA_DESIGN_CSS_URI . '/admin-pages.css',
-            [],
-            file_exists($css_path) ? filemtime($css_path) : OMEGA_DESIGN_ASSET_VERSION
-        );
+        self::enqueue_admin_pages_style(false);
     }
 
     public function register_customizer($wp_customize) {
@@ -115,13 +124,7 @@ class classic_header {
             $wp_customize->remove_section('header_options');
         }
 
-        if (!$wp_customize->get_panel('omega_design_panel')) {
-            $wp_customize->add_panel('omega_design_panel', [
-                'title'       => __('Omega Design', 'omega-design'),
-                'description' => __('Theme-specific options for Omega Design.', 'omega-design'),
-                'priority'    => 30,
-            ]);
-        }
+        self::ensure_design_panel($wp_customize);
 
         $wp_customize->add_section('omega_header_style_settings', [
             'title'       => __('Header Style', 'omega-design'),
@@ -136,17 +139,10 @@ class classic_header {
             'transport'         => 'refresh',
         ]);
 
-        // WP_Customize_Control only exists once the Customizer's own class
-        // files have loaded, right before 'customize_register' fires - see
-        // omega_define_header_style_control()'s own comment for why this
-        // is called here rather than the class being declared at this
-        // file's top level.
-        omega_define_header_style_control();
-
-        $wp_customize->add_control(new omega_header_style_control($wp_customize, 'omega_nav_mode', [
+        self::add_card_control($wp_customize, 'omega_nav_mode', 'omega_header_style', [__CLASS__, 'render_style_cards'], [
             'label'   => __('Header Style', 'omega-design'),
             'section' => 'omega_header_style_settings',
-        ]));
+        ]);
     }
 
     public function sanitize_nav_mode($value) {
@@ -166,8 +162,7 @@ class classic_header {
     }
 
     private function active_style() {
-        $mode = self::normalize_mode(get_theme_mod('omega_nav_mode', 'block'));
-        return in_array($mode, self::STYLES, true) ? $mode : '';
+        return self::classic_style_or_empty(self::normalize_mode(get_theme_mod('omega_nav_mode', 'block')));
     }
 
     /**
@@ -195,94 +190,86 @@ class classic_header {
      * arrangement, pill nav vs. plain, dark bar, ...) instead of the plain
      * <select> full of text labels an admin can't visually tell apart from
      * one another. Shared by both the Settings page (menus.php) and the
-     * native Customizer control below. $link_callback receives each
-     * style's key and must echo whatever attributes bind that <input> to
-     * its context - a plain name="omega_nav_mode" for the POST form, or
-     * the Customizer's own name + $this->link() for two-way JS binding.
+     * native Customizer control.
      */
     public static function render_style_cards($current, $link_callback) {
-        $labels = self::style_choices();
+        self::render_radio_card_grid('omega-header-style', self::style_choices(), $current, $link_callback, [__CLASS__, 'render_style_card_body']);
+    }
 
+    public static function render_style_card_body($key, $label) {
+        self::render_card_radio_dot('omega-header-style');
+        self::render_style_preview($key);
         ?>
-        <div class="omega-header-style-grid">
-            <?php foreach ($labels as $key => $label) : ?>
-                <label class="omega-header-style-card">
-                    <input
-                        type="radio"
-                        <?php call_user_func($link_callback, $key); ?>
-                        value="<?php echo esc_attr($key); ?>"
-                        <?php checked($current, $key); ?>
-                        class="omega-header-style-card__input"
-                    />
-                    <span class="omega-header-style-card__radio"></span>
+        <span class="omega-header-style-card__title"><?php echo esc_html($label); ?></span>
+        <?php
+    }
 
-                    <?php if ('block' === $key) : ?>
-                        <span class="omega-header-style-card__preview">
-                            <span class="omega-header-style-card__blocks-icon">
-                                <span></span><span></span><span></span>
-                                <span></span><span></span><span></span>
-                            </span>
-                        </span>
-                    <?php elseif ('classic-2' === $key) : ?>
-                        <span class="omega-header-style-card__preview omega-header-style-card__preview--centered">
-                            <span class="omega-header-style-card__logo"></span>
-                            <span class="omega-header-style-card__divider"></span>
-                            <span class="omega-header-style-card__nav">
-                                <span class="omega-header-style-card__nav-item"></span>
-                                <span class="omega-header-style-card__nav-item"></span>
-                                <span class="omega-header-style-card__nav-item"></span>
-                            </span>
-                        </span>
-                    <?php elseif ('classic-3' === $key) : ?>
-                        <span class="omega-header-style-card__preview">
-                            <span class="omega-header-style-card__row">
-                                <span class="omega-header-style-card__logo"></span>
-                                <span class="omega-header-style-card__nav">
-                                    <span class="omega-header-style-card__nav-item"></span>
-                                    <span class="omega-header-style-card__nav-item"></span>
-                                    <span class="omega-header-style-card__nav-item omega-header-style-card__nav-item--btn"></span>
-                                </span>
-                            </span>
-                        </span>
-                    <?php elseif ('classic-4' === $key) : ?>
-                        <span class="omega-header-style-card__preview">
-                            <span class="omega-header-style-card__row">
-                                <span class="omega-header-style-card__logo"></span>
-                                <span class="omega-header-style-card__nav omega-header-style-card__nav--boxed">
-                                    <span class="omega-header-style-card__nav-item omega-header-style-card__nav-item--active"></span>
-                                    <span class="omega-header-style-card__nav-item"></span>
-                                    <span class="omega-header-style-card__nav-item"></span>
-                                </span>
-                            </span>
-                        </span>
-                    <?php elseif ('classic-5' === $key) : ?>
-                        <span class="omega-header-style-card__preview omega-header-style-card__preview--dark">
-                            <span class="omega-header-style-card__row">
-                                <span class="omega-header-style-card__logo"></span>
-                                <span class="omega-header-style-card__nav">
-                                    <span class="omega-header-style-card__nav-item"></span>
-                                    <span class="omega-header-style-card__nav-item"></span>
-                                    <span class="omega-header-style-card__nav-item"></span>
-                                </span>
-                            </span>
-                        </span>
-                    <?php else : /* classic-1: the plain, roomy logo-left/nav-right base layout. */ ?>
-                        <span class="omega-header-style-card__preview">
-                            <span class="omega-header-style-card__row">
-                                <span class="omega-header-style-card__logo"></span>
-                                <span class="omega-header-style-card__nav">
-                                    <span class="omega-header-style-card__nav-item"></span>
-                                    <span class="omega-header-style-card__nav-item"></span>
-                                    <span class="omega-header-style-card__nav-item"></span>
-                                </span>
-                            </span>
-                        </span>
-                    <?php endif; ?>
+    private static function render_style_preview($key) {
+        switch ($key) {
+            case 'block':
+                self::render_block_preview();
+                break;
+            case 'classic-2':
+                self::render_centered_preview();
+                break;
+            case 'classic-3':
+                self::render_row_preview('', '', ['', '', '--btn']);
+                break;
+            case 'classic-4':
+                self::render_row_preview('', ' omega-header-style-card__nav--boxed', ['--active', '', '']);
+                break;
+            case 'classic-5':
+                self::render_row_preview(' omega-header-style-card__preview--dark', '', ['', '', '']);
+                break;
+            default:
+                // classic-1: the plain, roomy logo-left/nav-right base layout.
+                self::render_row_preview('', '', ['', '', '']);
+        }
+    }
 
-                    <span class="omega-header-style-card__title"><?php echo esc_html($label); ?></span>
-                </label>
+    private static function render_block_preview() {
+        ?>
+        <span class="omega-header-style-card__preview">
+            <span class="omega-header-style-card__blocks-icon">
+                <span></span><span></span><span></span>
+                <span></span><span></span><span></span>
+            </span>
+        </span>
+        <?php
+    }
+
+    private static function render_centered_preview() {
+        ?>
+        <span class="omega-header-style-card__preview omega-header-style-card__preview--centered">
+            <span class="omega-header-style-card__logo"></span>
+            <span class="omega-header-style-card__divider"></span>
+            <?php self::render_nav_preview('', ['', '', '']); ?>
+        </span>
+        <?php
+    }
+
+    /**
+     * Logo-left / nav-right row. $item_modifiers holds one BEM modifier
+     * suffix per nav item ('' for a plain item, e.g. '--btn').
+     */
+    private static function render_row_preview($preview_class, $nav_class, array $item_modifiers) {
+        ?>
+        <span class="omega-header-style-card__preview<?php echo esc_attr($preview_class); ?>">
+            <span class="omega-header-style-card__row">
+                <span class="omega-header-style-card__logo"></span>
+                <?php self::render_nav_preview($nav_class, $item_modifiers); ?>
+            </span>
+        </span>
+        <?php
+    }
+
+    private static function render_nav_preview($nav_class, array $item_modifiers) {
+        ?>
+        <span class="omega-header-style-card__nav<?php echo esc_attr($nav_class); ?>">
+            <?php foreach ($item_modifiers as $modifier) : ?>
+                <span class="omega-header-style-card__nav-item<?php echo $modifier ? esc_attr(' omega-header-style-card__nav-item' . $modifier) : ''; ?>"></span>
             <?php endforeach; ?>
-        </div>
+        </span>
         <?php
     }
 
@@ -291,39 +278,17 @@ class classic_header {
             return;
         }
 
-        // filemtime() as the *primary* version, not a fallback - `$ver ??
-        // filemtime(...)` never actually ran filemtime() at all, since
-        // OMEGA_DESIGN_VERSION is a constant that's never null, so every
-        // CSS/JS edit here kept enqueuing under the exact same unchanged
-        // version string and browsers had every reason to keep serving a
-        // stale cached copy instead of re-fetching. Matches hooks.php's own
-        // asset_version() helper, which gets this right already.
-
-        $css_path = get_template_directory() . '/assets/css/classic-header.css';
-        if (file_exists($css_path)) {
-            wp_enqueue_style(
-                'omega-design-classic-header',
-                get_template_directory_uri() . '/assets/css/classic-header.css',
-                [],
-                filemtime($css_path)
-            );
-
+        // filemtime() as the *primary* version (see traits\assets), so every
+        // CSS/JS edit here is re-fetched by browsers instead of served from
+        // a stale cached copy under an unchanged theme version string.
+        if (self::enqueue_style('omega-design-classic-header', 'css/classic-header.css')) {
             $custom_css = $this->custom_style_css();
             if ('' !== $custom_css) {
                 wp_add_inline_style('omega-design-classic-header', $custom_css);
             }
         }
 
-        $js_path = get_template_directory() . '/assets/js/classic-header.js';
-        if (file_exists($js_path)) {
-            wp_enqueue_script(
-                'omega-design-classic-header',
-                get_template_directory_uri() . '/assets/js/classic-header.js',
-                [],
-                filemtime($js_path),
-                true
-            );
-        }
+        self::enqueue_script('omega-design-classic-header', 'js/classic-header.js', [], true);
     }
 
     /**
@@ -339,45 +304,52 @@ class classic_header {
      * explicit admin choice here should always be the final word.
      */
     private function custom_style_css() {
-        $rules = [];
-
-        $bg_color = trim((string) get_theme_mod('omega_header_bg_color', ''));
-        if ('' !== $bg_color) {
-            $rules[] = '.omega-classic-header{background:' . $bg_color . ' !important;}';
-        }
-
-        $text_color = trim((string) get_theme_mod('omega_header_text_color', ''));
-        if ('' !== $text_color) {
-            $rules[] = '.omega-classic-header{color:' . $text_color . ' !important;}';
-        }
-
-        $font_family = trim((string) get_theme_mod('omega_header_font_family', ''));
-        if ('' !== $font_family) {
-            $rules[] = '.omega-classic-header{font-family:' . $font_family . ' !important;}';
-        }
-
-        $font_size_map = [
-            'small'   => 'var(--wp--preset--font-size--small, 0.875rem)',
-            'medium'  => 'var(--wp--preset--font-size--medium, 1rem)',
-            'large'   => 'var(--wp--preset--font-size--large, 1.25rem)',
-            'x-large' => 'var(--wp--preset--font-size--x-large, 1.75rem)',
+        $rules = [
+            self::theme_mod_rule('omega_header_bg_color', '.omega-classic-header', 'background'),
+            self::theme_mod_rule('omega_header_text_color', '.omega-classic-header', 'color'),
+            self::theme_mod_rule('omega_header_font_family', '.omega-classic-header', 'font-family'),
         ];
-        $font_size = self::sanitize_choice(get_theme_mod('omega_header_font_size', 'default'), self::FONT_SIZE_CHOICES, 'default');
-        if (isset($font_size_map[$font_size])) {
-            $rules[] = '.omega-classic-header__nav a{font-size:' . $font_size_map[$font_size] . ' !important;}';
+
+        $font_size = self::choice_value('omega_header_font_size', self::FONT_SIZE_CHOICES, self::FONT_SIZE_VALUES);
+        if ('' !== $font_size) {
+            $rules[] = self::important_rule('.omega-classic-header__nav a', ['font-size' => $font_size]);
         }
 
-        $height_map = [
-            'compact'  => '0.55rem',
-            'regular'  => '1rem',
-            'spacious' => '1.6rem',
-        ];
-        $height = self::sanitize_choice(get_theme_mod('omega_header_height', 'default'), self::HEIGHT_CHOICES, 'default');
-        if (isset($height_map[$height])) {
-            $rules[] = '.omega-classic-header .omega-classic-header__inner{padding-top:' . $height_map[$height] . ' !important;padding-bottom:' . $height_map[$height] . ' !important;}';
+        $padding = self::choice_value('omega_header_height', self::HEIGHT_CHOICES, self::HEIGHT_VALUES);
+        if ('' !== $padding) {
+            $rules[] = self::important_rule('.omega-classic-header .omega-classic-header__inner', [
+                'padding-top'    => $padding,
+                'padding-bottom' => $padding,
+            ]);
         }
 
         return implode('', $rules);
+    }
+
+    /**
+     * "selector{property:value !important;}" for a free-text theme mod, or
+     * '' when it's blank.
+     */
+    private static function theme_mod_rule($theme_mod, $selector, $property) {
+        $value = trim((string) get_theme_mod($theme_mod, ''));
+        return '' === $value ? '' : self::important_rule($selector, [$property => $value]);
+    }
+
+    /**
+     * The CSS value mapped to a choice theme mod's (sanitized) value, or ''
+     * for "default"/anything without a mapping.
+     */
+    private static function choice_value($theme_mod, array $choices, array $values) {
+        $choice = self::sanitize_choice(get_theme_mod($theme_mod, 'default'), $choices, 'default');
+        return $values[$choice] ?? '';
+    }
+
+    private static function important_rule($selector, array $declarations) {
+        $css = '';
+        foreach ($declarations as $property => $value) {
+            $css .= $property . ':' . $value . ' !important;';
+        }
+        return $selector . '{' . $css . '}';
     }
 
     /**
@@ -388,7 +360,7 @@ class classic_header {
      * this region of the page at all.
      */
     public function maybe_render_classic_header($block_content, $block) {
-        if ('header' !== ($block['attrs']['slug'] ?? '')) {
+        if (!self::is_template_part($block, 'header')) {
             return $block_content;
         }
 
@@ -406,121 +378,41 @@ class classic_header {
             return $block_content;
         }
 
-        $template_file = self::TEMPLATE_FILES[$style] ?? '';
-        $template_path = get_template_directory() . '/template-parts/classic-header/' . $template_file;
-        if ('' === $template_file || !file_exists($template_path)) {
+        $template_path = self::style_template_path('classic-header', $style);
+        if ('' === $template_path) {
             return $block_content;
         }
 
-        $menu_id  = (int) get_theme_mod('omega_classic_menu_id', 0);
-        $nav_html = '';
-        if ($menu_id && wp_get_nav_menu_object($menu_id)) {
-            $nav_html = (string) wp_nav_menu([
-                'menu'        => $menu_id,
-                'echo'        => false,
-                'container'   => false,
-                'fallback_cb' => false,
-            ]);
-        }
+        return self::render_template_file($template_path, $this->template_vars());
+    }
 
-        $brand_html    = $this->brand_html();
-        $sticky        = (bool) get_theme_mod('omega_header_sticky', false);
-        $wc_icons_html = class_exists('OmegaDesign\\customizer\\woocommerce_header')
-            ? woocommerce_header::get_instance()->icons_html()
-            : '';
-
-        ob_start();
-        include $template_path;
-        return (string) ob_get_clean();
+    /**
+     * Variables every classic header template file reads.
+     */
+    private function template_vars() {
+        return [
+            'nav_html'      => self::classic_menu_html('omega_classic_menu_id'),
+            'brand_html'    => $this->brand_html(),
+            'sticky'        => (bool) get_theme_mod('omega_header_sticky', false),
+            'wc_icons_html' => class_exists('OmegaDesign\\customizer\\woocommerce_header')
+                ? woocommerce_header::get_instance()->icons_html()
+                : '',
+        ];
     }
 
     /**
      * The site's own logo (Customizer/Settings > Site Identity -
      * has_custom_logo()/get_custom_logo() are core WordPress, so this
-     * works on any site the moment an admin sets one) if one is set,
-     * falling back to the site title as a plain link otherwise. Never
-     * assumes either exists.
+     * works on any site the moment an admin sets one) if one is set, with
+     * its dark mode variant (core\dark_logo), falling back to the site
+     * title as a plain link otherwise. Never assumes either exists.
      */
     private function brand_html() {
         if (has_custom_logo()) {
-            return $this->with_dark_logo_variant(get_custom_logo());
+            return dark_logo::add_variant(get_custom_logo());
         }
 
         return '<a class="omega-classic-header__title" href="' . esc_url(home_url('/')) . '">' . get_bloginfo('name') . '</a>';
-    }
-
-    /**
-     * Duplicates get_custom_logo()'s <img> into a light/dark pair - same
-     * mechanism, theme_mod ('omega_custom_logo_dark', set from the Omega
-     * Design dashboard) and .omega-logo-light/.omega-logo-dark CSS classes
-     * as hooks.php's inject_dark_mode_logo() already uses for the
-     * block-based core/site-logo, so a dark logo uploaded once applies
-     * here too rather than only to the block-editor header. color-mode.css
-     * shows/hides whichever one matches the active color mode; no CSS
-     * changes needed to support this.
-     */
-    private function with_dark_logo_variant($logo_html) {
-        $dark_logo_id = (int) get_theme_mod('omega_custom_logo_dark');
-
-        if (!$dark_logo_id || strpos($logo_html, 'custom-logo') === false) {
-            return $logo_html;
-        }
-
-        $dark_image = wp_get_attachment_image($dark_logo_id, 'full', false, [
-            'class' => 'custom-logo omega-logo-dark',
-        ]);
-
-        $with_dark_logo = preg_replace_callback(
-            '/<img\b[^>]*\bclass="[^"]*\bcustom-logo\b[^"]*"[^>]*\/?>/i',
-            function ($matches) use ($dark_image) {
-                $light_image = preg_replace('/class="([^"]*)"/', 'class="$1 omega-logo-light"', $matches[0], 1);
-                return $light_image . $dark_image;
-            },
-            $logo_html,
-            1
-        );
-
-        return null !== $with_dark_logo ? $with_dark_logo : $logo_html;
-    }
-}
-
-/**
- * Declared lazily (called from register_customizer(), which only ever runs
- * on 'customize_register') rather than at this file's top level, since
- * WP_Customize_Control doesn't exist yet when this file is first required
- * during theme bootstrap - the same fatal-error trap the color_scheme
- * control hit before this pattern was established (see
- * includes/customizer/color_scheme.php's own version of this function).
- */
-function omega_define_header_style_control() {
-    if (class_exists(__NAMESPACE__ . '\\omega_header_style_control')) {
-        return;
-    }
-
-    class omega_header_style_control extends \WP_Customize_Control {
-        public $type = 'omega_header_style';
-
-        public function render_content() {
-            ?>
-            <?php if ($this->label) : ?>
-                <span class="customize-control-title"><?php echo esc_html($this->label); ?></span>
-            <?php endif; ?>
-            <?php if ($this->description) : ?>
-                <span class="description customize-control-description"><?php echo esc_html($this->description); ?></span>
-            <?php endif; ?>
-            <?php
-            $name = '_customize-radio-' . $this->id;
-            $control = $this;
-            classic_header::render_style_cards(
-                $this->value(),
-                function ($key) use ($name, $control) {
-                    printf('name="%s" ', esc_attr($name));
-                    $control->link();
-                }
-            );
-            ?>
-            <?php
-        }
     }
 }
 

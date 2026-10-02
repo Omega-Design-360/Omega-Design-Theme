@@ -9,9 +9,9 @@
 
 defined('ABSPATH') || exit;
 
-require_once OMEGA_DESIGN_INCLUDES . '/patterns/pattern-helpers.php';
+use OmegaDesign\patterns\pattern_helpers;
 
-$omega_ph = omega_pattern_placeholder_url();
+$omega_ph = pattern_helpers::placeholder_url();
 ?>
 <!-- wp:group {"align":"wide","backgroundColor":"surface","style":{"spacing":{"padding":{"top":"var:preset|spacing|xl","bottom":"var:preset|spacing|xl"}}}} -->
 <div class="wp-block-group alignwide has-surface-background-color has-background" style="padding-top:var(--wp--preset--spacing--xl);padding-bottom:var(--wp--preset--spacing--xl)">
@@ -31,7 +31,7 @@ foreach ($testimonials as $t) :
 <div class="wp-block-group">
 <!-- wp:group {"layout":{"type":"flex","flexWrap":"nowrap","verticalAlignment":"center","justifyContent":"center"}} -->
 <div class="wp-block-group">
-<!-- wp:image {"className":"omega-round-image omega-avatar-lg","sizeSlug":"thumbnail"} --><figure class="wp-block-image size-thumbnail omega-round-image omega-avatar-lg"><img src="<?php echo esc_url(omega_pattern_fashion_asset('blog/testimonial-avatar.png')); ?>" alt="<?php echo esc_attr($t['name']); ?>"/></figure><!-- /wp:image -->
+<!-- wp:image {"className":"omega-round-image omega-avatar-lg","sizeSlug":"thumbnail"} --><figure class="wp-block-image size-thumbnail omega-round-image omega-avatar-lg"><img src="<?php echo esc_url(pattern_helpers::fashion_asset('blog/testimonial-avatar.png')); ?>" alt="<?php echo esc_attr($t['name']); ?>"/></figure><!-- /wp:image -->
 </div>
 <!-- /wp:group -->
 <!-- wp:paragraph {"align":"center","className":"omega-stars","fontSize":"large"} --><p class="has-text-align-center omega-stars has-large-font-size">★★★★★</p><!-- /wp:paragraph -->

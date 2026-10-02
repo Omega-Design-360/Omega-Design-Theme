@@ -20,7 +20,7 @@
 
 defined('ABSPATH') || exit;
 
-require_once OMEGA_DESIGN_DIR . '/includes/patterns/pattern-helpers.php';
+use OmegaDesign\patterns\pattern_helpers;
 
 $omega_hub_img = esc_url(get_template_directory_uri() . '/assets/images/blog-hub/hero.jpg');
 

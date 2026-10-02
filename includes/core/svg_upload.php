@@ -13,11 +13,13 @@
 
 namespace OmegaDesign\core;
 
+use OmegaDesign\traits\singleton;
+
 defined('ABSPATH') || exit;
 
 class svg_upload {
 
-    private static $instance = null;
+    use singleton;
 
     const ALLOWED_TAGS = [
         'svg', 'g', 'path', 'rect', 'circle', 'ellipse', 'line', 'polyline', 'polygon',
@@ -34,13 +36,6 @@ class svg_upload {
         'xmlns', 'xmlns:xlink', 'version', 'clip-path', 'mask', 'href', 'xlink:href',
     ];
 
-    public static function get_instance() {
-        if (null === self::$instance) {
-            self::$instance = new self();
-        }
-        return self::$instance;
-    }
-
     private function __construct() {
         add_filter('upload_mimes', [$this, 'allow_svg_mime']);
         add_filter('wp_check_filetype_and_ext', [$this, 'fix_svg_filetype_check'], 10, 4);
@@ -50,8 +45,6 @@ class svg_upload {
         add_action('admin_head', [$this, 'svg_grid_thumbnail_css']);
     }
 
-    public function init() {}
-
     /**
      * Admins only - editors/authors/contributors never see .svg as an
      * accepted type in the media uploader at all. Also gated behind
@@ -59,7 +52,7 @@ class svg_upload {
      * (default on) so an admin can turn the capability off site-wide.
      */
     public function allow_svg_mime($mimes) {
-        if (!current_user_can('manage_options') || !$this->uploads_enabled()) {
+        if (!$this->can_upload_svg()) {
             return $mimes;
         }
         $mimes['svg'] = 'image/svg+xml';
@@ -70,6 +63,29 @@ class svg_upload {
         return (bool) get_theme_mod('omega_svg_uploads_enabled', true);
     }
 
+    /** Admins only, and only while SVG uploads are switched on. */
+    private function can_upload_svg() {
+        return current_user_can('manage_options') && $this->uploads_enabled();
+    }
+
+    /**
+     * Parses $content as strict XML with network access disabled. With
+     * $hardened, external entities are also never resolved or substituted
+     * (blocks XXE). Returns the document, or null when it doesn't parse.
+     */
+    private static function load_xml($content, $hardened) {
+        libxml_use_internal_errors(true);
+        $doc = new \DOMDocument();
+        if ($hardened) {
+            $doc->resolveExternals   = false;
+            $doc->substituteEntities = false;
+        }
+        $loaded = @$doc->loadXML($content, LIBXML_NONET | LIBXML_NOBLANKS);
+        libxml_clear_errors();
+
+        return ($loaded && $doc->documentElement) ? $doc : null;
+    }
+
     /**
      * WordPress's own real-MIME sniff (finfo) frequently reports SVG files
      * as text/plain or text/html rather than image/svg+xml, which would
@@ -77,7 +93,7 @@ class svg_upload {
      * after upload_mimes() allows the extension.
      */
     public function fix_svg_filetype_check($data, $file, $filename, $mimes) {
-        if (!current_user_can('manage_options') || !$this->uploads_enabled()) {
+        if (!$this->can_upload_svg()) {
             return $data;
         }
 
@@ -107,7 +123,7 @@ class svg_upload {
             return $file;
         }
 
-        if (!current_user_can('manage_options') || !$this->uploads_enabled()) {
+        if (!$this->can_upload_svg()) {
             $file['error'] = __('You are not allowed to upload SVG files.', 'omega-design');
             return $file;
         }
@@ -151,14 +167,8 @@ class svg_upload {
             return null;
         }
 
-        libxml_use_internal_errors(true);
-        $doc = new \DOMDocument();
-        $doc->resolveExternals   = false;
-        $doc->substituteEntities = false;
-        $loaded = @$doc->loadXML($content, LIBXML_NONET | LIBXML_NOBLANKS);
-        libxml_clear_errors();
-
-        if (!$loaded || !$doc->documentElement || 'svg' !== strtolower($doc->documentElement->localName)) {
+        $doc = self::load_xml($content, true);
+        if (!$doc || 'svg' !== strtolower($doc->documentElement->localName)) {
             return null;
         }
 
@@ -352,28 +362,23 @@ class svg_upload {
             return null;
         }
 
-        libxml_use_internal_errors(true);
-        $doc = new \DOMDocument();
-        $loaded = @$doc->loadXML($content, LIBXML_NONET | LIBXML_NOBLANKS);
-        libxml_clear_errors();
-
-        if (!$loaded || !$doc->documentElement) {
+        $doc = self::load_xml($content, false);
+        if (!$doc) {
             return null;
         }
 
         $svg = $doc->documentElement;
         $width  = $svg->getAttribute('width');
         $height = $svg->getAttribute('height');
-        $viewbox = $svg->getAttribute('viewBox');
 
         $w = is_numeric($width) ? (float) $width : null;
         $h = is_numeric($height) ? (float) $height : null;
 
-        if ((null === $w || null === $h) && $viewbox) {
-            $parts = preg_split('/[\s,]+/', trim($viewbox));
-            if (4 === count($parts) && is_numeric($parts[2]) && is_numeric($parts[3])) {
-                $w = $w ?? (float) $parts[2];
-                $h = $h ?? (float) $parts[3];
+        if (null === $w || null === $h) {
+            $viewbox_size = self::viewbox_size($svg->getAttribute('viewBox'));
+            if ($viewbox_size) {
+                $w = $w ?? $viewbox_size[0];
+                $h = $h ?? $viewbox_size[1];
             }
         }
 
@@ -382,6 +387,20 @@ class svg_upload {
         }
 
         return ['width' => (int) round($w), 'height' => (int) round($h)];
+    }
+
+    /** [width, height] from a "minX minY width height" viewBox, or null. */
+    private static function viewbox_size($viewbox) {
+        if (!$viewbox) {
+            return null;
+        }
+
+        $parts = preg_split('/[\s,]+/', trim($viewbox));
+        if (4 !== count($parts) || !is_numeric($parts[2]) || !is_numeric($parts[3])) {
+            return null;
+        }
+
+        return [(float) $parts[2], (float) $parts[3]];
     }
 
     public function svg_grid_thumbnail_css() {

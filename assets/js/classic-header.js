@@ -19,16 +19,19 @@
 		document.documentElement.classList.toggle('omega-nav-open', anyOpen);
 	}
 
+	/** A toggle button's pressed look plus its aria-expanded state. */
+	function setExpanded(button, isExpanded) {
+		button.classList.toggle('is-active', isExpanded);
+		button.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
+	}
+
 	function closeMainNav(exceptHeader) {
 		document.querySelectorAll('.omega-classic-header').forEach(function (header) {
 			if (header === exceptHeader) return;
 			var nav = header.querySelector('.omega-classic-header__nav.is-open');
 			var btn = header.querySelector('.omega-classic-header__toggle.is-active');
 			if (nav) nav.classList.remove('is-open');
-			if (btn) {
-				btn.classList.remove('is-active');
-				btn.setAttribute('aria-expanded', 'false');
-			}
+			if (btn) setExpanded(btn, false);
 		});
 		syncBodyScrollLock();
 	}
@@ -44,8 +47,7 @@
 			if (target) {
 				var expanding = !target.classList.contains('is-expanded');
 				target.classList.toggle('is-expanded', expanding);
-				submenuToggle.classList.toggle('is-active', expanding);
-				submenuToggle.setAttribute('aria-expanded', expanding ? 'true' : 'false');
+				setExpanded(submenuToggle, expanding);
 
 				// Explicit, rather than relying on the browser's own
 				// "scroll the newly-focused button into view" behavior
@@ -74,8 +76,7 @@
 				var opening = !nav.classList.contains('is-open');
 				closeMainNav(opening ? header : null);
 				nav.classList.toggle('is-open', opening);
-				mainToggle.classList.toggle('is-active', opening);
-				mainToggle.setAttribute('aria-expanded', opening ? 'true' : 'false');
+				setExpanded(mainToggle, opening);
 				syncBodyScrollLock();
 			}
 			return;

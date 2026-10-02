@@ -25,11 +25,13 @@
 
 namespace OmegaDesign\core;
 
+use OmegaDesign\traits\singleton;
+
 defined('ABSPATH') || exit;
 
 class visitor_language {
 
-    private static $instance = null;
+    use singleton;
 
     const SUPPORTED = ['en', 'ar'];
     const DEFAULT   = 'en';
@@ -37,13 +39,6 @@ class visitor_language {
 
     /** Languages present on the page being rendered (null = not scanned yet). */
     private $page_languages = null;
-
-    public static function get_instance() {
-        if (null === self::$instance) {
-            self::$instance = new self();
-        }
-        return self::$instance;
-    }
 
     private function __construct() {
         add_action('init', [$this, 'remember_choice']);
@@ -84,8 +79,6 @@ class visitor_language {
         echo '</nav>';
     }
 
-    public function init() {}
-
     /** The visitor's language: URL choice, then cookie, then device language. */
     public static function current() {
         static $lang = null;
@@ -93,17 +86,29 @@ class visitor_language {
             return $lang;
         }
 
-        $choice = strtolower((string) ($_GET['lang'] ?? ''));
-        if (in_array($choice, self::SUPPORTED, true)) {
+        $choice = self::supported_or_empty($_GET['lang'] ?? '');
+        if ('' !== $choice) {
             return $lang = $choice;
         }
 
-        $cookie = strtolower((string) ($_COOKIE[self::COOKIE] ?? ''));
-        if (in_array($cookie, self::SUPPORTED, true)) {
+        $cookie = self::supported_or_empty($_COOKIE[self::COOKIE] ?? '');
+        if ('' !== $cookie) {
             return $lang = $cookie;
         }
 
         return $lang = self::from_accept_language((string) ($_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? ''));
+    }
+
+    /** The lowercased language code when it's a supported one, else ''. */
+    private static function supported_or_empty($value) {
+        $value = strtolower((string) $value);
+        return in_array($value, self::SUPPORTED, true) ? $value : '';
+    }
+
+    /** Language codes of every language block in $content. */
+    private static function languages_in($content) {
+        preg_match_all('/omega-lang-(en|ar)\b/', (string) $content, $matches);
+        return array_unique($matches[1]);
     }
 
     /** Highest-priority supported language in an Accept-Language header, e.g. "ar-SA,ar;q=0.9,en;q=0.8" -> "ar". */
@@ -137,8 +142,8 @@ class visitor_language {
 
     /** Stores an explicit ?lang= choice so the rest of the visit stays in that language. */
     public function remember_choice() {
-        $choice = strtolower((string) ($_GET['lang'] ?? ''));
-        if (!in_array($choice, self::SUPPORTED, true) || headers_sent() || is_admin()) {
+        $choice = self::supported_or_empty($_GET['lang'] ?? '');
+        if ('' === $choice || headers_sent() || is_admin()) {
             return;
         }
         if (($_COOKIE[self::COOKIE] ?? '') === $choice) {
@@ -161,10 +166,8 @@ class visitor_language {
     /** Languages the current page offers, from its own content. */
     private function page_languages() {
         if (null === $this->page_languages) {
-            $post    = get_post();
-            $content = $post ? (string) $post->post_content : '';
-            preg_match_all('/omega-lang-(en|ar)\b/', $content, $matches);
-            $this->page_languages = array_unique($matches[1]);
+            $post = get_post();
+            $this->page_languages = self::languages_in($post ? $post->post_content : '');
         }
         return $this->page_languages;
     }
@@ -191,7 +194,7 @@ class visitor_language {
         }
 
         $attrs = 'ar' === $lang ? ' lang="ar" dir="rtl"' : ' lang="en" dir="ltr"';
-        return preg_replace('/^(\s*<[a-z0-9]+)/i', '$1' . $attrs, $block_content, 1);
+        return block_html::prepend_first_tag_attrs($block_content, $attrs);
     }
 
     /** Whether the page being viewed has both an English and an Arabic version. */
@@ -200,11 +203,10 @@ class visitor_language {
             return false;
         }
 
-        $post    = get_queried_object();
-        $content = $post instanceof \WP_Post ? (string) $post->post_content : '';
-        preg_match_all('/omega-lang-(en|ar)\b/', $content, $matches);
+        $post = get_queried_object();
+        $languages = self::languages_in($post instanceof \WP_Post ? $post->post_content : '');
 
-        return count(array_intersect(self::SUPPORTED, array_unique($matches[1]))) >= 2;
+        return count(array_intersect(self::SUPPORTED, $languages)) >= 2;
     }
 
     /**

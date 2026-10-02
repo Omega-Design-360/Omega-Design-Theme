@@ -13,11 +13,19 @@
 
 namespace OmegaDesign\customizer;
 
+use OmegaDesign\traits\assets;
+use OmegaDesign\traits\classic_template_part;
+use OmegaDesign\traits\customizer_section;
+use OmegaDesign\traits\singleton;
+
 defined('ABSPATH') || exit;
 
 class classic_footer {
 
-    private static $instance = null;
+    use singleton;
+    use assets;
+    use customizer_section;
+    use classic_template_part;
 
     const STYLES = ['classic-1', 'classic-2', 'classic-3', 'classic-4', 'classic-5'];
 
@@ -28,13 +36,6 @@ class classic_footer {
         'classic-4' => 'newsletter.php',
         'classic-5' => 'bold.php',
     ];
-
-    public static function get_instance() {
-        if (null === self::$instance) {
-            self::$instance = new self();
-        }
-        return self::$instance;
-    }
 
     private function __construct() {
         add_filter('render_block_core/template-part', [$this, 'maybe_render_classic_footer'], 10, 2);
@@ -48,8 +49,6 @@ class classic_footer {
         add_action('customize_controls_enqueue_scripts', [$this, 'enqueue_control_assets']);
     }
 
-    public function init() {}
-
     /**
      * The theme's own Settings page (menus.php) draws the same preview
      * cards with this same markup/CSS (.omega-footer-style-grid, admin-
@@ -58,22 +57,7 @@ class classic_footer {
      * as Settings, matching the Header Style picker (classic_header.php).
      */
     public function enqueue_control_assets() {
-        $css_path = OMEGA_DESIGN_ASSETS . '/css/admin-pages.css';
-        wp_enqueue_style(
-            'omega-design-admin-pages',
-            OMEGA_DESIGN_CSS_URI . '/admin-pages.css',
-            [],
-            file_exists($css_path) ? filemtime($css_path) : OMEGA_DESIGN_ASSET_VERSION
-        );
-
-        // The Customizer's controls pane is a plain wp-admin page like the
-        // Settings page (see menus.php's own enqueue_admin_page_assets())
-        // and never prints the theme.json-derived --wp--preset--color--*
-        // variables on its own - every var(--wp--preset--color--...) below
-        // has an explicit fallback already, so this is mostly a safety net
-        // rather than something visibly broken without it (see the same
-        // fix in typography.php/buttons.php for a case where it wasn't).
-        wp_add_inline_style('omega-design-admin-pages', wp_get_global_stylesheet(['variables']));
+        self::enqueue_admin_pages_style(true);
     }
 
     public function register_customizer($wp_customize) {
@@ -88,13 +72,7 @@ class classic_footer {
             $wp_customize->remove_section('footer_options');
         }
 
-        if (!$wp_customize->get_panel('omega_design_panel')) {
-            $wp_customize->add_panel('omega_design_panel', [
-                'title'       => __('Omega Design', 'omega-design'),
-                'description' => __('Theme-specific options for Omega Design.', 'omega-design'),
-                'priority'    => 30,
-            ]);
-        }
+        self::ensure_design_panel($wp_customize);
 
         $wp_customize->add_section('omega_footer_style_settings', [
             'title'       => __('Footer Style', 'omega-design'),
@@ -109,22 +87,14 @@ class classic_footer {
             'transport'         => 'refresh',
         ]);
 
-        // WP_Customize_Control only exists once the Customizer's own class
-        // files have loaded, right before 'customize_register' fires - see
-        // omega_define_footer_style_control()'s own comment for why this
-        // is called here rather than the class being declared at this
-        // file's top level.
-        omega_define_footer_style_control();
-
-        $wp_customize->add_control(new omega_footer_style_control($wp_customize, 'omega_footer_mode', [
+        self::add_card_control($wp_customize, 'omega_footer_mode', 'omega_footer_style', [__CLASS__, 'render_style_cards'], [
             'label'   => __('Footer Style', 'omega-design'),
             'section' => 'omega_footer_style_settings',
-        ]));
+        ]);
     }
 
     public function sanitize_mode($value) {
-        $value = sanitize_key((string) $value);
-        return array_key_exists($value, self::style_choices()) ? $value : 'block';
+        return self::sanitize_key_choice($value, self::style_choices(), 'block');
     }
 
     public static function style_choices() {
@@ -139,8 +109,7 @@ class classic_footer {
     }
 
     private function active_style() {
-        $mode = get_theme_mod('omega_footer_mode', 'block');
-        return in_array($mode, self::STYLES, true) ? $mode : '';
+        return self::classic_style_or_empty(get_theme_mod('omega_footer_mode', 'block'));
     }
 
     /**
@@ -148,93 +117,113 @@ class classic_footer {
      * multi-column, centered, a CTA band, dark/bold, ...) instead of the
      * plain <select> full of text labels an admin can't visually tell
      * apart from one another. Shared by both the Settings page (menus.php)
-     * and the native Customizer control below. $link_callback receives
-     * each style's key and must echo whatever attributes bind that
-     * <input> to its context - a plain name="omega_footer_mode" for the
-     * POST form, or the Customizer's own name + $this->link() for two-way
-     * JS binding.
+     * and the native Customizer control.
      */
     public static function render_style_cards($current, $link_callback) {
-        $labels = self::style_choices();
+        self::render_radio_card_grid('omega-footer-style', self::style_choices(), $current, $link_callback, [__CLASS__, 'render_style_card_body']);
+    }
+
+    public static function render_style_card_body($key, $label) {
+        self::render_card_radio_dot('omega-footer-style');
+        self::render_style_preview($key);
         ?>
-        <div class="omega-footer-style-grid">
-            <?php foreach ($labels as $key => $label) : ?>
-                <label class="omega-footer-style-card">
-                    <input
-                        type="radio"
-                        <?php call_user_func($link_callback, $key); ?>
-                        value="<?php echo esc_attr($key); ?>"
-                        <?php checked($current, $key); ?>
-                        class="omega-footer-style-card__input"
-                    />
-                    <span class="omega-footer-style-card__radio"></span>
+        <span class="omega-footer-style-card__title"><?php echo esc_html($label); ?></span>
+        <?php
+    }
 
-                    <?php if ('block' === $key) : ?>
-                        <span class="omega-footer-style-card__preview">
-                            <span class="omega-footer-style-card__blocks-icon">
-                                <span></span><span></span><span></span>
-                                <span></span><span></span><span></span>
-                            </span>
-                        </span>
-                    <?php elseif ('classic-2' === $key || 'classic-5' === $key) : ?>
-                        <span class="omega-footer-style-card__preview omega-footer-style-card__preview--columns<?php echo 'classic-5' === $key ? ' omega-footer-style-card__preview--dark' : ''; ?>">
-                            <span class="omega-footer-style-card__logo"></span>
-                            <span class="omega-footer-style-card__columns">
-                                <span class="omega-footer-style-card__col">
-                                    <span class="omega-footer-style-card__col-head"></span>
-                                    <span class="omega-footer-style-card__col-line"></span>
-                                </span>
-                                <span class="omega-footer-style-card__col">
-                                    <span class="omega-footer-style-card__col-head"></span>
-                                    <span class="omega-footer-style-card__col-line"></span>
-                                </span>
-                                <span class="omega-footer-style-card__col">
-                                    <span class="omega-footer-style-card__col-head"></span>
-                                    <span class="omega-footer-style-card__col-line"></span>
-                                </span>
-                            </span>
-                        </span>
-                    <?php elseif ('classic-3' === $key) : ?>
-                        <span class="omega-footer-style-card__preview omega-footer-style-card__preview--centered">
-                            <span class="omega-footer-style-card__logo"></span>
-                            <span class="omega-footer-style-card__tagline"></span>
-                            <span class="omega-footer-style-card__nav">
-                                <span class="omega-footer-style-card__nav-item"></span>
-                                <span class="omega-footer-style-card__nav-item"></span>
-                                <span class="omega-footer-style-card__nav-item"></span>
-                            </span>
-                        </span>
-                    <?php elseif ('classic-4' === $key) : ?>
-                        <span class="omega-footer-style-card__preview">
-                            <span class="omega-footer-style-card__cta-band">
-                                <span class="omega-footer-style-card__tagline omega-footer-style-card__tagline--light"></span>
-                                <span class="omega-footer-style-card__cta-btn"></span>
-                            </span>
-                            <span class="omega-footer-style-card__row">
-                                <span class="omega-footer-style-card__logo"></span>
-                                <span class="omega-footer-style-card__nav">
-                                    <span class="omega-footer-style-card__nav-item"></span>
-                                    <span class="omega-footer-style-card__nav-item"></span>
-                                </span>
-                            </span>
-                        </span>
-                    <?php else : /* classic-1: Simple - one row, logo left, nav + copyright below. */ ?>
-                        <span class="omega-footer-style-card__preview">
-                            <span class="omega-footer-style-card__row">
-                                <span class="omega-footer-style-card__logo"></span>
-                                <span class="omega-footer-style-card__nav">
-                                    <span class="omega-footer-style-card__nav-item"></span>
-                                    <span class="omega-footer-style-card__nav-item"></span>
-                                </span>
-                            </span>
-                            <span class="omega-footer-style-card__copyright"></span>
-                        </span>
-                    <?php endif; ?>
+    private static function render_style_preview($key) {
+        switch ($key) {
+            case 'block':
+                self::render_block_preview();
+                break;
+            case 'classic-2':
+            case 'classic-5':
+                self::render_columns_preview('classic-5' === $key);
+                break;
+            case 'classic-3':
+                self::render_centered_preview();
+                break;
+            case 'classic-4':
+                self::render_cta_preview();
+                break;
+            default:
+                // classic-1: Simple - one row, logo left, nav + copyright below.
+                self::render_simple_preview();
+        }
+    }
 
-                    <span class="omega-footer-style-card__title"><?php echo esc_html($label); ?></span>
-                </label>
-            <?php endforeach; ?>
-        </div>
+    private static function render_block_preview() {
+        ?>
+        <span class="omega-footer-style-card__preview">
+            <span class="omega-footer-style-card__blocks-icon">
+                <span></span><span></span><span></span>
+                <span></span><span></span><span></span>
+            </span>
+        </span>
+        <?php
+    }
+
+    private static function render_columns_preview($dark) {
+        ?>
+        <span class="omega-footer-style-card__preview omega-footer-style-card__preview--columns<?php echo $dark ? ' omega-footer-style-card__preview--dark' : ''; ?>">
+            <span class="omega-footer-style-card__logo"></span>
+            <span class="omega-footer-style-card__columns">
+                <?php for ($i = 0; $i < 3; $i++) : ?>
+                    <span class="omega-footer-style-card__col">
+                        <span class="omega-footer-style-card__col-head"></span>
+                        <span class="omega-footer-style-card__col-line"></span>
+                    </span>
+                <?php endfor; ?>
+            </span>
+        </span>
+        <?php
+    }
+
+    private static function render_centered_preview() {
+        ?>
+        <span class="omega-footer-style-card__preview omega-footer-style-card__preview--centered">
+            <span class="omega-footer-style-card__logo"></span>
+            <span class="omega-footer-style-card__tagline"></span>
+            <?php self::render_nav_preview(3); ?>
+        </span>
+        <?php
+    }
+
+    private static function render_cta_preview() {
+        ?>
+        <span class="omega-footer-style-card__preview">
+            <span class="omega-footer-style-card__cta-band">
+                <span class="omega-footer-style-card__tagline omega-footer-style-card__tagline--light"></span>
+                <span class="omega-footer-style-card__cta-btn"></span>
+            </span>
+            <?php self::render_logo_nav_row(); ?>
+        </span>
+        <?php
+    }
+
+    private static function render_simple_preview() {
+        ?>
+        <span class="omega-footer-style-card__preview">
+            <?php self::render_logo_nav_row(); ?>
+            <span class="omega-footer-style-card__copyright"></span>
+        </span>
+        <?php
+    }
+
+    private static function render_logo_nav_row() {
+        ?>
+        <span class="omega-footer-style-card__row">
+            <span class="omega-footer-style-card__logo"></span>
+            <?php self::render_nav_preview(2); ?>
+        </span>
+        <?php
+    }
+
+    private static function render_nav_preview($items) {
+        ?>
+        <span class="omega-footer-style-card__nav">
+            <?php echo str_repeat('<span class="omega-footer-style-card__nav-item"></span>' . "\n", $items); ?>
+        </span>
         <?php
     }
 
@@ -248,15 +237,7 @@ class classic_footer {
             return;
         }
 
-        $css_path = get_template_directory() . '/assets/css/classic-footer.css';
-        if (file_exists($css_path)) {
-            wp_enqueue_style(
-                'omega-design-classic-footer',
-                get_template_directory_uri() . '/assets/css/classic-footer.css',
-                [],
-                filemtime($css_path)
-            );
-        }
+        self::enqueue_style('omega-design-classic-footer', 'css/classic-footer.css');
     }
 
     /**
@@ -266,14 +247,15 @@ class classic_footer {
      * from this site's own bloginfo(), not any fixed site name.
      */
     private function copyright_html() {
-        $template = get_theme_mod('omega_footer_copyright', '');
-        if ('' === trim(wp_strip_all_tags($template))) {
-            $template = sprintf(
+        $template = self::text_or_fallback(
+            get_theme_mod('omega_footer_copyright', ''),
+            sprintf(
                 /* translators: %s: site name */
                 __('&copy; {year} %s. All rights reserved.', 'omega-design'),
                 get_bloginfo('name')
-            );
-        }
+            )
+        );
+
         return str_replace('{year}', gmdate('Y'), $template);
     }
 
@@ -284,7 +266,7 @@ class classic_footer {
      * running first regardless of which mode is active.
      */
     public function maybe_render_classic_footer($block_content, $block) {
-        if ('footer' !== ($block['attrs']['slug'] ?? '')) {
+        if (!self::is_template_part($block, 'footer')) {
             return $block_content;
         }
 
@@ -297,75 +279,25 @@ class classic_footer {
             return $block_content;
         }
 
-        $template_file = self::TEMPLATE_FILES[$style] ?? '';
-        $template_path = get_template_directory() . '/template-parts/classic-footer/' . $template_file;
-        if ('' === $template_file || !file_exists($template_path)) {
+        $template_path = self::style_template_path('classic-footer', $style);
+        if ('' === $template_path) {
             return $block_content;
         }
 
-        $menu_id  = (int) get_theme_mod('omega_classic_footer_menu_id', 0);
-        $nav_html = '';
-        if ($menu_id && wp_get_nav_menu_object($menu_id)) {
-            $nav_html = (string) wp_nav_menu([
-                'menu'        => $menu_id,
-                'echo'        => false,
-                'container'   => false,
-                'fallback_cb' => false,
-            ]);
-        }
-
-        $tagline = get_theme_mod('omega_footer_tagline', '');
-        if ('' === trim(wp_strip_all_tags($tagline))) {
-            $tagline = get_bloginfo('description');
-        }
-
-        $cta_label = get_theme_mod('omega_footer_cta_label', '');
-        $cta_url   = get_theme_mod('omega_footer_cta_url', '');
-        $copyright = $this->copyright_html();
-
-        ob_start();
-        include $template_path;
-        return (string) ob_get_clean();
-    }
-}
-
-/**
- * Declared lazily (called from register_customizer(), which only ever runs
- * on 'customize_register') rather than at this file's top level, since
- * WP_Customize_Control doesn't exist yet when this file is first required
- * during theme bootstrap - the same fatal-error trap the header style
- * control hit before this pattern was established (see
- * includes/customizer/classic_header.php's own version of this function).
- */
-function omega_define_footer_style_control() {
-    if (class_exists(__NAMESPACE__ . '\\omega_footer_style_control')) {
-        return;
+        return self::render_template_file($template_path, $this->template_vars());
     }
 
-    class omega_footer_style_control extends \WP_Customize_Control {
-        public $type = 'omega_footer_style';
-
-        public function render_content() {
-            ?>
-            <?php if ($this->label) : ?>
-                <span class="customize-control-title"><?php echo esc_html($this->label); ?></span>
-            <?php endif; ?>
-            <?php if ($this->description) : ?>
-                <span class="description customize-control-description"><?php echo esc_html($this->description); ?></span>
-            <?php endif; ?>
-            <?php
-            $name    = '_customize-radio-' . $this->id;
-            $control = $this;
-            classic_footer::render_style_cards(
-                $this->value(),
-                function ($key) use ($name, $control) {
-                    printf('name="%s" ', esc_attr($name));
-                    $control->link();
-                }
-            );
-            ?>
-            <?php
-        }
+    /**
+     * Variables every classic footer template file reads.
+     */
+    private function template_vars() {
+        return [
+            'nav_html'  => self::classic_menu_html('omega_classic_footer_menu_id'),
+            'tagline'   => self::text_or_fallback(get_theme_mod('omega_footer_tagline', ''), get_bloginfo('description')),
+            'cta_label' => get_theme_mod('omega_footer_cta_label', ''),
+            'cta_url'   => get_theme_mod('omega_footer_cta_url', ''),
+            'copyright' => $this->copyright_html(),
+        ];
     }
 }
 

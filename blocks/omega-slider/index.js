@@ -7,9 +7,14 @@
 (function (wp) {
 	'use strict';
 
-	if (!wp || !wp.blocks || !wp.element || !wp.blockEditor || !wp.components || !wp.i18n || !wp.data) {
+	var editor = window.OmegaDesignEditor;
+
+	if (!wp || !wp.blocks || !wp.element || !wp.blockEditor || !wp.components || !wp.i18n || !wp.data || !editor) {
 		return;
 	}
+
+	var bindAttribute = editor.bindAttribute;
+	var bindToggle = editor.bindToggle;
 
 	var registerBlockType = wp.blocks.registerBlockType;
 	var createBlock = wp.blocks.createBlock;
@@ -156,55 +161,19 @@
 					createElement(
 						PanelBody,
 						{ title: __('Slider Settings', 'omega-design') },
-						createElement(ToggleControl, {
-							label: __('Autoplay', 'omega-design'),
-							checked: !!attributes.autoplay,
-							onChange: function (value) { setAttributes({ autoplay: value }); }
-						}),
-						attributes.autoplay && createElement(RangeControl, {
+						createElement(ToggleControl, Object.assign({ label: __('Autoplay', 'omega-design') }, bindToggle(props, 'autoplay'))),
+						attributes.autoplay && createElement(RangeControl, Object.assign({
 							label: __('Autoplay speed (ms)', 'omega-design'),
-							value: attributes.autoplaySpeed,
 							min: 2000,
 							max: 12000,
-							step: 500,
-							onChange: function (value) { setAttributes({ autoplaySpeed: value }); }
-						}),
-						createElement(ToggleControl, {
-							label: __('Loop', 'omega-design'),
-							checked: !!attributes.loop,
-							onChange: function (value) { setAttributes({ loop: value }); }
-						}),
-						createElement(ToggleControl, {
-							label: __('Show arrows', 'omega-design'),
-							checked: !!attributes.showArrows,
-							onChange: function (value) { setAttributes({ showArrows: value }); }
-						}),
-						createElement(ToggleControl, {
-							label: __('Show dots', 'omega-design'),
-							checked: !!attributes.showDots,
-							onChange: function (value) { setAttributes({ showDots: value }); }
-						}),
-						createElement(RangeControl, {
-							label: __('Slides per view (desktop)', 'omega-design'),
-							value: attributes.slidesPerView,
-							min: 1,
-							max: 6,
-							onChange: function (value) { setAttributes({ slidesPerView: value }); }
-						}),
-						createElement(RangeControl, {
-							label: __('Slides per view (tablet)', 'omega-design'),
-							value: attributes.slidesPerViewTablet,
-							min: 1,
-							max: 4,
-							onChange: function (value) { setAttributes({ slidesPerViewTablet: value }); }
-						}),
-						createElement(RangeControl, {
-							label: __('Slides per view (mobile)', 'omega-design'),
-							value: attributes.slidesPerViewMobile,
-							min: 1,
-							max: 2,
-							onChange: function (value) { setAttributes({ slidesPerViewMobile: value }); }
-						})
+							step: 500
+						}, bindAttribute(props, 'autoplaySpeed'))),
+						createElement(ToggleControl, Object.assign({ label: __('Loop', 'omega-design') }, bindToggle(props, 'loop'))),
+						createElement(ToggleControl, Object.assign({ label: __('Show arrows', 'omega-design') }, bindToggle(props, 'showArrows'))),
+						createElement(ToggleControl, Object.assign({ label: __('Show dots', 'omega-design') }, bindToggle(props, 'showDots'))),
+						createElement(RangeControl, Object.assign({ label: __('Slides per view (desktop)', 'omega-design'), min: 1, max: 6 }, bindAttribute(props, 'slidesPerView'))),
+						createElement(RangeControl, Object.assign({ label: __('Slides per view (tablet)', 'omega-design'), min: 1, max: 4 }, bindAttribute(props, 'slidesPerViewTablet'))),
+						createElement(RangeControl, Object.assign({ label: __('Slides per view (mobile)', 'omega-design'), min: 1, max: 2 }, bindAttribute(props, 'slidesPerViewMobile')))
 					),
 					createElement(
 						PanelBody,
@@ -216,23 +185,15 @@
 							onChange: function (value) { setAttributes({ effect: value }); },
 							help: __('Fade/Zoom/Coverflow always show one slide at a time regardless of "Slides per view".', 'omega-design')
 						}),
-						createElement(ToggleControl, {
+						createElement(ToggleControl, Object.assign({
 							label: __('Peek next slide', 'omega-design'),
-							checked: !!attributes.showPeek,
-							onChange: function (value) { setAttributes({ showPeek: value }); },
 							help: __('Shows a sliver of the next slide at the edge, as a hint there is more to scroll to. Slide effect only.', 'omega-design')
-						}),
-						createElement(ToggleControl, {
-							label: __('Show thumbnail navigation', 'omega-design'),
-							checked: !!attributes.showThumbnails,
-							onChange: function (value) { setAttributes({ showThumbnails: value }); }
-						}),
-						createElement(ToggleControl, {
+						}, bindToggle(props, 'showPeek'))),
+						createElement(ToggleControl, Object.assign({ label: __('Show thumbnail navigation', 'omega-design') }, bindToggle(props, 'showThumbnails'))),
+						createElement(ToggleControl, Object.assign({
 							label: __('Show autoplay progress bar', 'omega-design'),
-							checked: !!attributes.showProgressBar,
-							onChange: function (value) { setAttributes({ showProgressBar: value }); },
 							help: __('Replaces the dots with a countdown bar until the next slide.', 'omega-design')
-						})
+						}, bindToggle(props, 'showProgressBar')))
 					)
 				),
 				createElement('div', innerBlocksProps)

@@ -7,16 +7,16 @@
  * Keywords: hero, slider, banner, section
  *
  * Split out of pattern/landing-fashion-store.php so it can be inserted on
- * its own - see includes/patterns/pattern-helpers.php for the shared
+ * its own - see includes/patterns/pattern_helpers.php for the shared
  * markup builders both files use.
  */
 
 defined('ABSPATH') || exit;
 
-require_once OMEGA_DESIGN_INCLUDES . '/patterns/pattern-helpers.php';
+use OmegaDesign\patterns\pattern_helpers;
 
-$omega_ph = omega_pattern_placeholder_url();
-$eyebrow = 'omega_pattern_eyebrow';
+$omega_ph = pattern_helpers::placeholder_url();
+$eyebrow = [pattern_helpers::class, 'eyebrow'];
 ?>
 <!-- wp:omega-design/slider {"autoplay":true,"autoplaySpeed":7000,"loop":true,"showArrows":true,"showDots":true,"align":"full","className":"omega-hero-slider","prevLabel":"Previous slide","nextLabel":"Next slide","dotsLabel":"Slides"} -->
 <div class="wp-block-omega-design-slider omega-hero-slider alignfull omega-slider" data-autoplay="1" data-autoplay-speed="7000" data-loop="1" data-arrows="1" data-dots="1" data-spv="1" data-spv-tablet="1" data-spv-mobile="1" data-gap="0px" data-prev-label="Previous slide" data-next-label="Next slide" data-dots-label="Slides" data-effect="slide" data-thumbnails="0" data-progress-bar="0" data-peek="0">
@@ -26,8 +26,8 @@ $hero_slides = [
 	['eyebrow' => __('This Week Only', 'omega-design'), 'heading' => __('New Arrivals Every Week', 'omega-design'), 'body' => __('Fresh drops across women\'s, men\'s and kids\' collections, updated weekly so there\'s always something new.', 'omega-design'), 'cta' => __('Shop New Arrivals', 'omega-design'), 'stats' => [['500+', __('New Styles', 'omega-design')], ['4.8★', __('Average Rating', 'omega-design')], ['100%', __('Secure Shopping', 'omega-design')]]],
 	['eyebrow' => __('Limited Time', 'omega-design'), 'heading' => __('Free Shipping On Orders $50+', 'omega-design'), 'body' => __('No code needed, free standard shipping is automatically applied at checkout on every order over $50.', 'omega-design'), 'cta' => __('Start Shopping', 'omega-design'), 'stats' => [['Free', __('Shipping $50+', 'omega-design')], ['30-Day', __('Easy Returns', 'omega-design')], ['100%', __('Secure Checkout', 'omega-design')]]],
 ];
-$hero_image = omega_pattern_fashion_asset('hero/hero-models.png');
-$hero_badge = omega_pattern_fashion_asset('hero/sale-badge.png');
+$hero_image = pattern_helpers::fashion_asset('hero/hero-models.png');
+$hero_badge = pattern_helpers::fashion_asset('hero/sale-badge.png');
 foreach ($hero_slides as $i => $slide) :
 	?>
 <!-- wp:group {"backgroundColor":"surface","style":{"spacing":{"padding":{"top":"var:preset|spacing|2xl","bottom":"var:preset|spacing|2xl","left":"var:preset|spacing|l","right":"var:preset|spacing|l"}}},"layout":{"type":"constrained"}} -->

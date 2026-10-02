@@ -9,7 +9,7 @@
 
 defined('ABSPATH') || exit;
 
-require_once OMEGA_DESIGN_INCLUDES . '/patterns/pattern-helpers.php';
+use OmegaDesign\patterns\pattern_helpers;
 ?>
 <!-- wp:group {"align":"wide","style":{"spacing":{"padding":{"top":"var:preset|spacing|l","bottom":"var:preset|spacing|l"}}}} -->
 <div class="wp-block-group alignwide" style="padding-top:var(--wp--preset--spacing--l);padding-bottom:var(--wp--preset--spacing--l)">
@@ -28,11 +28,11 @@ foreach ($promos as $i => $promo) :
 	// photo's own for the same space. omega-promo-card bottom-anchors it
 	// below where that baked-in text sits.
 	$content = '<!-- wp:buttons --><div class="wp-block-buttons"><!-- wp:button {"backgroundColor":"background","textColor":"heading"} --><div class="wp-block-button"><a class="wp-block-button__link has-heading-color has-background-background-color has-text-color has-background wp-element-button" href="#">' . esc_html($promo['cta']) . '</a></div><!-- /wp:button --></div><!-- /wp:buttons -->' . "\n";
-	$badge = 0 === $i ? omega_pattern_corner_badge('omega-sale-badge', __('Limited Time', 'omega-design'), __('-40%', 'omega-design')) : '';
+	$badge = 0 === $i ? pattern_helpers::corner_badge('omega-sale-badge', __('Limited Time', 'omega-design'), __('-40%', 'omega-design')) : '';
 	?>
 <!-- wp:column -->
 <div class="wp-block-column">
-<?php echo omega_pattern_photo_card('omega-photo-card--tall omega-promo-card', $content, $badge, omega_pattern_fashion_asset($promo['image'])); ?>
+<?php echo pattern_helpers::photo_card('omega-photo-card--tall omega-promo-card', $content, $badge, pattern_helpers::fashion_asset($promo['image'])); ?>
 </div>
 <!-- /wp:column -->
 <?php endforeach; ?>

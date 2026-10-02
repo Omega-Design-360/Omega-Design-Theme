@@ -21,25 +21,18 @@
 
 namespace OmegaDesign\core;
 
+use OmegaDesign\traits\singleton;
+
 defined('ABSPATH') || exit;
 
 class loading_bar {
 
-    private static $instance = null;
-
-    public static function get_instance() {
-        if (null === self::$instance) {
-            self::$instance = new self();
-        }
-        return self::$instance;
-    }
+    use singleton;
 
     private function __construct() {
         add_action('wp_head', [$this, 'output_styles'], 1);
         add_action('wp_body_open', [$this, 'output_markup'], 1);
     }
-
-    public function init() {}
 
     private function should_output() {
         if (is_admin() || is_customize_preview()) {

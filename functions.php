@@ -88,12 +88,18 @@ define('OMEGA_DESIGN_UPLOADS_THEME_DIR', OMEGA_DESIGN_UPLOADS_DIR . '/omega-desi
 define('OMEGA_DESIGN_UPLOADS_THEME_URL', OMEGA_DESIGN_UPLOADS_URL . '/omega-design');
 
 /**
+ * Class autoloader - registered before anything else so every theme class
+ * and trait (including page_cache below) loads on demand.
+ */
+require_once OMEGA_DESIGN_INCLUDES . '/core/autoloader.php';
+\OmegaDesign\core\autoloader::register();
+
+/**
  * Full-page cache hit, served before the rest of the theme even loads -
  * see OmegaDesign\core\page_cache::serve_early(). Exits here on a hit;
  * on a miss (or any non-cacheable request) it returns immediately and the
  * theme boots as normal.
  */
-require_once __DIR__ . '/includes/core/page_cache.php';
 \OmegaDesign\core\page_cache::serve_early();
 define('OMEGA_DESIGN_UPLOADS_TEMP_DIR', OMEGA_DESIGN_UPLOADS_THEME_DIR . '/temp');
 define('OMEGA_DESIGN_UPLOADS_BACKUP_DIR', OMEGA_DESIGN_UPLOADS_THEME_DIR . '/backups');
@@ -165,267 +171,25 @@ define('OMEGA_DESIGN_THUMBNAIL_HEIGHT', 150);
 define('OMEGA_DESIGN_POSTS_PER_PAGE', get_option('posts_per_page', 10));
 define('OMEGA_DESIGN_MAX_POSTS_PER_REQUEST', 100);
 
-/**
- * Remove WordPress core default color/gradient CSS variables from frontend output.
- * "defaultPalette: false" in theme.json only hides them from the editor UI;
- * this filter removes them from the default origin so no CSS vars are emitted.
- */
-add_filter( 'wp_theme_json_data_default', function ( $theme_json ) {
-    return $theme_json->update_with( [
-        'version'  => 3,
-        'settings' => [
-            'color' => [
-                'palette'         => [],
-                'gradients'       => [],
-                'duotone'         => [],
-                'defaultPalette'  => false,
-                'defaultGradients'=> false,
-                'defaultDuotone'  => false,
-            ],
-        ],
-    ] );
-} );
-
-/**
- * Create required directories on theme activation
- */
-function omega_design_create_upload_directories() {
-    $directories = [
-        OMEGA_DESIGN_UPLOADS_THEME_DIR,
-        OMEGA_DESIGN_UPLOADS_TEMP_DIR,
-        OMEGA_DESIGN_UPLOADS_BACKUP_DIR,
-        OMEGA_DESIGN_UPLOADS_IMAGES_DIR,
-        OMEGA_DESIGN_UPLOADS_FONTS_DIR,
-        OMEGA_DESIGN_UPLOADS_LOGS_DIR,
-        OMEGA_DESIGN_UPLOADS_EXPORTS_DIR,
-    ];
-    
-    foreach ($directories as $directory) {
-        if (!file_exists($directory)) {
-            wp_mkdir_p($directory);
-            
-            $index_file = $directory . '/index.php';
-            if (!file_exists($index_file)) {
-                file_put_contents($index_file, '<?php // Silence is golden.');
-            }
-            
-            $htaccess_file = $directory . '/.htaccess';
-            if (!file_exists($htaccess_file)) {
-                file_put_contents($htaccess_file, "Options -Indexes\nDeny from all");
-            }
-        }
-    }
-}
-add_action('after_switch_theme', 'omega_design_create_upload_directories');
-
-/**
- * Get upload directory path
- */
-function omega_design_get_upload_dir($subdir = '') {
-    $path = OMEGA_DESIGN_UPLOADS_THEME_DIR;
-    if (!empty($subdir)) {
-        $path .= '/' . ltrim($subdir, '/');
-    }
-    
-    if (!file_exists($path)) {
-        wp_mkdir_p($path);
-    }
-    
-    return $path;
-}
-
-/**
- * Get upload directory URL
- */
-function omega_design_get_upload_url($subdir = '') {
-    $url = OMEGA_DESIGN_UPLOADS_THEME_URL;
-    if (!empty($subdir)) {
-        $url .= '/' . ltrim($subdir, '/');
-    }
-    return $url;
-}
-
-/**
- * Get asset URL with version cache busting
- */
-function omega_design_asset_url($path, $type = 'css') {
-    $base_url = OMEGA_DESIGN_ASSETS_URI . '/' . $type;
-    $url = $base_url . '/' . ltrim($path, '/');
-    return add_query_arg('ver', OMEGA_DESIGN_ASSET_VERSION, $url);
-}
-
-/**
- * Get an asset URL versioned by the file's own modified time, so replacing
- * the file (e.g. swapping an icon/logo image) is reflected immediately
- * without needing a manual theme version bump or a hard browser refresh.
- */
-function omega_design_versioned_asset_url($relative_path) {
-    $relative_path = '/' . ltrim($relative_path, '/');
-    $file_path = OMEGA_DESIGN_ASSETS . $relative_path;
-    $version = file_exists($file_path) ? filemtime($file_path) : OMEGA_DESIGN_ASSET_VERSION;
-
-    return add_query_arg('ver', $version, OMEGA_DESIGN_ASSETS_URI . $relative_path);
-}
-
-/**
- * Save file to theme uploads directory
- */
-function omega_design_save_to_uploads($file_data, $filename, $subdir = '') {
-    $upload_dir = omega_design_get_upload_dir($subdir);
-    
-    if (!file_exists($upload_dir)) {
-        wp_mkdir_p($upload_dir);
-    }
-    
-    $file_path = $upload_dir . '/' . sanitize_file_name($filename);
-    
-    if (file_exists($file_path) && OMEGA_DESIGN_DEV_MODE) {
-        $backup_path = $upload_dir . '/backup_' . time() . '_' . $filename;
-        copy($file_path, $backup_path);
-    }
-    
-    $result = file_put_contents($file_path, $file_data);
-    
-    if ($result !== false) {
-        return $file_path;
-    }
-    
-    return false;
-}
-
-/**
- * Delete file from theme uploads directory
- */
-function omega_design_delete_from_uploads($filename, $subdir = '') {
-    $upload_dir = omega_design_get_upload_dir($subdir);
-    $file_path = $upload_dir . '/' . sanitize_file_name($filename);
-    
-    if (file_exists($file_path) && is_writable($file_path)) {
-        return unlink($file_path);
-    }
-    
-    return false;
-}
-
-/**
- * Get file from theme uploads directory
- */
-function omega_design_get_from_uploads($filename, $subdir = '') {
-    $upload_dir = omega_design_get_upload_dir($subdir);
-    $file_path = $upload_dir . '/' . sanitize_file_name($filename);
-    
-    if (file_exists($file_path) && is_readable($file_path)) {
-        return file_get_contents($file_path);
-    }
-    
-    return false;
-}
-
-/**
- * Write debug log to theme uploads folder
- */
-function omega_design_log($data, $type = 'debug') {
-    if (!OMEGA_DESIGN_DEV_MODE) {
-        return;
-    }
-    
-    $log_dir = OMEGA_DESIGN_UPLOADS_LOGS_DIR;
-    if (!file_exists($log_dir)) {
-        wp_mkdir_p($log_dir);
-    }
-    
-    $log_file = $log_dir . '/' . gmdate('Y-m-d') . '-' . $type . '.log';
-    $log_entry = '[' . gmdate('Y-m-d H:i:s') . '] ' . print_r($data, true) . PHP_EOL;
-    error_log($log_entry, 3, $log_file);
-}
-
 // Verify required constants exist before loading
-$required_constants = [
-    'OMEGA_DESIGN_INCLUDES',
-    'OMEGA_DESIGN_VERSION',
-    'OMEGA_DESIGN_DEV_MODE',
-];
-
-foreach ($required_constants as $constant) {
-    if (!defined($constant)) {
-        wp_die(sprintf('Required constant %s is not defined', $constant));
+foreach (['OMEGA_DESIGN_INCLUDES', 'OMEGA_DESIGN_VERSION', 'OMEGA_DESIGN_DEV_MODE'] as $omega_design_constant) {
+    if (!defined($omega_design_constant)) {
+        wp_die(sprintf('Required constant %s is not defined', $omega_design_constant));
     }
 }
+unset($omega_design_constant);
 
-// Load the core class
-$core_file = OMEGA_DESIGN_INCLUDES . '/core/core.php';
-if (!file_exists($core_file)) {
-    wp_die(sprintf('Core file not found: %s', $core_file));
+if (!class_exists('\OmegaDesign\core\core')) {
+    wp_die(sprintf('Core file not found: %s', OMEGA_DESIGN_INCLUDES . '/core/core.php'));
 }
 
-require_once $core_file;
+// Old global function names (child themes / custom snippets), each a thin
+// wrapper around the class that now provides it.
+require_once OMEGA_DESIGN_INCLUDES . '/compat/functions.php';
 
-// Initialize theme
-function omega_design_initialize() {
-    if (class_exists('\OmegaDesign\core\core')) {
-        return \OmegaDesign\core\core::get_instance()->init();
-    }
-    return null;
-}
-omega_design_initialize();
-
-// Debug helper
-function omega_design_debug($data) {
-    if (OMEGA_DESIGN_DEV_MODE) {
-        omega_design_log($data, 'debug');
-    }
-}
-
-/**
- * Check WordPress version compatibility
- */
-function omega_design_check_wp_compatibility() {
-    global $wp_version;
-    
-    $required_wp_version = '5.8';
-    if (version_compare($wp_version, $required_wp_version, '<')) {
-        add_action('admin_notices', function() use ($required_wp_version) {
-            ?>
-            <div class="notice notice-warning">
-                <p><?php echo sprintf(esc_html__('Omega Design Theme requires WordPress version %s or higher. Please update WordPress.', 'omega-design'), esc_html($required_wp_version)); ?></p>
-            </div>
-            <?php
-        });
-        return false;
-    }
-    return true;
-}
-add_action('init', 'omega_design_check_wp_compatibility');
-
-/**
- * Check PHP version compatibility
- */
-function omega_design_check_php_compatibility() {
-    $required_php_version = '7.4';
-    if (version_compare(PHP_VERSION, $required_php_version, '<')) {
-        add_action('admin_notices', function() use ($required_php_version) {
-            ?>
-            <div class="notice notice-warning">
-                <p><?php echo sprintf(esc_html__('Omega Design Theme requires PHP version %s or higher. Please contact your hosting provider to upgrade PHP.', 'omega-design'), esc_html($required_php_version)); ?></p>
-            </div>
-            <?php
-        });
-        return false;
-    }
-    return true;
-}
-add_action('init', 'omega_design_check_php_compatibility');
+// Initialize theme - the loader boots every module, including
+// OmegaDesign\core\theme_setup (nav menus, upload directories, palette).
+\OmegaDesign\core\core::get_instance()->init();
 
 // Hook to signal theme is ready
 do_action('omega_design_theme_loaded');
-
-/**
- * Register Mega Menu nav menu locations
- */
-add_action('after_setup_theme', function() {
-    register_nav_menus([
-        'megamenu' => __('Mega Menu', 'omega-design'),
-        'primary'  => __('Primary Menu', 'omega-design'),
-        'footer'   => __('Footer Menu', 'omega-design'),
-    ]);
-});

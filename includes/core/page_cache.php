@@ -38,15 +38,13 @@
 
 namespace OmegaDesign\core;
 
-defined('ABSPATH') || exit;
+use OmegaDesign\traits\singleton;
 
-// Loaded here (not just by the autoloader) because serve_early() runs
-// before the theme's autoloader exists and needs the visitor's language.
-require_once __DIR__ . '/visitor_language.php';
+defined('ABSPATH') || exit;
 
 class page_cache {
 
-    private static $instance = null;
+    use singleton;
 
     const TTL = 12 * HOUR_IN_SECONDS;
 
@@ -81,14 +79,10 @@ class page_cache {
     /** Most URLs a single background warm-up run re-renders. */
     const WARM_LIMIT = 40;
 
-    private $cache_file = null;
+    /** Subdirectory of the theme uploads dir the cached pages live in. */
+    const CACHE_SUBDIR = 'page-cache';
 
-    public static function get_instance() {
-        if (null === self::$instance) {
-            self::$instance = new self();
-        }
-        return self::$instance;
-    }
+    private $cache_file = null;
 
     private function __construct() {
         add_action('template_redirect', [$this, 'maybe_serve_or_capture'], 0);
@@ -109,10 +103,19 @@ class page_cache {
         add_action('after_switch_theme', [$this, 'schedule_warm']);
     }
 
-    public function init() {}
-
+    /**
+     * The cache directory, created on first use.
+     */
     private function cache_dir() {
-        return omega_design_get_upload_dir('page-cache');
+        return uploads::get_dir(self::CACHE_SUBDIR);
+    }
+
+    /**
+     * The cache directory path without touching the filesystem - for
+     * serve_early(), which only ever reads.
+     */
+    private static function cache_path() {
+        return OMEGA_DESIGN_UPLOADS_THEME_DIR . '/' . self::CACHE_SUBDIR;
     }
 
     /**
@@ -142,7 +145,7 @@ class page_cache {
             return;
         }
 
-        $file = self::find_cached_file(OMEGA_DESIGN_UPLOADS_THEME_DIR . '/page-cache', $per_language);
+        $file = self::find_cached_file(self::cache_path(), $per_language);
         if (null === $file) {
             return;
         }
@@ -244,10 +247,7 @@ class page_cache {
         }
 
         $dir = $this->cache_dir();
-        if (!file_exists($dir)) {
-            wp_mkdir_p($dir);
-        }
-        $this->protect_directory($dir);
+        uploads::protect_directory($dir, "Options -Indexes\n");
 
         // A bilingual page (it carries the language toggle - see
         // visitor_language.php) is cached once per language; every other
@@ -344,18 +344,6 @@ class page_cache {
         }
         $per_language = false;
         return null;
-    }
-
-    private function protect_directory($dir) {
-        $index_file = $dir . '/index.php';
-        if (!file_exists($index_file)) {
-            file_put_contents($index_file, '<?php // Silence is golden.');
-        }
-
-        $htaccess_file = $dir . '/.htaccess';
-        if (!file_exists($htaccess_file)) {
-            file_put_contents($htaccess_file, "Options -Indexes\n");
-        }
     }
 
     /**

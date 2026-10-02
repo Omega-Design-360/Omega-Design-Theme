@@ -9,9 +9,9 @@
 
 defined('ABSPATH') || exit;
 
-require_once OMEGA_DESIGN_INCLUDES . '/patterns/pattern-helpers.php';
+use OmegaDesign\patterns\pattern_helpers;
 
-$omega_ph = omega_pattern_placeholder_url();
+$omega_ph = pattern_helpers::placeholder_url();
 ?>
 <!-- wp:group {"align":"wide","style":{"spacing":{"padding":{"top":"var:preset|spacing|l","bottom":"var:preset|spacing|l"}}}} -->
 <div class="wp-block-group alignwide" style="padding-top:var(--wp--preset--spacing--l);padding-bottom:var(--wp--preset--spacing--l)">
@@ -24,7 +24,7 @@ $omega_ph = omega_pattern_placeholder_url();
 <!-- wp:gallery {"columns":3,"linkTo":"none","className":"omega-instagram-grid"} -->
 <figure class="wp-block-gallery has-nested-images columns-3 is-cropped omega-instagram-grid">
 <?php for ($i = 1; $i <= 6; $i++) : ?>
-<!-- wp:image {"sizeSlug":"large","className":"omega-rounded-image"} --><figure class="wp-block-image size-large omega-rounded-image"><img src="<?php echo esc_url(omega_pattern_fashion_asset(sprintf('instagram/instagram-%02d.png', $i))); ?>" alt="<?php esc_attr_e('Instagram photo', 'omega-design'); ?>"/></figure><!-- /wp:image -->
+<!-- wp:image {"sizeSlug":"large","className":"omega-rounded-image"} --><figure class="wp-block-image size-large omega-rounded-image"><img src="<?php echo esc_url(pattern_helpers::fashion_asset(sprintf('instagram/instagram-%02d.png', $i))); ?>" alt="<?php esc_attr_e('Instagram photo', 'omega-design'); ?>"/></figure><!-- /wp:image -->
 <?php endfor; ?>
 </figure>
 <!-- /wp:gallery -->
@@ -35,7 +35,7 @@ $omega_ph = omega_pattern_placeholder_url();
 <div class="wp-block-column" style="flex-basis:40%">
 <!-- wp:group {"className":"omega-card","backgroundColor":"accent","textColor":"button-text","layout":{"type":"constrained"}} -->
 <div class="wp-block-group omega-card has-button-text-color has-accent-background-color has-text-color has-background">
-<!-- wp:image {"className":"omega-app-phone-image"} --><figure class="wp-block-image omega-app-phone-image"><img src="<?php echo esc_url(omega_pattern_fashion_asset('app/app-phone.png')); ?>" alt="<?php esc_attr_e('App screenshot', 'omega-design'); ?>"/></figure><!-- /wp:image -->
+<!-- wp:image {"className":"omega-app-phone-image"} --><figure class="wp-block-image omega-app-phone-image"><img src="<?php echo esc_url(pattern_helpers::fashion_asset('app/app-phone.png')); ?>" alt="<?php esc_attr_e('App screenshot', 'omega-design'); ?>"/></figure><!-- /wp:image -->
 <!-- wp:heading {"level":3,"textColor":"button-text"} --><h3 class="wp-block-heading has-button-text-color has-text-color"><?php esc_html_e('Download Our App', 'omega-design'); ?></h3><!-- /wp:heading -->
 <!-- wp:paragraph {"textColor":"button-text"} --><p class="has-button-text-color has-text-color"><?php esc_html_e('Shop anytime, anywhere - exclusive app-only deals, faster checkout and order tracking.', 'omega-design'); ?></p><!-- /wp:paragraph -->
 <!-- wp:list {"textColor":"button-text"} --><ul class="wp-block-list has-button-text-color has-text-color">

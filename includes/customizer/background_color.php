@@ -7,52 +7,35 @@
 
 namespace OmegaDesign\customizer;
 
+use OmegaDesign\traits\editor_meta;
+use OmegaDesign\traits\singleton;
+
 defined('ABSPATH') || exit;
 
 class background_color {
 
+    use singleton;
+    use editor_meta;
+
     const META_KEY = 'omega_background_color';
     const DARK_META_KEY = 'omega_background_color_dark';
 
-    private static $instance = null;
-
-    public static function get_instance() {
-        if (null === self::$instance) {
-            self::$instance = new self();
-        }
-        return self::$instance;
-    }
-
     private function __construct() {
-        add_action('init', [$this, 'register_meta']);
-        add_action('enqueue_block_editor_assets', [$this, 'enqueue_editor_assets']);
+        $this->register_editor_meta_hooks();
         add_action('wp_enqueue_scripts', [$this, 'enqueue_front_style']);
     }
 
-    public function init() {}
-
-    /**
-     * Post types that get the "Background Color" control in the editor.
-     */
-    public function get_supported_post_types() {
-        return apply_filters('omega_design_background_color_post_types', ['post', 'page']);
+    protected function post_types_filter() {
+        return 'omega_design_background_color_post_types';
     }
 
-    public function register_meta() {
-        foreach ($this->get_supported_post_types() as $post_type) {
-            foreach ([self::META_KEY, self::DARK_META_KEY] as $meta_key) {
-                register_post_meta($post_type, $meta_key, [
-                    'show_in_rest'      => true,
-                    'single'            => true,
-                    'type'              => 'string',
-                    'default'           => '',
-                    'sanitize_callback' => [$this, 'sanitize_color'],
-                    'auth_callback'     => function () {
-                        return current_user_can('edit_posts');
-                    },
-                ]);
-            }
-        }
+    protected function meta_fields() {
+        $field = self::string_meta_field([$this, 'sanitize_color']);
+
+        return [
+            self::META_KEY      => $field,
+            self::DARK_META_KEY => $field,
+        ];
     }
 
     /**
@@ -76,36 +59,14 @@ class background_color {
         return '';
     }
 
-    public function enqueue_editor_assets() {
-        $screen = get_current_screen();
-
-        if (!$screen || !in_array($screen->post_type, $this->get_supported_post_types(), true)) {
-            return;
-        }
-
-        wp_enqueue_script(
+    protected function enqueue_editor_screen_assets() {
+        self::enqueue_editor_script(
             'omega-design-background-color',
-            OMEGA_DESIGN_JS_URI . '/background-color.js',
-            ['wp-plugins', 'wp-edit-post', 'wp-element', 'wp-components', 'wp-data', 'wp-compose', 'wp-i18n', 'omega-design-featured-image-toggle', 'omega-design-sidebar-toggle'],
-            $this->asset_version(OMEGA_DESIGN_ASSETS . '/js/background-color.js'),
-            true
+            'js/background-color.js',
+            ['omega-design-featured-image-toggle', 'omega-design-sidebar-toggle']
         );
 
-        wp_enqueue_style(
-            'omega-design-background-color-editor',
-            OMEGA_DESIGN_CSS_URI . '/background-color-editor.css',
-            [],
-            $this->asset_version(OMEGA_DESIGN_ASSETS . '/css/background-color-editor.css')
-        );
-    }
-
-    /**
-     * filemtime()-based version so a saved edit to the JS or editor CSS is
-     * picked up on the next load instead of being cached by the browser
-     * under the static OMEGA_DESIGN_ASSET_VERSION query string.
-     */
-    private function asset_version($path) {
-        return file_exists($path) ? filemtime($path) : OMEGA_DESIGN_ASSET_VERSION;
+        self::enqueue_style('omega-design-background-color-editor', 'css/background-color-editor.css');
     }
 
     /**
@@ -131,13 +92,19 @@ class background_color {
             return;
         }
 
-        $light = get_post_meta($post_id, self::META_KEY, true);
-        $dark  = get_post_meta($post_id, self::DARK_META_KEY, true);
+        $css = self::build_css(
+            get_post_meta($post_id, self::META_KEY, true),
+            get_post_meta($post_id, self::DARK_META_KEY, true)
+        );
 
-        if (!$light && !$dark) {
+        if ('' === $css) {
             return;
         }
 
+        self::enqueue_inline_style('omega-design-background-color', $css);
+    }
+
+    private static function build_css($light, $dark) {
         $css = '';
 
         if ($light) {
@@ -150,8 +117,6 @@ class background_color {
             $css .= 'body.omega-color-mode-dark{background-color:' . $dark . ' !important;}';
         }
 
-        wp_register_style('omega-design-background-color', false, [], OMEGA_DESIGN_ASSET_VERSION);
-        wp_enqueue_style('omega-design-background-color');
-        wp_add_inline_style('omega-design-background-color', $css);
+        return $css;
     }
 }

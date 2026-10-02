@@ -27,9 +27,13 @@
 
 namespace OmegaDesign\core;
 
+use OmegaDesign\traits\singleton;
+
 defined('ABSPATH') || exit;
 
 class github_updater {
+
+    use singleton;
 
     const REPO      = 'Omega-Design-360/Omega-Design-Theme';
     const BRANCH    = 'main';
@@ -37,15 +41,7 @@ class github_updater {
     const CACHE_TTL = 6 * HOUR_IN_SECONDS;
     const REST_NS   = 'omega-design/v1';
 
-    private static $instance = null;
     private $slug;
-
-    public static function get_instance() {
-        if (null === self::$instance) {
-            self::$instance = new self();
-        }
-        return self::$instance;
-    }
 
     private function __construct() {
         $this->slug = basename(get_template_directory());
@@ -90,8 +86,6 @@ class github_updater {
         return $args;
     }
 
-    public function init() {}
-
     /**
      * WP's own "Check again" button on the Updates screen sets force-check=1
      * and would otherwise still show our cached (possibly stale) result,
@@ -131,31 +125,34 @@ class github_updater {
             return new \WP_REST_Response(['error' => 'Webhook secret not configured on this site.'], 403);
         }
 
-        $signature = $request->get_header('x-hub-signature-256');
-        $token     = $request->get_param('token');
-
-        $authorized = false;
-
-        if ($signature) {
-            // GitHub's own webhook signing: HMAC-SHA256 of the raw body,
-            // keyed with the same secret entered in the repo's webhook
-            // settings - verified this way instead of a bare token so the
-            // payload itself can't be forged even if the URL leaks.
-            $expected = 'sha256=' . hash_hmac('sha256', $request->get_body(), OMEGA_GITHUB_WEBHOOK_SECRET);
-            $authorized = hash_equals($expected, $signature);
-        } elseif ($token) {
-            // Fallback for a manual/non-GitHub trigger (e.g. a CI step that
-            // just curls this URL with ?token=... after deploying).
-            $authorized = hash_equals(OMEGA_GITHUB_WEBHOOK_SECRET, (string) $token);
-        }
-
-        if (!$authorized) {
+        if (!self::is_authorized_webhook($request)) {
             return new \WP_REST_Response(['error' => 'Invalid signature or token.'], 403);
         }
 
         delete_site_transient(self::CACHE_KEY);
 
         return new \WP_REST_Response(['cleared' => true], 200);
+    }
+
+    private static function is_authorized_webhook(\WP_REST_Request $request) {
+        $signature = $request->get_header('x-hub-signature-256');
+        if ($signature) {
+            // GitHub's own webhook signing: HMAC-SHA256 of the raw body,
+            // keyed with the same secret entered in the repo's webhook
+            // settings - verified this way instead of a bare token so the
+            // payload itself can't be forged even if the URL leaks.
+            $expected = 'sha256=' . hash_hmac('sha256', $request->get_body(), OMEGA_GITHUB_WEBHOOK_SECRET);
+            return hash_equals($expected, $signature);
+        }
+
+        $token = $request->get_param('token');
+        if ($token) {
+            // Fallback for a manual/non-GitHub trigger (e.g. a CI step that
+            // just curls this URL with ?token=... after deploying).
+            return hash_equals(OMEGA_GITHUB_WEBHOOK_SECRET, (string) $token);
+        }
+
+        return false;
     }
 
     /**
@@ -171,40 +168,12 @@ class github_updater {
             return $cached;
         }
 
-        $commit_url = sprintf('https://api.github.com/repos/%s/commits/%s', self::REPO, self::BRANCH);
-        $commit_response = wp_remote_get($commit_url, [
-            'headers' => [
-                'Accept'     => 'application/vnd.github+json',
-                'User-Agent' => 'OmegaDesign-Theme-Updater',
-            ],
-            'timeout' => 10,
-        ]);
-
-        if (is_wp_error($commit_response) || 200 !== wp_remote_retrieve_response_code($commit_response)) {
-            return null;
-        }
-
-        $commit = json_decode(wp_remote_retrieve_body($commit_response), true);
-        $sha = $commit['sha'] ?? null;
+        $sha = self::latest_commit_sha();
         if (!$sha) {
             return null;
         }
 
-        $style_url = sprintf('https://raw.githubusercontent.com/%s/%s/style.css', self::REPO, $sha);
-        $style_response = wp_remote_get($style_url, [
-            'headers' => ['User-Agent' => 'OmegaDesign-Theme-Updater'],
-            'timeout' => 10,
-        ]);
-
-        if (is_wp_error($style_response) || 200 !== wp_remote_retrieve_response_code($style_response)) {
-            return null;
-        }
-
-        $version = null;
-        if (preg_match('/^\s*Version:\s*(.+)$/mi', wp_remote_retrieve_body($style_response), $m)) {
-            $version = trim($m[1]);
-        }
-
+        $version = self::theme_version_at($sha);
         if (!$version) {
             return null;
         }
@@ -226,6 +195,47 @@ class github_updater {
         set_site_transient(self::CACHE_KEY, $info, self::CACHE_TTL);
 
         return $info;
+    }
+
+    /** SHA of the latest commit on BRANCH, or null. */
+    private static function latest_commit_sha() {
+        $body = self::remote_body(
+            sprintf('https://api.github.com/repos/%s/commits/%s', self::REPO, self::BRANCH),
+            ['Accept' => 'application/vnd.github+json']
+        );
+        if (null === $body) {
+            return null;
+        }
+
+        $commit = json_decode($body, true);
+        return $commit['sha'] ?? null;
+    }
+
+    /** The Version header of style.css at commit $sha, or null. */
+    private static function theme_version_at($sha) {
+        $body = self::remote_body(sprintf('https://raw.githubusercontent.com/%s/%s/style.css', self::REPO, $sha));
+        if (null === $body || !preg_match('/^\s*Version:\s*(.+)$/mi', $body, $m)) {
+            return null;
+        }
+
+        return trim($m[1]);
+    }
+
+    /**
+     * The body of a successful (200) GET to GitHub, or null on any error.
+     * authorize_github_requests() adds the token header on its own.
+     */
+    private static function remote_body($url, array $headers = []) {
+        $response = wp_remote_get($url, [
+            'headers' => array_merge($headers, ['User-Agent' => 'OmegaDesign-Theme-Updater']),
+            'timeout' => 10,
+        ]);
+
+        if (is_wp_error($response) || 200 !== wp_remote_retrieve_response_code($response)) {
+            return null;
+        }
+
+        return wp_remote_retrieve_body($response);
     }
 
     public function check_for_update($transient) {

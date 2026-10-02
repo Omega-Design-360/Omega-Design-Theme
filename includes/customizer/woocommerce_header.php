@@ -14,22 +14,15 @@
 
 namespace OmegaDesign\customizer;
 
+use OmegaDesign\traits\singleton;
+
 defined('ABSPATH') || exit;
 
 class woocommerce_header {
 
-    private static $instance = null;
-
-    public static function get_instance() {
-        if (null === self::$instance) {
-            self::$instance = new self();
-        }
-        return self::$instance;
-    }
+    use singleton;
 
     private function __construct() {}
-
-    public function init() {}
 
     public static function is_active() {
         return defined('OMEGA_DESIGN_WOOCOMMERCE_ACTIVE')

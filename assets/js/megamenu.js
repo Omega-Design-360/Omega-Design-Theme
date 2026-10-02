@@ -16,14 +16,29 @@
 		return null;
 	}
 
-	function showPanel(panelClass) {
-		panels.forEach(function (p) { p.classList.remove('is-active'); });
-		var panel = header.querySelector('.omega-megamenu-panel.' + panelClass);
-		if (panel) panel.classList.add('is-active');
+	function findPanel(panelClass) {
+		return header.querySelector('.omega-megamenu-panel.' + panelClass);
 	}
 
 	function hideAll() {
 		panels.forEach(function (p) { p.classList.remove('is-active'); });
+	}
+
+	function showPanel(panelClass) {
+		hideAll();
+		var panel = findPanel(panelClass);
+		if (panel) panel.classList.add('is-active');
+	}
+
+	/** Opens the trigger's panel - or closes everything if it's already the open one. */
+	function togglePanel(panelClass) {
+		if (!panelClass) return;
+		var panel = findPanel(panelClass);
+		if (panel && panel.classList.contains('is-active')) {
+			hideAll();
+		} else {
+			showPanel(panelClass);
+		}
 	}
 
 	function scheduleHide() {
@@ -57,12 +72,7 @@
 
 		trigger.addEventListener('click', function (e) {
 			if (!panelClass) return;
-			var panel = header.querySelector('.omega-megamenu-panel.' + panelClass);
-			if (panel && panel.classList.contains('is-active')) {
-				hideAll();
-			} else {
-				showPanel(panelClass);
-			}
+			togglePanel(panelClass);
 			e.preventDefault();
 		});
 
@@ -70,12 +80,7 @@
 		trigger.addEventListener('keydown', function (e) {
 			if (e.key === 'Enter' || e.key === ' ') {
 				e.preventDefault();
-				var panel = header.querySelector('.omega-megamenu-panel.' + panelClass);
-				if (panel && panel.classList.contains('is-active')) {
-					hideAll();
-				} else {
-					if (panelClass) showPanel(panelClass);
-				}
+				togglePanel(panelClass);
 			}
 			if (e.key === 'Escape') hideAll();
 		});

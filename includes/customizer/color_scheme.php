@@ -17,21 +17,20 @@
 
 namespace OmegaDesign\customizer;
 
+use OmegaDesign\traits\assets;
+use OmegaDesign\traits\customizer_section;
+use OmegaDesign\traits\singleton;
+
 defined('ABSPATH') || exit;
 
 class color_scheme {
 
+    use singleton;
+    use assets;
+    use customizer_section;
+
     const THEME_MOD     = 'omega_color_scheme';
     const DEFAULT_SCHEME = 'green';
-
-    private static $instance = null;
-
-    public static function get_instance() {
-        if (null === self::$instance) {
-            self::$instance = new self();
-        }
-        return self::$instance;
-    }
 
     private function __construct() {
         add_action('customize_register', [$this, 'register_customizer']);
@@ -71,7 +70,7 @@ class color_scheme {
      * prefers-color-scheme / .omega-color-mode-dark CSS instead.
      */
     public function filter_theme_json($theme_json) {
-        $scheme = $this->get_schemes()[$this->get_scheme_key()];
+        $scheme = $this->get_active_scheme();
         $data = $theme_json->get_data();
 
         if (empty($data['settings']['color']['palette']['theme']) || !is_array($data['settings']['color']['palette']['theme'])) {
@@ -96,16 +95,8 @@ class color_scheme {
      * preview at all) isn't the only place this setting can be changed from.
      */
     public function enqueue_control_assets() {
-        $css_path = OMEGA_DESIGN_ASSETS . '/css/admin-pages.css';
-        wp_enqueue_style(
-            'omega-design-admin-pages',
-            OMEGA_DESIGN_CSS_URI . '/admin-pages.css',
-            [],
-            file_exists($css_path) ? filemtime($css_path) : OMEGA_DESIGN_ASSET_VERSION
-        );
+        self::enqueue_admin_pages_style(false);
     }
-
-    public function init() {}
 
     /**
      * Each scheme provides light-mode values for every color slug
@@ -116,8 +107,27 @@ class color_scheme {
      * colors, not part of a scheme's brand identity, so only the brand-
      * facing slugs (primary, secondary, accent, surface, button-background)
      * actually vary between schemes.
+     *
+     * Built once per request (after init, once translations have loaded) -
+     * the theme.json filter, the scheme key lookup and the CSS output each
+     * ask for it, several times over.
      */
     public function get_schemes() {
+        if (null !== $this->schemes) {
+            return $this->schemes;
+        }
+
+        $schemes = self::build_schemes();
+        if (did_action('init')) {
+            $this->schemes = $schemes;
+        }
+        return $schemes;
+    }
+
+    /** Built schemes, once cached by get_schemes(). */
+    private $schemes = null;
+
+    private static function build_schemes() {
         return [
             'green' => [
                 'label' => __('Classic Green', 'omega-design'),
@@ -218,18 +228,15 @@ class color_scheme {
     }
 
     public function get_scheme_key() {
-        $key = get_theme_mod(self::THEME_MOD, self::DEFAULT_SCHEME);
-        return isset($this->get_schemes()[$key]) ? $key : self::DEFAULT_SCHEME;
+        return $this->sanitize_scheme(get_theme_mod(self::THEME_MOD, self::DEFAULT_SCHEME));
+    }
+
+    private function get_active_scheme() {
+        return $this->get_schemes()[$this->get_scheme_key()];
     }
 
     public function register_customizer($wp_customize) {
-        if (!$wp_customize->get_panel('omega_design_panel')) {
-            $wp_customize->add_panel('omega_design_panel', [
-                'title'       => __('Omega Design', 'omega-design'),
-                'description' => __('Theme-specific options for Omega Design.', 'omega-design'),
-                'priority'    => 30,
-            ]);
-        }
+        self::ensure_design_panel($wp_customize);
 
         $wp_customize->add_section('omega_color_scheme_settings', [
             'title'       => __('Color Scheme', 'omega-design'),
@@ -244,21 +251,14 @@ class color_scheme {
             'transport'         => 'refresh',
         ]);
 
-        // WP_Customize_Control only exists once the Customizer's own class
-        // files have loaded, which happens right before 'customize_register'
-        // fires - defining omega_color_scheme_control at the bottom of this
-        // file (top-level) ran too early (this file is required during
-        // theme bootstrap, well before that), so the class was silently
-        // never declared and `new omega_color_scheme_control(...)` fataled.
-        // Defining it here instead, inside the same hook callback, only
-        // ever runs once WP_Customize_Control is guaranteed to exist.
-        omega_define_color_scheme_control();
+        $schemes = $this->get_schemes();
 
-        $wp_customize->add_control(new omega_color_scheme_control($wp_customize, self::THEME_MOD, [
+        self::add_card_control($wp_customize, self::THEME_MOD, 'omega_color_scheme', function ($current, $link_callback) use ($schemes) {
+            self::render_scheme_cards($schemes, $current, $link_callback);
+        }, [
             'label'   => __('Color Scheme', 'omega-design'),
             'section' => 'omega_color_scheme_settings',
-            'schemes' => $this->get_schemes(),
-        ]));
+        ]);
     }
 
     public function sanitize_scheme($value) {
@@ -295,19 +295,11 @@ class color_scheme {
      * preview already relies on for the same reason).
      */
     private function get_scheme_css($important = false) {
-        $bang = $important ? ' !important' : '';
-        $scheme = $this->get_schemes()[$this->get_scheme_key()];
-        $css = ':root{';
-        foreach ($scheme['light'] as $slug => $hex) {
-            $css .= '--wp--preset--color--' . $slug . ':' . $hex . $bang . ';';
-        }
-        $css .= '}';
+        $scheme = $this->get_active_scheme();
+        $css = ':root{' . self::color_vars($scheme['light'], $important) . '}';
 
         if (!empty($scheme['dark'])) {
-            $dark_vars = '';
-            foreach ($scheme['dark'] as $slug => $hex) {
-                $dark_vars .= '--wp--preset--color--' . $slug . ':' . $hex . $bang . ';';
-            }
+            $dark_vars = self::color_vars($scheme['dark'], $important);
             // CSS custom properties inherit through descendants regardless
             // of which element sets them, so setting these on body (like
             // color_mode.php's own dark-mode overrides already do) reaches
@@ -318,6 +310,18 @@ class color_scheme {
         }
 
         return $css;
+    }
+
+    /**
+     * "--wp--preset--color--{slug}:{hex};" declarations for a slug => hex map.
+     */
+    private static function color_vars(array $colors, $important = false) {
+        $bang = $important ? ' !important' : '';
+        $vars = '';
+        foreach ($colors as $slug => $hex) {
+            $vars .= '--wp--preset--color--' . $slug . ':' . $hex . $bang . ';';
+        }
+        return $vars;
     }
 
     /**
@@ -332,15 +336,7 @@ class color_scheme {
      * mounted yet on first load.
      */
     public function enqueue_editor_assets() {
-        $js_path = OMEGA_DESIGN_ASSETS . '/js/color-scheme-editor.js';
-
-        wp_enqueue_script(
-            'omega-design-color-scheme-editor',
-            OMEGA_DESIGN_JS_URI . '/color-scheme-editor.js',
-            [],
-            file_exists($js_path) ? filemtime($js_path) : OMEGA_DESIGN_ASSET_VERSION,
-            true
-        );
+        self::enqueue_script('omega-design-color-scheme-editor', 'js/color-scheme-editor.js', [self::editor_shared_script()], true);
 
         wp_add_inline_script(
             'omega-design-color-scheme-editor',
@@ -360,97 +356,54 @@ class color_scheme {
      * name + $this->link() for two-way JS binding.
      */
     public static function render_scheme_cards($schemes, $current, $link_callback) {
-        $rows = [
+        self::render_radio_card_grid('omega-scheme', $schemes, $current, $link_callback, [__CLASS__, 'render_scheme_card_body']);
+    }
+
+    /**
+     * The scheme roles shown as labelled swatches on each card.
+     */
+    private static function swatch_rows() {
+        return [
             'primary'         => __('Primary', 'omega-design'),
             'secondary'       => __('Secondary', 'omega-design'),
             'accent'          => __('Accent', 'omega-design'),
             'page-background' => __('Background', 'omega-design'),
             'heading'         => __('Text', 'omega-design'),
         ];
+    }
+
+    public static function render_scheme_card_body($key, $scheme) {
+        self::render_scheme_banner($scheme);
         ?>
-        <div class="omega-scheme-grid">
-            <?php foreach ($schemes as $key => $scheme) : ?>
-                <label class="omega-scheme-card">
-                    <input
-                        type="radio"
-                        <?php call_user_func($link_callback, $key); ?>
-                        value="<?php echo esc_attr($key); ?>"
-                        <?php checked($current, $key); ?>
-                        class="omega-scheme-card__input"
-                    />
-                    <span
-                        class="omega-scheme-card__banner"
-                        style="background: linear-gradient(135deg, <?php echo esc_attr($scheme['light']['primary']); ?> 0%, <?php echo esc_attr($scheme['light']['secondary']); ?> 100%);"
-                    >
-                        <span class="omega-scheme-card__name"><?php echo esc_html($scheme['label']); ?></span>
-                        <?php if (!empty($scheme['tagline'])) : ?>
-                            <span class="omega-scheme-card__tagline"><?php echo esc_html($scheme['tagline']); ?></span>
-                        <?php endif; ?>
-                    </span>
-                    <span class="omega-scheme-card__swatches">
-                        <?php foreach ($rows as $slug => $row_label) :
-                            $hex = isset($scheme['light'][$slug]) ? $scheme['light'][$slug] : '';
-                        ?>
-                            <span class="omega-scheme-card__swatch">
-                                <span class="omega-scheme-card__circle" style="background:<?php echo esc_attr($hex); ?>"></span>
-                                <span class="omega-scheme-card__swatch-label"><?php echo esc_html($row_label); ?></span>
-                                <span class="omega-scheme-card__hex"><?php echo esc_html($hex); ?></span>
-                            </span>
-                        <?php endforeach; ?>
-                    </span>
-                </label>
+        <span class="omega-scheme-card__swatches">
+            <?php foreach (self::swatch_rows() as $slug => $row_label) : ?>
+                <?php self::render_scheme_swatch($scheme['light'][$slug] ?? '', $row_label); ?>
             <?php endforeach; ?>
-        </div>
+        </span>
         <?php
     }
-}
 
-/**
- * Renders the same .omega-scheme-grid / .omega-scheme-card swatch cards
- * the theme's own Settings page uses (see menus.php's
- * render_color_scheme_form() and their CSS in admin-pages.css, enqueued
- * for the controls panel by color_scheme::enqueue_control_assets()) -
- * WP_Customize_Control's own "radio" type only ever prints a bare radio
- * dot next to a text label, with no way to show a color preview at all.
- *
- * Declared lazily (called from register_customizer(), which only ever
- * runs on 'customize_register') rather than at this file's top level,
- * since WP_Customize_Control doesn't exist yet when this file is first
- * required during theme bootstrap.
- */
-function omega_define_color_scheme_control() {
-    if (class_exists(__NAMESPACE__ . '\\omega_color_scheme_control')) {
-        return;
+    private static function render_scheme_banner($scheme) {
+        ?>
+        <span
+            class="omega-scheme-card__banner"
+            style="background: linear-gradient(135deg, <?php echo esc_attr($scheme['light']['primary']); ?> 0%, <?php echo esc_attr($scheme['light']['secondary']); ?> 100%);"
+        >
+            <span class="omega-scheme-card__name"><?php echo esc_html($scheme['label']); ?></span>
+            <?php if (!empty($scheme['tagline'])) : ?>
+                <span class="omega-scheme-card__tagline"><?php echo esc_html($scheme['tagline']); ?></span>
+            <?php endif; ?>
+        </span>
+        <?php
     }
 
-    class omega_color_scheme_control extends \WP_Customize_Control {
-        public $type = 'omega_color_scheme';
-        public $schemes = [];
-
-        public function render_content() {
-            if (empty($this->schemes)) {
-                return;
-            }
-            ?>
-            <?php if ($this->label) : ?>
-                <span class="customize-control-title"><?php echo esc_html($this->label); ?></span>
-            <?php endif; ?>
-            <?php if ($this->description) : ?>
-                <span class="description customize-control-description"><?php echo esc_html($this->description); ?></span>
-            <?php endif; ?>
-            <?php
-            $name = '_customize-radio-' . $this->id;
-            $control = $this;
-            \OmegaDesign\customizer\color_scheme::render_scheme_cards(
-                $this->schemes,
-                $this->value(),
-                function ($key) use ($name, $control) {
-                    printf('name="%s" ', esc_attr($name));
-                    $control->link();
-                }
-            );
-            ?>
-            <?php
-        }
+    private static function render_scheme_swatch($hex, $label) {
+        ?>
+        <span class="omega-scheme-card__swatch">
+            <span class="omega-scheme-card__circle" style="background:<?php echo esc_attr($hex); ?>"></span>
+            <span class="omega-scheme-card__swatch-label"><?php echo esc_html($label); ?></span>
+            <span class="omega-scheme-card__hex"><?php echo esc_html($hex); ?></span>
+        </span>
+        <?php
     }
 }

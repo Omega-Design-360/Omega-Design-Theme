@@ -5,7 +5,6 @@
  * Categories: omega-design-general
  * Description: A full beauty & cosmetics landing page - hero, trust strip, a shop-by-category row, tabbed featured products (live WooCommerce data), a promo banner, a feature strip, a testimonial slider, and a newsletter signup. Every image, heading and line of copy is editable after inserting.
  * Keywords: landing page, beauty, cosmetics, skincare, makeup, shop, woocommerce
- * Block Types: core/post-content
  * Viewport Width: 1400
  *
  * Follows the same conventions as pattern/landing-digital-agency.php: a
@@ -19,9 +18,9 @@
 
 defined('ABSPATH') || exit;
 
-require_once OMEGA_DESIGN_DIR . '/includes/patterns/pattern-helpers.php';
+use OmegaDesign\patterns\pattern_helpers;
 
-$omega_ph = omega_pattern_placeholder_url();
+$omega_ph = pattern_helpers::placeholder_url();
 
 /** One category card: icon, title, inside a Group carrying a numbered `omega-category-card--N` class (tint in assets/css/landing-beauty-cosmetics.css). */
 $build_category_card = function ($icon, $title, $variant) {
@@ -56,7 +55,7 @@ $build_category_row = function ($items) use ($build_category_card) {
 
 <!-- wp:column {"verticalAlignment":"center","width":"55%"} -->
 <div class="wp-block-column is-vertically-aligned-center" style="flex-basis:55%">
-<?php echo omega_pattern_eyebrow(__('Clean Beauty, Real Results', 'omega-design')); ?>
+<?php echo pattern_helpers::eyebrow(__('Clean Beauty, Real Results', 'omega-design')); ?>
 <!-- wp:heading {"level":1} --><h1 class="wp-block-heading"><?php esc_html_e('Beauty That\'s Uniquely You', 'omega-design'); ?></h1><!-- /wp:heading -->
 <!-- wp:paragraph --><p><?php esc_html_e('Skincare, makeup and fragrance made with ingredients you can trust - cruelty-free, dermatologist tested, always.', 'omega-design'); ?></p><!-- /wp:paragraph -->
 <!-- wp:buttons -->
@@ -97,7 +96,7 @@ $build_category_row = function ($items) use ($build_category_card) {
 <!-- wp:group {"align":"wide","style":{"spacing":{"padding":{"top":"var:preset|spacing|l","bottom":"var:preset|spacing|l"}}},"omegaAnimation":"fade-up"} -->
 <div class="wp-block-group alignwide omega-animate" style="padding-top:var(--wp--preset--spacing--l);padding-bottom:var(--wp--preset--spacing--l)" data-omega-animate="fade-up" data-omega-animate-duration="600" data-omega-animate-delay="0">
 <?php
-echo omega_pattern_icon_row_left([
+echo pattern_helpers::icon_row_left([
 	['icon' => 'local-shipping', 'title' => __('Free Shipping', 'omega-design'),   'desc' => __('On orders over $40', 'omega-design')],
 	['icon' => 'volunteer-activism', 'title' => __('Cruelty-Free', 'omega-design'), 'desc' => __('Never tested on animals', 'omega-design')],
 	['icon' => 'security',       'title' => __('Secure Payment', 'omega-design'),  'desc' => __('100% protected checkout', 'omega-design')],
@@ -111,7 +110,7 @@ echo omega_pattern_icon_row_left([
 <?php // SHOP BY CATEGORY ?>
 <!-- wp:group {"align":"wide","style":{"spacing":{"padding":{"top":"var:preset|spacing|l","bottom":"var:preset|spacing|l"}}},"omegaAnimation":"fade-up"} -->
 <div class="wp-block-group alignwide omega-animate" style="padding-top:var(--wp--preset--spacing--l);padding-bottom:var(--wp--preset--spacing--l)" data-omega-animate="fade-up" data-omega-animate-duration="600" data-omega-animate-delay="0">
-<?php echo omega_pattern_eyebrow(__('Shop by Category', 'omega-design')); ?>
+<?php echo pattern_helpers::eyebrow(__('Shop by Category', 'omega-design')); ?>
 <!-- wp:heading {"level":2} --><h2 class="wp-block-heading"><?php esc_html_e('Your Routine, Reimagined', 'omega-design'); ?></h2><!-- /wp:heading -->
 <?php
 echo $build_category_row([
@@ -133,22 +132,22 @@ echo $build_category_row([
 <?php // FEATURED PRODUCTS (TABS) ?>
 <!-- wp:group {"align":"wide","backgroundColor":"surface","style":{"spacing":{"padding":{"top":"var:preset|spacing|l","bottom":"var:preset|spacing|l"}}},"omegaAnimation":"fade-up"} -->
 <div class="wp-block-group alignwide has-surface-background-color has-background omega-animate" style="padding-top:var(--wp--preset--spacing--l);padding-bottom:var(--wp--preset--spacing--l)" data-omega-animate="fade-up" data-omega-animate-duration="600" data-omega-animate-delay="0">
-<?php echo omega_pattern_eyebrow(__('Featured Products', 'omega-design')); ?>
+<?php echo pattern_helpers::eyebrow(__('Featured Products', 'omega-design')); ?>
 <!-- wp:heading {"level":2} --><h2 class="wp-block-heading"><?php esc_html_e('Bestsellers & New Drops', 'omega-design'); ?></h2><!-- /wp:heading -->
 
 <!-- wp:omega-design/tabs -->
 <div class="wp-block-omega-design-tabs omega-tabs"><div class="omega-tabs__panels">
 
 <!-- wp:omega-design/tabs-item {"label":"<?php echo esc_attr__('Best Sellers', 'omega-design'); ?>"} -->
-<div class="wp-block-omega-design-tabs-item omega-tabs__panel"><div class="omega-tabs__panel-content"><?php echo omega_pattern_product_collection(41, 'popularity'); ?></div></div>
+<div class="wp-block-omega-design-tabs-item omega-tabs__panel"><div class="omega-tabs__panel-content"><?php echo pattern_helpers::product_collection(41, 'popularity'); ?></div></div>
 <!-- /wp:omega-design/tabs-item -->
 
 <!-- wp:omega-design/tabs-item {"label":"<?php echo esc_attr__('New Arrivals', 'omega-design'); ?>"} -->
-<div class="wp-block-omega-design-tabs-item omega-tabs__panel"><div class="omega-tabs__panel-content"><?php echo omega_pattern_product_collection(42, 'date'); ?></div></div>
+<div class="wp-block-omega-design-tabs-item omega-tabs__panel"><div class="omega-tabs__panel-content"><?php echo pattern_helpers::product_collection(42, 'date'); ?></div></div>
 <!-- /wp:omega-design/tabs-item -->
 
 <!-- wp:omega-design/tabs-item {"label":"<?php echo esc_attr__('On Sale', 'omega-design'); ?>"} -->
-<div class="wp-block-omega-design-tabs-item omega-tabs__panel"><div class="omega-tabs__panel-content"><?php echo omega_pattern_product_collection(43, 'date', true); ?></div></div>
+<div class="wp-block-omega-design-tabs-item omega-tabs__panel"><div class="omega-tabs__panel-content"><?php echo pattern_helpers::product_collection(43, 'date', true); ?></div></div>
 <!-- /wp:omega-design/tabs-item -->
 
 </div></div>
@@ -161,7 +160,7 @@ echo $build_category_row([
 <!-- wp:group {"align":"wide","style":{"spacing":{"padding":{"top":"var:preset|spacing|l","bottom":"var:preset|spacing|l"}}},"omegaAnimation":"fade-up"} -->
 <div class="wp-block-group alignwide omega-animate" style="padding-top:var(--wp--preset--spacing--l);padding-bottom:var(--wp--preset--spacing--l)" data-omega-animate="fade-up" data-omega-animate-duration="600" data-omega-animate-delay="0">
 <?php
-echo omega_pattern_split_promo([
+echo pattern_helpers::split_promo([
 	'bg'          => 'secondary',
 	'offer_color' => 'accent',
 	'eyebrow'     => __('Limited Time', 'omega-design'),
@@ -180,7 +179,7 @@ echo omega_pattern_split_promo([
 <!-- wp:group {"align":"wide","backgroundColor":"surface","style":{"spacing":{"padding":{"top":"var:preset|spacing|l","bottom":"var:preset|spacing|l"}}},"omegaAnimation":"fade-up"} -->
 <div class="wp-block-group alignwide has-surface-background-color has-background omega-animate" style="padding-top:var(--wp--preset--spacing--l);padding-bottom:var(--wp--preset--spacing--l)" data-omega-animate="fade-up" data-omega-animate-duration="600" data-omega-animate-delay="0">
 <?php
-echo omega_pattern_icon_row_left([
+echo pattern_helpers::icon_row_left([
 	['icon' => 'eco',               'title' => __('Clean Ingredients', 'omega-design'), 'desc' => __('No parabens or sulfates', 'omega-design')],
 	['icon' => 'verified',          'title' => __('Dermatologist Tested', 'omega-design'), 'desc' => __('Safe for sensitive skin', 'omega-design')],
 	['icon' => 'local-shipping',    'title' => __('Discreet Shipping', 'omega-design'), 'desc' => __('Plain, unmarked packaging', 'omega-design')],

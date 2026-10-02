@@ -24,7 +24,7 @@
 
 defined('ABSPATH') || exit;
 
-require_once OMEGA_DESIGN_DIR . '/includes/patterns/pattern-helpers.php';
+use OmegaDesign\patterns\pattern_helpers;
 
 /** URL of one of this template's own photos in assets/images/beauty-salon-template/. */
 $salon_img = function ($file) {
@@ -183,7 +183,7 @@ $build_row = function ($items, $builder, $class = '') {
 
 <!-- wp:column {"verticalAlignment":"center","width":"48%"} -->
 <div class="wp-block-column is-vertically-aligned-center" style="flex-basis:48%">
-<?php echo omega_pattern_eyebrow(__('الفخامة في الجمال والعناية', 'omega-design')); ?>
+<?php echo pattern_helpers::eyebrow(__('الفخامة في الجمال والعناية', 'omega-design')); ?>
 <!-- wp:heading {"level":1} --><h1 class="wp-block-heading"><?php esc_html_e('جمالكِ،', 'omega-design'); ?><br><mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-primary-color"><?php esc_html_e('بلمسة راقية.', 'omega-design'); ?></mark></h1><!-- /wp:heading -->
 <!-- wp:paragraph --><p><?php esc_html_e('عناية احترافية وتقنيات حديثة في أجواء مريحة تُبرز جمالكِ الطبيعي.', 'omega-design'); ?></p><!-- /wp:paragraph -->
 <!-- wp:buttons -->
@@ -270,7 +270,7 @@ echo $build_row([
 
 <!-- wp:column {"verticalAlignment":"center","width":"50%","className":"omega-salon-about__content"} -->
 <div class="wp-block-column is-vertically-aligned-center omega-salon-about__content" style="flex-basis:50%">
-<?php echo omega_pattern_eyebrow(__('عن لوميا', 'omega-design')); ?>
+<?php echo pattern_helpers::eyebrow(__('عن لوميا', 'omega-design')); ?>
 <!-- wp:heading {"level":2} --><h2 class="wp-block-heading"><?php esc_html_e('جمالٌ مصمَّم', 'omega-design'); ?><br><?php esc_html_e('خصيصاً لكِ.', 'omega-design'); ?></h2><!-- /wp:heading -->
 <!-- wp:paragraph {"fontSize":"small"} --><p class="has-small-font-size"><?php esc_html_e('في لوميا، نؤمن أن الجمال أكثر من مجرد مظهر — إنه إحساس. تكرّس خبيراتنا في التصفيف والعناية جهودهن لتقديم علاجات مخصصة في أجواء فاخرة ومريحة.', 'omega-design'); ?></p><!-- /wp:paragraph -->
 <!-- wp:group {"className":"omega-salon-about__features","layout":{"type":"flex","flexWrap":"wrap"}} -->

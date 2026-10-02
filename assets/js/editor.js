@@ -91,6 +91,197 @@
 		return 'desktop';
 	}
 
+	/* ── Shared building blocks for every panel below ───────────────── */
+
+	// Tablet and Mobile only - panels whose Desktop values stay on core's
+	// own controls.
+	var SMALL_DEVICE_TABS = DEVICE_TABS.slice(1);
+
+	// What counts as "unset" (key removed rather than stored) differs per
+	// control and is part of the saved attribute shape, so each setter
+	// below names the rule it has always used.
+	function isFalsy(value) {
+		return !value;
+	}
+
+	function isBlank(value) {
+		return value === undefined || value === null || value === '';
+	}
+
+	function isBlankOrFalse(value) {
+		return isBlank(value) || value === false;
+	}
+
+	/** A custom group nested in a block's `style` attribute (e.g. style.omegaHover), or {}. */
+	function getStyleGroup(attributes, group) {
+		return (attributes.style && attributes.style[group]) || {};
+	}
+
+	/** A copy of `style` with `group` set to `values` - or removed once values is empty. */
+	function withStyleGroup(style, group, values) {
+		var nextStyle = Object.assign({}, style);
+		if (Object.keys(values).length) {
+			nextStyle[group] = values;
+		} else {
+			delete nextStyle[group];
+		}
+		return nextStyle;
+	}
+
+	/** Sets one key of style[group] - or removes it when isEmpty(value). */
+	function setStyleGroupValue(props, group, key, value, isEmpty) {
+		var style = props.attributes.style || {};
+		var values = Object.assign({}, style[group]);
+
+		if (isEmpty(value)) {
+			delete values[key];
+		} else {
+			values[key] = value;
+		}
+
+		props.setAttributes({ style: withStyleGroup(style, group, values) });
+	}
+
+	/**
+	 * A copy of a per-device map ({desktop:{}, tablet:{}, mobile:{}}) with
+	 * one device's key set - or removed when isEmpty(value), dropping the
+	 * device itself once it has nothing left.
+	 */
+	function withDeviceValue(all, device, key, value, isEmpty) {
+		var next = Object.assign({}, all);
+		var settings = Object.assign({}, next[device]);
+
+		if (isEmpty(value)) {
+			delete settings[key];
+		} else {
+			settings[key] = value;
+		}
+
+		if (Object.keys(settings).length) {
+			next[device] = settings;
+		} else {
+			delete next[device];
+		}
+
+		return next;
+	}
+
+	/** The object, or undefined once it has no keys (so the attribute is dropped). */
+	function objectOrUndefined(object) {
+		return Object.keys(object).length ? object : undefined;
+	}
+
+	/** Adds attribute definitions to a block type's registration settings. */
+	function addBlockAttributes(settings, attributes) {
+		settings.attributes = Object.assign({}, settings.attributes, attributes);
+		return settings;
+	}
+
+	/** The block's own edit UI plus one Inspector panel. */
+	function inspectorPanel(BlockEdit, props, inspectorProps, panelProps, content) {
+		return createElement(
+			Fragment,
+			{},
+			createElement(BlockEdit, props),
+			createElement(
+				InspectorControls,
+				inspectorProps,
+				createElement(PanelBody, panelProps, content)
+			)
+		);
+	}
+
+	/** Device tabs, each rendering renderDevice(deviceName). */
+	function deviceTabPanel(tabs, renderDevice) {
+		return createElement(TabPanel, { tabs: tabs }, function (tab) {
+			return renderDevice(tab.name);
+		});
+	}
+
+	/** One option of a primary/secondary button group. */
+	function optionButton(key, label, isActive, onClick) {
+		return createElement(
+			Button,
+			{
+				key: key,
+				variant: isActive ? 'primary' : 'secondary',
+				isPressed: isActive,
+				onClick: onClick
+			},
+			label
+		);
+	}
+
+	/** Editor canvas block with a scoped <style> rendered just before it. */
+	function withPreviewStyle(BlockListBlock, props, css) {
+		return createElement(
+			Fragment,
+			{},
+			createElement('style', {}, css),
+			createElement(BlockListBlock, props)
+		);
+	}
+
+	/** Editor canvas block with `overrides` merged into its wrapper props. */
+	function withWrapperOverrides(BlockListBlock, props, overrides) {
+		var wrapperProps = Object.assign({}, props.wrapperProps, overrides);
+		return createElement(BlockListBlock, Object.assign({}, props, { wrapperProps: wrapperProps }));
+	}
+
+	/** The wrapper's existing inline style with `style` added. */
+	function mergedWrapperStyle(props, style) {
+		return Object.assign({}, props.wrapperProps && props.wrapperProps.style, style);
+	}
+
+	/** The wrapper's existing class name with `className` appended. */
+	function mergedWrapperClassName(props, className) {
+		var existingClassName = (props.wrapperProps && props.wrapperProps.className) || '';
+		return (existingClassName + ' ' + className).trim();
+	}
+
+	/** Adds `style` to a block's saved wrapper props. */
+	function addSaveStyle(extraProps, style) {
+		extraProps.style = Object.assign({}, extraProps.style, style);
+		return extraProps;
+	}
+
+	/**
+	 * Canvas preview CSS for the active Tablet/Mobile preview: the tablet
+	 * rules, plus the mobile ones on top when previewing mobile - the same
+	 * cascade the front end's `@media` rules produce.
+	 */
+	function deviceCascadeCss(all, device, buildRules) {
+		var css = buildRules(all.tablet || {});
+		if (device === 'mobile') {
+			css += buildRules(all.mobile || {});
+		}
+		return css;
+	}
+
+	/**
+	 * Top/Right/Bottom/Left size fields for one box value (padding, margin).
+	 * onChangeBox receives the whole box, or '' once every side is cleared.
+	 */
+	function boxControl(key, label, box, onChangeBox) {
+		return createElement(BaseControl, { key: key, label: label, __nextHasNoMarginBottom: true },
+			createElement('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' } },
+				['top', 'right', 'bottom', 'left'].map(function (side) {
+					return createElement(UnitControl, {
+						key: side,
+						label: side.charAt(0).toUpperCase() + side.slice(1),
+						units: SIZE_UNITS,
+						value: box[side] || '',
+						onChange: function (value) {
+							var next = Object.assign({}, box);
+							if (value) { next[side] = value; } else { delete next[side]; }
+							onChangeBox(Object.keys(next).length ? next : '');
+						}
+					});
+				})
+			)
+		);
+	}
+
 	var WIDTH_OPTIONS = [
 		{ label: __('Standard', 'omega-design'), value: undefined },
 		{ label: __('Wide', 'omega-design'), value: 'wide' },
@@ -106,35 +297,14 @@
 			var currentAlign = props.attributes.align;
 
 			var buttons = WIDTH_OPTIONS.map(function (option) {
-				var isActive = currentAlign === option.value;
-				return createElement(
-					Button,
-					{
-						key: option.label,
-						variant: isActive ? 'primary' : 'secondary',
-						isPressed: isActive,
-						onClick: function () {
-							props.setAttributes({ align: option.value });
-						}
-					},
-					option.label
-				);
+				return optionButton(option.label, option.label, currentAlign === option.value, function () {
+					props.setAttributes({ align: option.value });
+				});
 			});
 
-			return createElement(
-				Fragment,
-				{},
-				createElement(BlockEdit, props),
-				createElement(
-					InspectorControls,
-					{ group: 'styles' },
-					createElement(
-						PanelBody,
-						{ title: __('Width', 'omega-design'), initialOpen: true },
-						createElement(ButtonGroup, {}, buttons)
-					)
-				)
-			);
+			return inspectorPanel(BlockEdit, props, { group: 'styles' },
+				{ title: __('Width', 'omega-design'), initialOpen: true },
+				createElement(ButtonGroup, {}, buttons));
 		};
 	}, 'withLayoutWidthControl');
 
@@ -166,27 +336,11 @@
 	];
 
 	function getCustomSize(attributes) {
-		return (attributes.style && attributes.style.dimensions) || {};
+		return getStyleGroup(attributes, 'dimensions');
 	}
 
 	function setCustomSize(props, key, value) {
-		var style = props.attributes.style || {};
-		var dimensions = Object.assign({}, style.dimensions);
-
-		if (value) {
-			dimensions[key] = value;
-		} else {
-			delete dimensions[key];
-		}
-
-		var nextStyle = Object.assign({}, style);
-		if (Object.keys(dimensions).length) {
-			nextStyle.dimensions = dimensions;
-		} else {
-			delete nextStyle.dimensions;
-		}
-
-		props.setAttributes({ style: nextStyle });
+		setStyleGroupValue(props, 'dimensions', key, value, isFalsy);
 	}
 
 	function getResponsiveSizeStyle(attributes, device) {
@@ -241,14 +395,9 @@
 				ButtonGroup,
 				{},
 				VALIGN_OPTIONS.map(function (option) {
-					return createElement(Button, {
-						key: option.value || 'top',
-						variant: current === option.value ? 'primary' : 'secondary',
-						isPressed: current === option.value,
-						onClick: function () {
-							setCustomSize(props, 'omegaVAlign', option.value);
-						}
-					}, option.label);
+					return optionButton(option.value || 'top', option.label, current === option.value, function () {
+						setCustomSize(props, 'omegaVAlign', option.value);
+					});
 				})
 			)
 		);
@@ -290,22 +439,9 @@
 				);
 			}
 
-			return createElement(
-				Fragment,
-				{},
-				createElement(BlockEdit, props),
-				createElement(
-					InspectorControls,
-					{ group: 'styles' },
-					createElement(
-						PanelBody,
-						{ title: __('Custom Size', 'omega-design'), initialOpen: false },
-						createElement(TabPanel, { tabs: DEVICE_TABS }, function (tab) {
-							return renderDeviceFields(tab.name);
-						})
-					)
-				)
-			);
+			return inspectorPanel(BlockEdit, props, { group: 'styles' },
+				{ title: __('Custom Size', 'omega-design'), initialOpen: false },
+				deviceTabPanel(DEVICE_TABS, renderDeviceFields));
 		};
 	}, 'withCustomSizeControl');
 
@@ -333,13 +469,10 @@
 				return createElement(BlockListBlock, props);
 			}
 
-			var existingClassName = (props.wrapperProps && props.wrapperProps.className) || '';
-			var wrapperProps = Object.assign({}, props.wrapperProps, {
-				className: (existingClassName + ' ' + valignClass).trim(),
-				style: Object.assign({}, props.wrapperProps && props.wrapperProps.style, style)
+			return withWrapperOverrides(BlockListBlock, props, {
+				className: mergedWrapperClassName(props, valignClass),
+				style: mergedWrapperStyle(props, style)
 			});
-
-			return createElement(BlockListBlock, Object.assign({}, props, { wrapperProps: wrapperProps }));
 		};
 	}, 'withCustomSizeStyleEditor');
 
@@ -359,12 +492,11 @@
 			return extraProps;
 		}
 
-		var style = Object.assign({}, extraProps.style);
+		var style = {};
 		if (size.width) { style.width = size.width; }
 		if (size.height) { style.height = size.height; }
-		extraProps.style = style;
 
-		return extraProps;
+		return addSaveStyle(extraProps, style);
 	});
 
 	/**
@@ -423,27 +555,12 @@
 	];
 
 	function getHoverColors(attributes) {
-		return (attributes.style && attributes.style.omegaHover) || {};
+		return getStyleGroup(attributes, 'omegaHover');
 	}
 
+	// Keeps 0 (a shadow size/offset of zero is a real value).
 	function setHoverColor(props, key, value) {
-		var style = props.attributes.style || {};
-		var hover = Object.assign({}, style.omegaHover);
-
-		if (value !== undefined && value !== null && value !== '') {
-			hover[key] = value;
-		} else {
-			delete hover[key];
-		}
-
-		var nextStyle = Object.assign({}, style);
-		if (Object.keys(hover).length) {
-			nextStyle.omegaHover = hover;
-		} else {
-			delete nextStyle.omegaHover;
-		}
-
-		props.setAttributes({ style: nextStyle });
+		setStyleGroupValue(props, 'omegaHover', key, value, isBlank);
 	}
 
 	var DEFAULT_HOVER_SHADOW_COLOR = 'rgba(0, 0, 0, 0.35)';
@@ -569,22 +686,9 @@
 				return createElement(Fragment, { key: device }, colorControls.concat(shadowControls));
 			}
 
-			return createElement(
-				Fragment,
-				{},
-				createElement(BlockEdit, props),
-				createElement(
-					InspectorControls,
-					{ group: 'styles' },
-					createElement(
-						PanelBody,
-						{ title: __('Hover Colors & Shadow', 'omega-design'), initialOpen: false },
-						createElement(TabPanel, { tabs: DEVICE_TABS }, function (tab) {
-							return renderDeviceFields(tab.name);
-						})
-					)
-				)
-			);
+			return inspectorPanel(BlockEdit, props, { group: 'styles' },
+				{ title: __('Hover Colors & Shadow', 'omega-design'), initialOpen: false },
+				deviceTabPanel(DEVICE_TABS, renderDeviceFields));
 		};
 	}, 'withHoverColorControls');
 
@@ -611,15 +715,10 @@
 				return createElement(BlockListBlock, props);
 			}
 
-			var existingStyle = (props.wrapperProps && props.wrapperProps.style) || {};
-			var existingClassName = (props.wrapperProps && props.wrapperProps.className) || '';
-
-			var wrapperProps = Object.assign({}, props.wrapperProps, {
-				style: Object.assign({}, existingStyle, style),
-				className: (existingClassName + ' has-omega-hover-color').trim()
+			return withWrapperOverrides(BlockListBlock, props, {
+				style: mergedWrapperStyle(props, style),
+				className: mergedWrapperClassName(props, 'has-omega-hover-color')
 			});
-
-			return createElement(BlockListBlock, Object.assign({}, props, { wrapperProps: wrapperProps }));
 		};
 	}, 'withHoverColorStyleEditor');
 
@@ -639,7 +738,7 @@
 			return extraProps;
 		}
 
-		extraProps.style = Object.assign({}, extraProps.style, hoverProps.style);
+		addSaveStyle(extraProps, hoverProps.style);
 		extraProps.className = ((extraProps.className || '') + ' ' + hoverProps.className).trim();
 
 		return extraProps;
@@ -670,27 +769,11 @@
 	];
 
 	function getTextAlign(attributes) {
-		return (attributes.style && attributes.style.omegaAlign) || {};
+		return getStyleGroup(attributes, 'omegaAlign');
 	}
 
 	function setTextAlign(props, key, value) {
-		var style = props.attributes.style || {};
-		var align = Object.assign({}, style.omegaAlign);
-
-		if (value) {
-			align[key] = value;
-		} else {
-			delete align[key];
-		}
-
-		var nextStyle = Object.assign({}, style);
-		if (Object.keys(align).length) {
-			nextStyle.omegaAlign = align;
-		} else {
-			delete nextStyle.omegaAlign;
-		}
-
-		props.setAttributes({ style: nextStyle });
+		setStyleGroupValue(props, 'omegaAlign', key, value, isFalsy);
 	}
 
 	function getResponsiveAlignStyle(attributes, device) {
@@ -714,39 +797,17 @@
 
 				var buttons = ALIGN_OPTIONS.map(function (option) {
 					var isActive = current === option.value;
-					return createElement(
-						Button,
-						{
-							key: option.value,
-							variant: isActive ? 'primary' : 'secondary',
-							isPressed: isActive,
-							onClick: function () {
-								setTextAlign(props, key, isActive ? undefined : option.value);
-							}
-						},
-						option.label
-					);
+					return optionButton(option.value, option.label, isActive, function () {
+						setTextAlign(props, key, isActive ? undefined : option.value);
+					});
 				});
 
 				return createElement(ButtonGroup, { key: device }, buttons);
 			}
 
-			return createElement(
-				Fragment,
-				{},
-				createElement(BlockEdit, props),
-				createElement(
-					InspectorControls,
-					{ group: 'styles' },
-					createElement(
-						PanelBody,
-						{ title: __('Text Alignment', 'omega-design'), initialOpen: false },
-						createElement(TabPanel, { tabs: DEVICE_TABS }, function (tab) {
-							return renderDeviceFields(tab.name);
-						})
-					)
-				)
-			);
+			return inspectorPanel(BlockEdit, props, { group: 'styles' },
+				{ title: __('Text Alignment', 'omega-design'), initialOpen: false },
+				deviceTabPanel(DEVICE_TABS, renderDeviceFields));
 		};
 	}, 'withTextAlignControl');
 
@@ -770,11 +831,7 @@
 				return createElement(BlockListBlock, props);
 			}
 
-			var wrapperProps = Object.assign({}, props.wrapperProps, {
-				style: Object.assign({}, props.wrapperProps && props.wrapperProps.style, style)
-			});
-
-			return createElement(BlockListBlock, Object.assign({}, props, { wrapperProps: wrapperProps }));
+			return withWrapperOverrides(BlockListBlock, props, { style: mergedWrapperStyle(props, style) });
 		};
 	}, 'withTextAlignStyleEditor');
 
@@ -794,9 +851,7 @@
 			return extraProps;
 		}
 
-		extraProps.style = Object.assign({}, extraProps.style, { textAlign: align.textAlign });
-
-		return extraProps;
+		return addSaveStyle(extraProps, { textAlign: align.textAlign });
 	});
 
 	/**
@@ -824,11 +879,9 @@
 			return settings;
 		}
 
-		settings.attributes = Object.assign({}, settings.attributes, {
+		return addBlockAttributes(settings, {
 			megaMenuPattern: { type: 'string', default: '' }
 		});
-
-		return settings;
 	});
 
 	/**
@@ -872,15 +925,11 @@
 	var MediaUploadCheck = wp.blockEditor.MediaUploadCheck;
 	var FocalPointPicker = wp.components.FocalPointPicker;
 	var RESPONSIVE_BG_BLOCKS = ['core/group', 'core/columns', 'core/column'];
-	var RESPONSIVE_BG_TABS = [
-		{ name: 'tablet', title: __('Tablet', 'omega-design') },
-		{ name: 'mobile', title: __('Mobile', 'omega-design') }
-	];
-
 	function getResponsiveBackground(attributes) {
-		return (attributes.style && attributes.style.omegaBackground) || {};
+		return getStyleGroup(attributes, 'omegaBackground');
 	}
 
+	/** Merges several keys at once (an image and its focal point change together). */
 	function setResponsiveBackground(props, changes) {
 		var style = props.attributes.style || {};
 		var background = Object.assign({}, style.omegaBackground, changes);
@@ -891,14 +940,7 @@
 			}
 		});
 
-		var nextStyle = Object.assign({}, style);
-		if (Object.keys(background).length) {
-			nextStyle.omegaBackground = background;
-		} else {
-			delete nextStyle.omegaBackground;
-		}
-
-		props.setAttributes({ style: nextStyle });
+		props.setAttributes({ style: withStyleGroup(style, 'omegaBackground', background) });
 	}
 
 	function positionToPoint(position) {
@@ -999,22 +1041,11 @@
 				return createElement(BlockEdit, props);
 			}
 
-			return createElement(
-				Fragment,
-				{},
-				createElement(BlockEdit, props),
-				createElement(
-					InspectorControls,
-					{ group: 'styles' },
-					createElement(
-						PanelBody,
-						{ title: __('Responsive Background', 'omega-design'), initialOpen: false },
-						createElement(TabPanel, { tabs: RESPONSIVE_BG_TABS }, function (tab) {
-							return renderResponsiveBackgroundFields(props, tab.name);
-						})
-					)
-				)
-			);
+			return inspectorPanel(BlockEdit, props, { group: 'styles' },
+				{ title: __('Responsive Background', 'omega-design'), initialOpen: false },
+				deviceTabPanel(SMALL_DEVICE_TABS, function (device) {
+					return renderResponsiveBackgroundFields(props, device);
+				}));
 		};
 	}, 'withResponsiveBackgroundControl');
 
@@ -1059,12 +1090,7 @@
 				return createElement(BlockListBlock, props);
 			}
 
-			return createElement(
-				Fragment,
-				{},
-				createElement('style', {}, css),
-				createElement(BlockListBlock, props)
-			);
+			return withPreviewStyle(BlockListBlock, props, css);
 		};
 	}, 'withResponsiveBackgroundPreview');
 
@@ -1088,11 +1114,6 @@
 	var SelectControl = wp.components.SelectControl;
 	var ToggleControl = wp.components.ToggleControl;
 	var RESPONSIVE_LAYOUT_BLOCKS = ['core/group', 'core/columns', 'core/column'];
-	var RESPONSIVE_LAYOUT_TABS = [
-		{ name: 'desktop', title: __('Desktop', 'omega-design') },
-		{ name: 'tablet', title: __('Tablet', 'omega-design') },
-		{ name: 'mobile', title: __('Mobile', 'omega-design') }
-	];
 	var INHERIT_OPTION = { value: '', label: __('Same as larger screen', 'omega-design') };
 	var FLEX_VALUES = {
 		left: 'flex-start', top: 'flex-start', center: 'center', right: 'flex-end',
@@ -1105,35 +1126,13 @@
 	}
 
 	function getResponsiveSettings(attributes, device) {
-		var all = (attributes.style && attributes.style.omegaResponsive) || {};
-		return all[device] || {};
+		return getStyleGroup(attributes, 'omegaResponsive')[device] || {};
 	}
 
 	function setResponsiveSetting(props, device, key, value) {
 		var style = props.attributes.style || {};
-		var all = Object.assign({}, style.omegaResponsive);
-		var settings = Object.assign({}, all[device]);
-
-		if (value === '' || value === undefined || value === false || value === null) {
-			delete settings[key];
-		} else {
-			settings[key] = value;
-		}
-
-		if (Object.keys(settings).length) {
-			all[device] = settings;
-		} else {
-			delete all[device];
-		}
-
-		var nextStyle = Object.assign({}, style);
-		if (Object.keys(all).length) {
-			nextStyle.omegaResponsive = all;
-		} else {
-			delete nextStyle.omegaResponsive;
-		}
-
-		props.setAttributes({ style: nextStyle });
+		var all = withDeviceValue(style.omegaResponsive, device, key, value, isBlankOrFalse);
+		props.setAttributes({ style: withStyleGroup(style, 'omegaResponsive', all) });
 	}
 
 	/**
@@ -1351,24 +1350,9 @@
 			fields.push(unitField(props, device, settings, 'gap', __('Gap', 'omega-design')));
 		}
 
-		var padding = settings.padding || {};
-		fields.push(createElement(BaseControl, { key: 'padding', label: __('Padding', 'omega-design'), __nextHasNoMarginBottom: true },
-			createElement('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' } },
-				['top', 'right', 'bottom', 'left'].map(function (side) {
-					return createElement(UnitControl, {
-						key: side,
-						label: side.charAt(0).toUpperCase() + side.slice(1),
-						units: SIZE_UNITS,
-						value: padding[side] || '',
-						onChange: function (value) {
-							var next = Object.assign({}, padding);
-							if (value) { next[side] = value; } else { delete next[side]; }
-							setResponsiveSetting(props, device, 'padding', Object.keys(next).length ? next : '');
-						}
-					});
-				})
-			)
-		));
+		fields.push(boxControl('padding', __('Padding', 'omega-design'), settings.padding || {}, function (box) {
+			setResponsiveSetting(props, device, 'padding', box);
+		}));
 
 		if (ToggleControl) {
 			fields.push(createElement(ToggleControl, {
@@ -1391,22 +1375,11 @@
 				return createElement(BlockEdit, props);
 			}
 
-			return createElement(
-				Fragment,
-				{},
-				createElement(BlockEdit, props),
-				createElement(
-					InspectorControls,
-					{ group: 'styles' },
-					createElement(
-						PanelBody,
-						{ title: __('Responsive Layout', 'omega-design'), initialOpen: false },
-						createElement(TabPanel, { tabs: RESPONSIVE_LAYOUT_TABS }, function (tab) {
-							return renderResponsiveLayoutFields(props, tab.name);
-						})
-					)
-				)
-			);
+			return inspectorPanel(BlockEdit, props, { group: 'styles' },
+				{ title: __('Responsive Layout', 'omega-design'), initialOpen: false },
+				deviceTabPanel(DEVICE_TABS, function (device) {
+					return renderResponsiveLayoutFields(props, device);
+				}));
 		};
 	}, 'withResponsiveLayoutControl');
 
@@ -1429,21 +1402,15 @@
 			}
 
 			var sel = '#block-' + props.clientId;
-			var css = buildLayoutRules(all.tablet || {}, props.name, props.attributes.layout, sel);
-			if (device === 'mobile') {
-				css += buildLayoutRules(all.mobile || {}, props.name, props.attributes.layout, sel);
-			}
+			var css = deviceCascadeCss(all, device, function (settings) {
+				return buildLayoutRules(settings, props.name, props.attributes.layout, sel);
+			});
 
 			if (!css) {
 				return createElement(BlockListBlock, props);
 			}
 
-			return createElement(
-				Fragment,
-				{},
-				createElement('style', {}, css),
-				createElement(BlockListBlock, props)
-			);
+			return withPreviewStyle(BlockListBlock, props, css);
 		};
 	}, 'withResponsiveLayoutPreview');
 
@@ -1472,11 +1439,9 @@
 			return settings;
 		}
 
-		settings.attributes = Object.assign({}, settings.attributes, {
+		return addBlockAttributes(settings, {
 			omegaResponsive: { type: 'object' }
 		});
-
-		return settings;
 	});
 
 	// Only for blocks that actually got the attribute - a plugin block
@@ -1487,22 +1452,8 @@
 	}
 
 	function setElementSetting(props, device, key, value) {
-		var all = Object.assign({}, props.attributes.omegaResponsive);
-		var settings = Object.assign({}, all[device]);
-
-		if (value === '' || value === undefined || value === false || value === null) {
-			delete settings[key];
-		} else {
-			settings[key] = value;
-		}
-
-		if (Object.keys(settings).length) {
-			all[device] = settings;
-		} else {
-			delete all[device];
-		}
-
-		props.setAttributes({ omegaResponsive: Object.keys(all).length ? all : undefined });
+		var all = withDeviceValue(props.attributes.omegaResponsive, device, key, value, isBlankOrFalse);
+		props.setAttributes({ omegaResponsive: objectOrUndefined(all) });
 	}
 
 	/**
@@ -1554,25 +1505,9 @@
 	}
 
 	function boxField(props, device, settings, key, label) {
-		var box = settings[key] || {};
-
-		return createElement(BaseControl, { key: key, label: label, __nextHasNoMarginBottom: true },
-			createElement('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' } },
-				['top', 'right', 'bottom', 'left'].map(function (side) {
-					return createElement(UnitControl, {
-						key: side,
-						label: side.charAt(0).toUpperCase() + side.slice(1),
-						units: SIZE_UNITS,
-						value: box[side] || '',
-						onChange: function (value) {
-							var next = Object.assign({}, box);
-							if (value) { next[side] = value; } else { delete next[side]; }
-							setElementSetting(props, device, key, Object.keys(next).length ? next : '');
-						}
-					});
-				})
-			)
-		);
+		return boxControl(key, label, settings[key] || {}, function (box) {
+			setElementSetting(props, device, key, box);
+		});
 	}
 
 	function renderElementFields(props, device) {
@@ -1624,22 +1559,11 @@
 				return createElement(BlockEdit, props);
 			}
 
-			return createElement(
-				Fragment,
-				{},
-				createElement(BlockEdit, props),
-				createElement(
-					InspectorControls,
-					{ group: 'styles' },
-					createElement(
-						PanelBody,
-						{ title: __('Responsive Settings', 'omega-design'), initialOpen: false },
-						createElement(TabPanel, { tabs: RESPONSIVE_LAYOUT_TABS.slice(1) }, function (tab) {
-							return renderElementFields(props, tab.name);
-						})
-					)
-				)
-			);
+			return inspectorPanel(BlockEdit, props, { group: 'styles' },
+				{ title: __('Responsive Settings', 'omega-design'), initialOpen: false },
+				deviceTabPanel(SMALL_DEVICE_TABS, function (device) {
+					return renderElementFields(props, device);
+				}));
 		};
 	}, 'withResponsiveSettingsControl');
 
@@ -1653,21 +1577,15 @@
 			}
 
 			var sel = '#block-' + props.clientId;
-			var css = buildElementRules(all.tablet || {}, props.name, sel);
-			if (device === 'mobile') {
-				css += buildElementRules(all.mobile || {}, props.name, sel);
-			}
+			var css = deviceCascadeCss(all, device, function (settings) {
+				return buildElementRules(settings, props.name, sel);
+			});
 
 			if (!css) {
 				return createElement(BlockListBlock, props);
 			}
 
-			return createElement(
-				Fragment,
-				{},
-				createElement('style', {}, css),
-				createElement(BlockListBlock, props)
-			);
+			return withPreviewStyle(BlockListBlock, props, css);
 		};
 	}, 'withResponsiveSettingsPreview');
 
@@ -1720,22 +1638,8 @@
 	var IMAGE_SIZE_FIELDS = ['width', 'maxWidth', 'height', 'minHeight', 'aspectRatio', 'objectFit', 'objectPosition', 'borderRadius'];
 
 	function setImageSize(props, device, key, value) {
-		var all = Object.assign({}, props.attributes.omegaImage);
-		var settings = Object.assign({}, all[device]);
-
-		if (value === '' || value === undefined || value === null) {
-			delete settings[key];
-		} else {
-			settings[key] = value;
-		}
-
-		if (Object.keys(settings).length) {
-			all[device] = settings;
-		} else {
-			delete all[device];
-		}
-
-		props.setAttributes({ omegaImage: Object.keys(all).length ? all : undefined });
+		var all = withDeviceValue(props.attributes.omegaImage, device, key, value, isBlank);
+		props.setAttributes({ omegaImage: objectOrUndefined(all) });
 	}
 
 	/**
@@ -1864,7 +1768,7 @@
 				onClick: function () {
 					var all = Object.assign({}, props.attributes.omegaImage);
 					delete all[device];
-					props.setAttributes({ omegaImage: Object.keys(all).length ? all : undefined });
+					props.setAttributes({ omegaImage: objectOrUndefined(all) });
 				}
 			}, device === 'desktop' ? __('Reset Desktop size', 'omega-design') : device === 'tablet' ? __('Reset Tablet size', 'omega-design') : __('Reset Mobile size', 'omega-design'))
 		);
@@ -1875,11 +1779,9 @@
 			return settings;
 		}
 
-		settings.attributes = Object.assign({}, settings.attributes, {
+		return addBlockAttributes(settings, {
 			omegaImage: { type: 'object' }
 		});
-
-		return settings;
 	});
 
 	var withImageSizeControl = createHigherOrderComponent(function (BlockEdit) {
@@ -1888,22 +1790,11 @@
 				return createElement(BlockEdit, props);
 			}
 
-			return createElement(
-				Fragment,
-				{},
-				createElement(BlockEdit, props),
-				createElement(
-					InspectorControls,
-					{ group: 'styles' },
-					createElement(
-						PanelBody,
-						{ title: __('Image Size', 'omega-design'), initialOpen: true },
-						createElement(TabPanel, { tabs: RESPONSIVE_LAYOUT_TABS }, function (tab) {
-							return renderImageSizeFields(props, tab.name);
-						})
-					)
-				)
-			);
+			return inspectorPanel(BlockEdit, props, { group: 'styles' },
+				{ title: __('Image Size', 'omega-design'), initialOpen: true },
+				deviceTabPanel(DEVICE_TABS, function (device) {
+					return renderImageSizeFields(props, device);
+				}));
 		};
 	}, 'withImageSizeControl');
 
@@ -1932,12 +1823,7 @@
 				return createElement(BlockListBlock, props);
 			}
 
-			return createElement(
-				Fragment,
-				{},
-				createElement('style', {}, css),
-				createElement(BlockListBlock, props)
-			);
+			return withPreviewStyle(BlockListBlock, props, css);
 		};
 	}, 'withImageSizePreview');
 
@@ -2005,7 +1891,6 @@
 
 	var ComboboxControl = wp.components.ComboboxControl;
 	var TextControl = wp.components.TextControl;
-	var ToggleControl = wp.components.ToggleControl;
 	var useSelect = wp.data.useSelect;
 
 	function useMegaMenuOptions() {
@@ -2039,28 +1924,17 @@
 
 			var options = useMegaMenuOptions();
 
-			return createElement(
-				Fragment,
-				{},
-				createElement(BlockEdit, props),
-				createElement(
-					InspectorControls,
-					{},
-					createElement(
-						PanelBody,
-						{ title: __('Mega Menu', 'omega-design'), initialOpen: false },
-						createElement(ComboboxControl, {
-							label: __('Mega Menu', 'omega-design'),
-							help: __('Attach one of your Mega Menus as a hover/click panel for this nav item. Manage them under Omega Design > Mega Menus in wp-admin.', 'omega-design'),
-							value: props.attributes.megaMenuPattern || '',
-							options: options,
-							onChange: function (value) {
-								props.setAttributes({ megaMenuPattern: value || '' });
-							}
-						})
-					)
-				)
-			);
+			return inspectorPanel(BlockEdit, props, {},
+				{ title: __('Mega Menu', 'omega-design'), initialOpen: false },
+				createElement(ComboboxControl, {
+					label: __('Mega Menu', 'omega-design'),
+					help: __('Attach one of your Mega Menus as a hover/click panel for this nav item. Manage them under Omega Design > Mega Menus in wp-admin.', 'omega-design'),
+					value: props.attributes.megaMenuPattern || '',
+					options: options,
+					onChange: function (value) {
+						props.setAttributes({ megaMenuPattern: value || '' });
+					}
+				}));
 		};
 	}, 'withMegaMenuControl');
 
@@ -2089,27 +1963,11 @@
 	var LINK_BLOCKS = ['core/group', 'core/columns', 'core/column'];
 
 	function getBlockLink(attributes) {
-		return (attributes.style && attributes.style.omegaLink) || {};
+		return getStyleGroup(attributes, 'omegaLink');
 	}
 
 	function setBlockLink(props, key, value) {
-		var style = props.attributes.style || {};
-		var link = Object.assign({}, style.omegaLink);
-
-		if (value) {
-			link[key] = value;
-		} else {
-			delete link[key];
-		}
-
-		var nextStyle = Object.assign({}, style);
-		if (Object.keys(link).length) {
-			nextStyle.omegaLink = link;
-		} else {
-			delete nextStyle.omegaLink;
-		}
-
-		props.setAttributes({ style: nextStyle });
+		setStyleGroupValue(props, 'omegaLink', key, value, isFalsy);
 	}
 
 	var withBlockLinkControl = createHigherOrderComponent(function (BlockEdit) {
@@ -2154,20 +2012,9 @@
 				);
 			}
 
-			return createElement(
-				Fragment,
-				{},
-				createElement(BlockEdit, props),
-				createElement(
-					InspectorControls,
-					{},
-					createElement(
-						PanelBody,
-						{ title: __('Link', 'omega-design'), initialOpen: false },
-						fields
-					)
-				)
-			);
+			return inspectorPanel(BlockEdit, props, {},
+				{ title: __('Link', 'omega-design'), initialOpen: false },
+				fields);
 		};
 	}, 'withBlockLinkControl');
 
@@ -2189,12 +2036,9 @@
 				return createElement(BlockListBlock, props);
 			}
 
-			var existingClassName = (props.wrapperProps && props.wrapperProps.className) || '';
-			var wrapperProps = Object.assign({}, props.wrapperProps, {
-				className: (existingClassName + ' is-omega-linked-block').trim()
+			return withWrapperOverrides(BlockListBlock, props, {
+				className: mergedWrapperClassName(props, 'is-omega-linked-block')
 			});
-
-			return createElement(BlockListBlock, Object.assign({}, props, { wrapperProps: wrapperProps }));
 		};
 	}, 'withBlockLinkIndicator');
 
@@ -2255,27 +2099,12 @@
 	];
 
 	function getTextStyle(attributes) {
-		return (attributes.style && attributes.style.omegaTypography) || {};
+		return getStyleGroup(attributes, 'omegaTypography');
 	}
 
+	// Keeps false and 0 (italic off, opacity 0 are real values).
 	function setTextStyle(props, key, value) {
-		var style = props.attributes.style || {};
-		var typography = Object.assign({}, style.omegaTypography);
-
-		if (value !== undefined && value !== null && value !== '') {
-			typography[key] = value;
-		} else {
-			delete typography[key];
-		}
-
-		var nextStyle = Object.assign({}, style);
-		if (Object.keys(typography).length) {
-			nextStyle.omegaTypography = typography;
-		} else {
-			delete nextStyle.omegaTypography;
-		}
-
-		props.setAttributes({ style: nextStyle });
+		setStyleGroupValue(props, 'omegaTypography', key, value, isBlank);
 	}
 
 	/**
@@ -2422,14 +2251,9 @@
 											{},
 											THICKNESS_OPTIONS.map(function (option) {
 												var isActive = typography.fontWeight === option.value;
-												return createElement(Button, {
-													key: option.value,
-													variant: isActive ? 'primary' : 'secondary',
-													isPressed: isActive,
-													onClick: function () {
-														setTextStyle(props, 'fontWeight', isActive ? '' : option.value);
-													}
-												}, option.label);
+												return optionButton(option.value, option.label, isActive, function () {
+													setTextStyle(props, 'fontWeight', isActive ? '' : option.value);
+												});
 											})
 										)
 									),
@@ -2501,15 +2325,9 @@
 											ButtonGroup,
 											{},
 											BOX_WIDTH_OPTIONS.map(function (option) {
-												var isActive = !!typography.fullWidth === option.value;
-												return createElement(Button, {
-													key: String(option.value),
-													variant: isActive ? 'primary' : 'secondary',
-													isPressed: isActive,
-													onClick: function () {
-														setTextStyle(props, 'fullWidth', option.value);
-													}
-												}, option.label);
+												return optionButton(String(option.value), option.label, !!typography.fullWidth === option.value, function () {
+													setTextStyle(props, 'fullWidth', option.value);
+												});
 											})
 										)
 									),
@@ -2558,11 +2376,7 @@
 				return createElement(BlockListBlock, props);
 			}
 
-			var wrapperProps = Object.assign({}, props.wrapperProps, {
-				style: Object.assign({}, props.wrapperProps && props.wrapperProps.style, style)
-			});
-
-			return createElement(BlockListBlock, Object.assign({}, props, { wrapperProps: wrapperProps }));
+			return withWrapperOverrides(BlockListBlock, props, { style: mergedWrapperStyle(props, style) });
 		};
 	}, 'withTextStyleEditor');
 
@@ -2584,9 +2398,7 @@
 			return extraProps;
 		}
 
-		extraProps.style = Object.assign({}, extraProps.style, style);
-
-		return extraProps;
+		return addSaveStyle(extraProps, style);
 	});
 
 	/**
@@ -2625,27 +2437,12 @@
 	];
 
 	function getGridAlign(attributes) {
-		return (attributes.style && attributes.style.omegaGridAlign) || {};
+		return getStyleGroup(attributes, 'omegaGridAlign');
 	}
 
+	// GRID_ALIGN_UNSET is '' - falsy, so it removes the key.
 	function setGridAlign(props, key, value) {
-		var style = props.attributes.style || {};
-		var gridAlign = Object.assign({}, style.omegaGridAlign);
-
-		if (value && value !== GRID_ALIGN_UNSET) {
-			gridAlign[key] = value;
-		} else {
-			delete gridAlign[key];
-		}
-
-		var nextStyle = Object.assign({}, style);
-		if (Object.keys(gridAlign).length) {
-			nextStyle.omegaGridAlign = gridAlign;
-		} else {
-			delete nextStyle.omegaGridAlign;
-		}
-
-		props.setAttributes({ style: nextStyle });
+		setStyleGroupValue(props, 'omegaGridAlign', key, value, isFalsy);
 	}
 
 	function getGridAlignCSS(gridAlign) {
@@ -2668,18 +2465,9 @@
 			function renderOptionGroup(options, key, currentValue) {
 				var buttons = options.map(function (option) {
 					var isActive = currentValue === option.value;
-					return createElement(
-						Button,
-						{
-							key: option.value,
-							variant: isActive ? 'primary' : 'secondary',
-							isPressed: isActive,
-							onClick: function () {
-								setGridAlign(props, key, isActive ? GRID_ALIGN_UNSET : option.value);
-							}
-						},
-						option.label
-					);
+					return optionButton(option.value, option.label, isActive, function () {
+						setGridAlign(props, key, isActive ? GRID_ALIGN_UNSET : option.value);
+					});
 				});
 
 				return createElement(ButtonGroup, {}, buttons);
@@ -2748,11 +2536,7 @@
 				return createElement(BlockListBlock, props);
 			}
 
-			var wrapperProps = Object.assign({}, props.wrapperProps, {
-				style: Object.assign({}, props.wrapperProps && props.wrapperProps.style, style)
-			});
-
-			return createElement(BlockListBlock, Object.assign({}, props, { wrapperProps: wrapperProps }));
+			return withWrapperOverrides(BlockListBlock, props, { style: mergedWrapperStyle(props, style) });
 		};
 	}, 'withGridAlignEditor');
 
@@ -2773,8 +2557,6 @@
 			return extraProps;
 		}
 
-		extraProps.style = Object.assign({}, extraProps.style, style);
-
-		return extraProps;
+		return addSaveStyle(extraProps, style);
 	});
 })(window.wp);

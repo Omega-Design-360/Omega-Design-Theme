@@ -12,18 +12,15 @@
 
 namespace OmegaDesign\core;
 
+use OmegaDesign\traits\assets;
+use OmegaDesign\traits\singleton;
+
 defined('ABSPATH') || exit;
 
 class scroll_animations {
 
-    private static $instance = null;
-
-    public static function get_instance() {
-        if (null === self::$instance) {
-            self::$instance = new self();
-        }
-        return self::$instance;
-    }
+    use singleton;
+    use assets;
 
     private function __construct() {
         add_action('wp_enqueue_scripts', [$this, 'enqueue_frontend']);
@@ -49,40 +46,23 @@ class scroll_animations {
             return $args;
         }
 
-        $args['attributes'] = array_merge($args['attributes'] ?? [], [
+        return blocks::with_attributes($args, [
             'omegaAnimation'         => ['type' => 'string', 'default' => ''],
             'omegaAnimationDuration' => ['type' => 'number', 'default' => 600],
             'omegaAnimationDelay'    => ['type' => 'number', 'default' => 0],
         ]);
-
-        return $args;
     }
 
-    public function init() {}
-
     public function enqueue_frontend() {
-        $css_path = OMEGA_DESIGN_ASSETS . '/css/scroll-animations.css';
-        if (file_exists($css_path)) {
-            wp_enqueue_style('omega-design-scroll-animations', OMEGA_DESIGN_CSS_URI . '/scroll-animations.css', [], filemtime($css_path));
-        }
-
-        $js_path = OMEGA_DESIGN_ASSETS . '/js/scroll-animations.js';
-        if (file_exists($js_path)) {
-            wp_enqueue_script('omega-design-scroll-animations', OMEGA_DESIGN_JS_URI . '/scroll-animations.js', [], filemtime($js_path), true);
-        }
+        self::enqueue_style('omega-design-scroll-animations', 'css/scroll-animations.css');
+        self::enqueue_script('omega-design-scroll-animations', 'js/scroll-animations.js', [], true);
     }
 
     public function enqueue_editor() {
-        $js_path = OMEGA_DESIGN_ASSETS . '/js/scroll-animations-editor.js';
-        if (!file_exists($js_path)) {
-            return;
-        }
-
-        wp_enqueue_script(
+        self::enqueue_script(
             'omega-design-scroll-animations-editor',
-            OMEGA_DESIGN_JS_URI . '/scroll-animations-editor.js',
+            'js/scroll-animations-editor.js',
             ['wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-compose', 'wp-hooks', 'wp-i18n'],
-            filemtime($js_path),
             true
         );
     }
@@ -121,8 +101,6 @@ class scroll_animations {
             $delay
         );
 
-        $replaced = preg_replace('/^(\s*<[a-z0-9]+)([^>]*)(>)/i', '$1$2' . $extra . '$3', $block_content, 1);
-
-        return null === $replaced ? $block_content : $replaced;
+        return block_html::append_first_tag_attrs($block_content, $extra);
     }
 }

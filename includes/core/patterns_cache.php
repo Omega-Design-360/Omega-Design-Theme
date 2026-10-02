@@ -24,11 +24,15 @@
 
 namespace OmegaDesign\core;
 
+use OmegaDesign\traits\rest_response_cache;
+use OmegaDesign\traits\singleton;
+
 defined('ABSPATH') || exit;
 
 class patterns_cache {
 
-    private static $instance = null;
+    use singleton;
+    use rest_response_cache;
 
     const ROUTE     = '/wp/v2/block-patterns/patterns';
     const CRON_HOOK = 'omega_patterns_warm_cache';
@@ -43,13 +47,6 @@ class patterns_cache {
      * transient comfortably under that limit.
      */
     const CHUNK_SIZE = 40;
-
-    public static function get_instance() {
-        if (null === self::$instance) {
-            self::$instance = new self();
-        }
-        return self::$instance;
-    }
 
     private function __construct() {
         add_filter('rest_pre_dispatch', [$this, 'maybe_serve_cached'], 10, 3);
@@ -68,8 +65,6 @@ class patterns_cache {
         add_action('deactivated_plugin', [$this, 'flush_cache']);
         add_action('switch_theme', [$this, 'flush_cache']);
     }
-
-    public function init() {}
 
     private function is_route($request) {
         return self::ROUTE === $request->get_route();
@@ -115,43 +110,17 @@ class patterns_cache {
             return $result;
         }
 
-        $key  = $this->cache_key($request);
-        $meta = get_transient($key . '_meta');
-        if (false === $meta || !isset($meta['chunks'])) {
-            return $result;
-        }
+        $data = self::read_chunked_transient($this->cache_key($request));
 
-        $data = [];
-        for ($i = 0; $i < $meta['chunks']; $i++) {
-            $chunk = get_transient($key . '_c' . $i);
-            if (false === $chunk) {
-                // A chunk expired/evicted independently - treat the whole
-                // thing as a miss rather than serve an incomplete list.
-                return $result;
-            }
-            $data = array_merge($data, $chunk);
-        }
-
-        return rest_ensure_response($data);
+        return null === $data ? $result : rest_ensure_response($data);
     }
 
     public function maybe_cache_response($response, $server, $request) {
-        if (!$this->is_route($request) || is_wp_error($response)) {
+        if (!$this->is_route($request) || !self::is_cacheable_response($response)) {
             return $response;
         }
 
-        $status = $response instanceof \WP_REST_Response ? $response->get_status() : 200;
-        if ($status < 200 || $status >= 300) {
-            return $response;
-        }
-
-        $key    = $this->cache_key($request);
-        $chunks = array_chunk($response->get_data(), self::CHUNK_SIZE);
-
-        foreach ($chunks as $i => $chunk) {
-            set_transient($key . '_c' . $i, $chunk, self::TTL);
-        }
-        set_transient($key . '_meta', ['chunks' => count($chunks)], self::TTL);
+        self::write_chunked_transient($this->cache_key($request), $response->get_data(), self::CHUNK_SIZE, self::TTL);
 
         return $response;
     }
@@ -164,9 +133,7 @@ class patterns_cache {
     }
 
     public function schedule_cache_warm() {
-        if (!wp_next_scheduled(self::CRON_HOOK)) {
-            wp_schedule_event(time(), 'hourly', self::CRON_HOOK);
-        }
+        self::schedule_recurring(self::CRON_HOOK, 'hourly');
     }
 
     public function unschedule_cache_warm() {
@@ -179,30 +146,11 @@ class patterns_cache {
     }
 
     /**
-     * See icons.php's warm_cache() for why this calls maybe_cache_response()
-     * directly instead of trusting the 'rest_post_dispatch' filter to fire
-     * on its own: WP_REST_Server::dispatch() (the method available from a
-     * cron context, with no real HTTP request to route) never applies that
-     * filter itself - only serve_request(), the full HTTP-serving path a
-     * real browser request takes, does. Relying on the filter here would
-     * silently pay the ~750ms cost on every cron run and throw the result
-     * away uncached.
+     * Re-renders the listing in the background (see
+     * rest_response_cache::warm_route_as_admin()) so no editor session pays
+     * the ~750ms cost directly.
      */
     public function warm_cache() {
-        $previous_user = get_current_user_id();
-        $admins        = get_users(['role' => 'administrator', 'number' => 1, 'fields' => 'ID']);
-
-        if (empty($admins)) {
-            return;
-        }
-
-        wp_set_current_user($admins[0]);
-
-        $request  = new \WP_REST_Request('GET', self::ROUTE);
-        $server   = rest_get_server();
-        $response = $server->dispatch($request);
-        $this->maybe_cache_response($response, $server, $request);
-
-        wp_set_current_user($previous_user);
+        self::warm_route_as_admin(self::ROUTE, [$this, 'maybe_cache_response']);
     }
 }

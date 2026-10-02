@@ -11,28 +11,21 @@
 
 namespace OmegaDesign\core;
 
+use OmegaDesign\traits\singleton;
+
 defined('ABSPATH') || exit;
 
 class leads {
 
-    private static $instance = null;
+    use singleton;
 
     const POST_TYPE = 'omega_lead';
-
-    public static function get_instance() {
-        if (null === self::$instance) {
-            self::$instance = new self();
-        }
-        return self::$instance;
-    }
 
     private function __construct() {
         add_action('init', [$this, 'register_post_type']);
         add_action('wp_ajax_omega_newsletter_subscribe', [$this, 'handle_subscribe']);
         add_action('wp_ajax_nopriv_omega_newsletter_subscribe', [$this, 'handle_subscribe']);
     }
-
-    public function init() {}
 
     public function register_post_type() {
         register_post_type(self::POST_TYPE, [
@@ -69,25 +62,7 @@ class leads {
 
         $source_url = isset($_POST['source_url']) ? esc_url_raw(wp_unslash($_POST['source_url'])) : '';
 
-        $existing = get_posts([
-            'post_type'      => self::POST_TYPE,
-            'post_status'    => 'publish',
-            'posts_per_page' => 1,
-            'meta_key'       => '_omega_lead_email',
-            'meta_value'     => $email,
-            'fields'         => 'ids',
-        ]);
-
-        if (!empty($existing)) {
-            $lead_id = $existing[0];
-            wp_update_post(['ID' => $lead_id, 'post_date' => current_time('mysql')]);
-        } else {
-            $lead_id = wp_insert_post([
-                'post_type'   => self::POST_TYPE,
-                'post_title'  => $email,
-                'post_status' => 'publish',
-            ]);
-        }
+        $lead_id = self::upsert_lead($email);
 
         if (is_wp_error($lead_id) || !$lead_id) {
             wp_send_json_error(['message' => __('Something went wrong. Please try again.', 'omega-design')], 500);
@@ -97,5 +72,37 @@ class leads {
         update_post_meta($lead_id, '_omega_lead_source_url', $source_url);
 
         wp_send_json_success();
+    }
+
+    /**
+     * The existing lead for $email (bumped to the top by its date), or a
+     * newly created one. Returns the post ID, 0 or a WP_Error.
+     */
+    private static function upsert_lead($email) {
+        $lead_id = self::find_lead_id($email);
+
+        if ($lead_id) {
+            wp_update_post(['ID' => $lead_id, 'post_date' => current_time('mysql')]);
+            return $lead_id;
+        }
+
+        return wp_insert_post([
+            'post_type'   => self::POST_TYPE,
+            'post_title'  => $email,
+            'post_status' => 'publish',
+        ]);
+    }
+
+    private static function find_lead_id($email) {
+        $existing = get_posts([
+            'post_type'      => self::POST_TYPE,
+            'post_status'    => 'publish',
+            'posts_per_page' => 1,
+            'meta_key'       => '_omega_lead_email',
+            'meta_value'     => $email,
+            'fields'         => 'ids',
+        ]);
+
+        return empty($existing) ? 0 : $existing[0];
     }
 }

@@ -11,24 +11,33 @@
 
 namespace OmegaDesign\core;
 
+use OmegaDesign\traits\assets;
+use OmegaDesign\traits\singleton;
+
 defined('ABSPATH') || exit;
 
 class blocks {
 
-    private static $instance = null;
+    use singleton;
+    use assets;
 
-    public static function get_instance() {
-        if (null === self::$instance) {
-            self::$instance = new self();
-        }
-        return self::$instance;
-    }
+    const EDITOR_DEPS = ['wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-i18n'];
 
     private function __construct() {
         add_action('init', [$this, 'register']);
         add_filter('register_block_type_args', [$this, 'add_background_support'], 10, 2);
         add_filter('register_block_type_args', [$this, 'add_responsive_attribute'], 10, 2);
         add_filter('register_block_type_args', [$this, 'add_image_size_attribute'], 10, 2);
+    }
+
+    /**
+     * Adds server-side attribute schema to a block type's registration args
+     * - the server half of an attribute assets/js/editor.js adds in the
+     * editor, so the REST API accepts it and render_block sees it.
+     */
+    public static function with_attributes($args, array $attributes) {
+        $args['attributes'] = array_merge($args['attributes'] ?? [], $attributes);
+        return $args;
     }
 
     /**
@@ -40,11 +49,7 @@ class blocks {
             return $args;
         }
 
-        $args['attributes'] = array_merge($args['attributes'] ?? [], [
-            'omegaImage' => ['type' => 'object'],
-        ]);
-
-        return $args;
+        return self::with_attributes($args, ['omegaImage' => ['type' => 'object']]);
     }
 
     /**
@@ -68,14 +73,8 @@ class blocks {
             return $args;
         }
 
-        $args['attributes'] = array_merge($args['attributes'] ?? [], [
-            'omegaResponsive' => ['type' => 'object'],
-        ]);
-
-        return $args;
+        return self::with_attributes($args, ['omegaResponsive' => ['type' => 'object']]);
     }
-
-    public function init() {}
 
     /**
      * Server half of editor.js's "omega-design/column-background" filter -
@@ -117,19 +116,18 @@ class blocks {
         $script_path = $dir . '/index.js';
         wp_register_script(
             'omega-icon-block-editor',
-            OMEGA_DESIGN_URI . '/blocks/omega-icon/index.js',
-            ['wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-i18n'],
+            self::block_file_uri($dir, 'index.js'),
+            self::EDITOR_DEPS,
             file_exists($script_path) ? filemtime($script_path) : OMEGA_DESIGN_VERSION,
             true
         );
         wp_set_script_translations('omega-icon-block-editor', 'omega-design');
 
-        $style_path = OMEGA_DESIGN_ASSETS . '/css/omega-icon-choreography.css';
         wp_register_style(
             'omega-icon-block',
-            OMEGA_DESIGN_CSS_URI . '/omega-icon-choreography.css',
+            self::asset_uri('css/omega-icon-choreography.css'),
             [],
-            file_exists($style_path) ? filemtime($style_path) : OMEGA_DESIGN_VERSION
+            self::has_asset('css/omega-icon-choreography.css') ? self::asset_version('css/omega-icon-choreography.css') : OMEGA_DESIGN_VERSION
         );
 
         register_block_type($dir);
@@ -139,46 +137,42 @@ class blocks {
      * Registers a block's editor script, front-end view script and shared
      * style.css from its own directory using the theme's standard hand-
      * rolled (no build step) convention - mirrors register_omega_icon()
-     * above. $handles keys: 'editor' (always registered), 'view' and
-     * 'style' (only if the corresponding file exists in $dir).
+     * above. $handles keys: 'editor', 'view' and 'style' (each only if the
+     * corresponding file exists in $dir).
      */
-    private function register_block_assets($dir, $handles, $editor_deps = ['wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-i18n']) {
+    private function register_block_assets($dir, $handles, $editor_deps = self::EDITOR_DEPS) {
         if (!file_exists($dir . '/block.json')) {
             return;
         }
 
-        $editor_path = $dir . '/index.js';
-        if (file_exists($editor_path) && !empty($handles['editor'])) {
-            wp_register_script(
-                $handles['editor'],
-                OMEGA_DESIGN_URI . '/blocks/' . basename($dir) . '/index.js',
-                $editor_deps,
-                filemtime($editor_path),
-                true
-            );
+        if (self::register_block_script($dir, 'index.js', $handles['editor'] ?? '', $editor_deps)) {
             wp_set_script_translations($handles['editor'], 'omega-design');
         }
 
-        $view_path = $dir . '/view.js';
-        if (file_exists($view_path) && !empty($handles['view'])) {
-            wp_register_script(
-                $handles['view'],
-                OMEGA_DESIGN_URI . '/blocks/' . basename($dir) . '/view.js',
-                [],
-                filemtime($view_path),
-                true
-            );
-        }
+        self::register_block_script($dir, 'view.js', $handles['view'] ?? '', []);
 
         $style_path = $dir . '/style.css';
         if (file_exists($style_path) && !empty($handles['style'])) {
-            wp_register_style(
-                $handles['style'],
-                OMEGA_DESIGN_URI . '/blocks/' . basename($dir) . '/style.css',
-                [],
-                filemtime($style_path)
-            );
+            wp_register_style($handles['style'], self::block_file_uri($dir, 'style.css'), [], filemtime($style_path));
         }
+    }
+
+    /**
+     * Registers $file from a block's directory as a footer script under
+     * $handle, when both exist. Returns whether it was registered.
+     */
+    private static function register_block_script($dir, $file, $handle, array $deps) {
+        $path = $dir . '/' . $file;
+        if (!file_exists($path) || empty($handle)) {
+            return false;
+        }
+
+        wp_register_script($handle, self::block_file_uri($dir, $file), $deps, filemtime($path), true);
+        return true;
+    }
+
+    private static function block_file_uri($dir, $file) {
+        return OMEGA_DESIGN_URI . '/blocks/' . basename($dir) . '/' . $file;
     }
 
     private function register_omega_slider() {
@@ -187,7 +181,7 @@ class blocks {
             'editor' => 'omega-slider-block-editor',
             'view'   => 'omega-slider-block-view',
             'style'  => 'omega-slider-block',
-        ], ['wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-i18n', 'wp-data']);
+        ], array_merge(self::EDITOR_DEPS, ['wp-data', self::editor_shared_script()]));
         register_block_type($dir);
     }
 
@@ -206,7 +200,7 @@ class blocks {
         $this->register_block_assets($dir, [
             'editor' => 'omega-content-slider-block-editor',
             'style'  => 'omega-content-slider-block',
-        ], ['wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-i18n']);
+        ], array_merge(self::EDITOR_DEPS, [self::editor_shared_script()]));
         register_block_type($dir);
     }
 
@@ -238,17 +232,33 @@ class blocks {
      * rendered).
      */
     public function render_omega_tabs($attributes, $content, $block) {
-        $labels = [];
-        foreach ($block->parsed_block['innerBlocks'] ?? [] as $inner) {
-            if (($inner['blockName'] ?? '') === 'omega-design/tabs-item') {
-                $labels[] = $inner['attrs']['label'] ?? __('Tab', 'omega-design');
-            }
-        }
+        $labels = self::tab_labels($block->parsed_block['innerBlocks'] ?? []);
 
         if (empty($labels)) {
             return $content;
         }
 
+        // $content is already the block's own wrapper (.omega-tabs, carrying
+        // its align/spacing supports) plus the panels inside it - insert the
+        // tab bar as the wrapper's first child rather than adding another
+        // wrapping element around it.
+        return block_html::insert_after_first_tag($content, self::tab_list_html($labels));
+    }
+
+    /**
+     * Each tabs-item child's label, in order.
+     */
+    private static function tab_labels(array $inner_blocks) {
+        $labels = [];
+        foreach ($inner_blocks as $inner) {
+            if (($inner['blockName'] ?? '') === 'omega-design/tabs-item') {
+                $labels[] = $inner['attrs']['label'] ?? __('Tab', 'omega-design');
+            }
+        }
+        return $labels;
+    }
+
+    private static function tab_list_html(array $labels) {
         $tab_list = '<div class="omega-tabs__list" role="tablist">';
         foreach ($labels as $i => $label) {
             $tab_list .= sprintf(
@@ -258,18 +268,7 @@ class blocks {
                 esc_html($label)
             );
         }
-        $tab_list .= '</div>';
-
-        // $content is already the block's own wrapper (.omega-tabs, carrying
-        // its align/spacing supports) plus the panels inside it - insert the
-        // tab bar as the wrapper's first child rather than adding another
-        // wrapping element around it.
-        if (!preg_match('/^(\s*<[a-z0-9]+)([^>]*)(>)/i', $content, $matches)) {
-            return $content;
-        }
-
-        $insert_at = strlen($matches[0]);
-        return substr($content, 0, $insert_at) . $tab_list . substr($content, $insert_at);
+        return $tab_list . '</div>';
     }
 
     private function register_omega_newsletter() {

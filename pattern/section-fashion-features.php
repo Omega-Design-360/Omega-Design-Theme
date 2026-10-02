@@ -9,12 +9,12 @@
 
 defined('ABSPATH') || exit;
 
-require_once OMEGA_DESIGN_INCLUDES . '/patterns/pattern-helpers.php';
+use OmegaDesign\patterns\pattern_helpers;
 ?>
 <!-- wp:group {"align":"wide","backgroundColor":"surface","style":{"spacing":{"padding":{"top":"var:preset|spacing|l","bottom":"var:preset|spacing|l"}}}} -->
 <div class="wp-block-group alignwide has-surface-background-color has-background" style="padding-top:var(--wp--preset--spacing--l);padding-bottom:var(--wp--preset--spacing--l)">
 <?php
-echo omega_pattern_icon_row_left([
+echo pattern_helpers::icon_row_left([
 	['icon' => 'eco',      'title' => __('Sustainable Fashion', 'omega-design'), 'desc' => __('Better for you, better for the planet', 'omega-design')],
 	['icon' => 'diamond',  'title' => __('Premium Quality', 'omega-design'),      'desc' => __('Carefully selected materials', 'omega-design')],
 	['icon' => 'favorite', 'title' => __('Styles for Everyone', 'omega-design'),  'desc' => __('Fashion for all ages', 'omega-design')],

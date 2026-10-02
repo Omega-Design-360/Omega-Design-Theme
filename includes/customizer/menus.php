@@ -7,21 +7,47 @@
 
 namespace OmegaDesign\customizer;
 
+use OmegaDesign\traits\assets;
+use OmegaDesign\traits\singleton;
+
 defined('ABSPATH') || exit;
 
 class menus {
 
-    private static $instance = null;
+    use singleton;
+    use assets;
+
+    /**
+     * Settings form section => its save method. Each form only includes a
+     * hidden "omega_section_*" marker for the sections it actually
+     * contains, so handle_save_settings() never touches settings a given
+     * form didn't show. Saved in this order.
+     */
+    const SAVE_SECTIONS = [
+        'color_scheme'  => 'save_color_scheme_section',
+        'color_mode'    => 'save_color_mode_section',
+        'sidebar'       => 'save_sidebar_section',
+        'typography'    => 'save_typography_section',
+        'design'        => 'save_design_section',
+        'logo'          => 'save_logo_section',
+        'header_nav'    => 'save_header_nav_section',
+        'announcement'  => 'save_announcement_section',
+        'footer'        => 'save_footer_section',
+        'product_page'  => 'save_product_page_section',
+    ];
+
+    /**
+     * Sections with their own nonce field, checked in this order; a form
+     * with none of them (the Dashboard's color-mode toggle) uses
+     * omega_nonce_mode.
+     */
+    const NONCE_SECTIONS = [
+        'color_scheme', 'sidebar', 'typography', 'design', 'logo',
+        'header_nav', 'announcement', 'footer', 'product_page',
+    ];
 
     private $dashboard_hook = null;
     private $settings_hook  = null;
-
-    public static function get_instance() {
-        if (null === self::$instance) {
-            self::$instance = new self();
-        }
-        return self::$instance;
-    }
 
     private function __construct() {
         add_action('admin_menu', [$this, 'register_admin_menu']);
@@ -46,8 +72,6 @@ class menus {
         }
         return $classes . ' omega-admin-page-body ' . $this->color_mode_class();
     }
-
-    public function init() {}
 
     /**
      * The left-hand admin menu icon for "Omega Design" - a base64 data URI
@@ -82,63 +106,21 @@ class menus {
             2
         );
 
-        add_submenu_page(
-            'omega-dashboard',
-            __('Dashboard', 'omega-design'),
-            __('Dashboard', 'omega-design'),
-            'manage_options',
-            'omega-dashboard',
-            [$this, 'dashboard_page']
-        );
+        self::add_submenu(__('Dashboard', 'omega-design'), 'omega-dashboard', [$this, 'dashboard_page']);
+        self::add_submenu(__('Site Builder', 'omega-design'), 'site-editor.php');
+        $this->settings_hook = self::add_submenu(__('Settings', 'omega-design'), 'omega-settings', [$this, 'settings_page']);
+        self::add_submenu(__('Appearance', 'omega-design'), 'customize.php');
+        self::add_submenu(__('Menus', 'omega-design'), 'nav-menus.php');
+        self::add_submenu(__('Mega Menus', 'omega-design'), 'edit.php?post_type=mega_menu');
+        self::add_submenu(__('Widgets', 'omega-design'), 'widgets.php');
+    }
 
-        add_submenu_page(
-            'omega-dashboard',
-            __('Site Builder', 'omega-design'),
-            __('Site Builder', 'omega-design'),
-            'manage_options',
-            'site-editor.php'
-        );
-
-        $this->settings_hook = add_submenu_page(
-            'omega-dashboard',
-            __('Settings', 'omega-design'),
-            __('Settings', 'omega-design'),
-            'manage_options',
-            'omega-settings',
-            [$this, 'settings_page']
-        );
-
-        add_submenu_page(
-            'omega-dashboard',
-            __('Appearance', 'omega-design'),
-            __('Appearance', 'omega-design'),
-            'manage_options',
-            'customize.php'
-        );
-
-        add_submenu_page(
-            'omega-dashboard',
-            __('Menus', 'omega-design'),
-            __('Menus', 'omega-design'),
-            'manage_options',
-            'nav-menus.php'
-        );
-
-        add_submenu_page(
-            'omega-dashboard',
-            __('Mega Menus', 'omega-design'),
-            __('Mega Menus', 'omega-design'),
-            'manage_options',
-            'edit.php?post_type=mega_menu'
-        );
-
-        add_submenu_page(
-            'omega-dashboard',
-            __('Widgets', 'omega-design'),
-            __('Widgets', 'omega-design'),
-            'manage_options',
-            'widgets.php'
-        );
+    /**
+     * One "Omega Design" submenu item (manage_options only), titled the
+     * same in the page title and the menu. Returns the page hook suffix.
+     */
+    private static function add_submenu($title, $slug, $callback = '') {
+        return add_submenu_page('omega-dashboard', $title, $title, 'manage_options', $slug, $callback);
     }
 
     /**
@@ -154,44 +136,29 @@ class menus {
             // A plain <img>, not a background-image span - core's admin-bar
             // CSS forces "background-image: none !important" on anything
             // classed .ab-icon, which an <img> tag simply isn't subject to.
-            'title' => '<img src="' . esc_url(omega_design_versioned_asset_url('/images/theme-icon.svg')) . '" class="omega-topbar-icon" alt="" />' . esc_html__('Omega Design', 'omega-design'),
+            'title' => '<img src="' . esc_url(\OmegaDesign\core\asset_urls::versioned('/images/theme-icon.svg')) . '" class="omega-topbar-icon" alt="" />' . esc_html__('Omega Design', 'omega-design'),
             'href'  => admin_url('admin.php?page=omega-dashboard'),
         ]);
 
-        $wp_admin_bar->add_node([
-            'id'     => 'omega-site-builder',
-            'parent' => 'omega-design',
-            'title'  => 'Site Builder',
-            'href'   => admin_url('site-editor.php'),
-        ]);
+        foreach (self::admin_bar_links() as $id => list($title, $path)) {
+            $wp_admin_bar->add_node([
+                'id'     => $id,
+                'parent' => 'omega-design',
+                'title'  => $title,
+                'href'   => admin_url($path),
+            ]);
+        }
+    }
 
-        $wp_admin_bar->add_node([
-            'id'     => 'omega-settings',
-            'parent' => 'omega-design',
-            'title'  => 'Settings',
-            'href'   => admin_url('admin.php?page=omega-settings'),
-        ]);
-
-        $wp_admin_bar->add_node([
-            'id'     => 'omega-appearance',
-            'parent' => 'omega-design',
-            'title'  => 'Appearance',
-            'href'   => admin_url('customize.php'),
-        ]);
-
-        $wp_admin_bar->add_node([
-            'id'     => 'omega-menus',
-            'parent' => 'omega-design',
-            'title'  => 'Menus',
-            'href'   => admin_url('nav-menus.php'),
-        ]);
-
-        $wp_admin_bar->add_node([
-            'id'     => 'omega-widgets',
-            'parent' => 'omega-design',
-            'title'  => 'Widgets',
-            'href'   => admin_url('widgets.php'),
-        ]);
+    /** Admin bar node id => [title, admin path], in display order. */
+    private static function admin_bar_links() {
+        return [
+            'omega-site-builder' => ['Site Builder', 'site-editor.php'],
+            'omega-settings'     => ['Settings', 'admin.php?page=omega-settings'],
+            'omega-appearance'   => ['Appearance', 'customize.php'],
+            'omega-menus'        => ['Menus', 'nav-menus.php'],
+            'omega-widgets'      => ['Widgets', 'widgets.php'],
+        ];
     }
 
     public function enqueue_admin_page_assets($hook) {
@@ -199,107 +166,45 @@ class menus {
             return;
         }
 
-        $admin_pages_path = OMEGA_DESIGN_ASSETS . '/css/admin-pages.css';
-        wp_enqueue_style(
-            'omega-design-admin-pages',
-            OMEGA_DESIGN_CSS_URI . '/admin-pages.css',
-            [],
-            file_exists($admin_pages_path) ? filemtime($admin_pages_path) : OMEGA_DESIGN_VERSION
-        );
-
         // This admin screen is a plain wp-admin page, not the front end or the
         // block editor - WordPress never prints the theme.json-derived
-        // --wp--preset--color--* variables here on its own. Without this,
-        // admin-pages.css's var(--wp--preset--color--...) references would
-        // all resolve to nothing.
-        wp_add_inline_style('omega-design-admin-pages', wp_get_global_stylesheet(['variables']));
+        // --wp--preset--color--* variables here on its own, so they're
+        // printed alongside admin-pages.css.
+        self::enqueue_admin_pages_style(true);
 
         // Same color-mode.css used on the front end, so this page can carry
         // the same omega-color-mode-{mode} class and pick up the identical
         // light/dark values - one palette, one switch, everywhere.
-        $color_mode_path = OMEGA_DESIGN_ASSETS . '/css/color-mode.css';
-        wp_enqueue_style(
-            'omega-design-color-mode',
-            OMEGA_DESIGN_CSS_URI . '/color-mode.css',
-            ['omega-design-admin-pages'],
-            file_exists($color_mode_path) ? filemtime($color_mode_path) : OMEGA_DESIGN_VERSION
-        );
+        self::enqueue_style('omega-design-color-mode', 'css/color-mode.css', ['omega-design-admin-pages']);
 
-        if ($hook === $this->dashboard_hook) {
-            wp_enqueue_media();
-            $logo_js_path = OMEGA_DESIGN_ASSETS . '/js/admin-logo.js';
-            wp_enqueue_script(
-                'omega-design-admin-logo',
-                OMEGA_DESIGN_JS_URI . '/admin-logo.js',
-                ['media-editor'],
-                file_exists($logo_js_path) ? filemtime($logo_js_path) : OMEGA_DESIGN_VERSION,
-                true
-            );
-        }
+        // Both pages render the same Site Logo form (render_logo_form()),
+        // so both need the media modal and admin-logo.js.
+        wp_enqueue_media();
+        self::enqueue_script('omega-design-admin-logo', 'js/admin-logo.js', ['media-editor'], true);
 
         if ($hook === $this->settings_hook) {
-            $layout_picker_js_path = OMEGA_DESIGN_ASSETS . '/js/admin-layout-picker.js';
-            wp_enqueue_script(
-                'omega-design-admin-layout-picker',
-                OMEGA_DESIGN_JS_URI . '/admin-layout-picker.js',
-                [],
-                file_exists($layout_picker_js_path) ? filemtime($layout_picker_js_path) : OMEGA_DESIGN_VERSION,
-                true
-            );
-
-            $tabs_js_path = OMEGA_DESIGN_ASSETS . '/js/admin-settings-tabs.js';
-            wp_enqueue_script(
-                'omega-design-admin-settings-tabs',
-                OMEGA_DESIGN_JS_URI . '/admin-settings-tabs.js',
-                [],
-                file_exists($tabs_js_path) ? filemtime($tabs_js_path) : OMEGA_DESIGN_VERSION,
-                true
-            );
-
-            // The real front-end announcement-bar stylesheet, reused as-is
-            // so the Announcement Bar form's live preview strip renders
-            // pixel-identical to what actually shows on the front end -
-            // see render_announcement_form() and admin-announcement-
-            // preview.js.
-            $announcement_css_path = OMEGA_DESIGN_ASSETS . '/css/announcement-bar.css';
-            wp_enqueue_style(
-                'omega-design-announcement-bar',
-                OMEGA_DESIGN_CSS_URI . '/announcement-bar.css',
-                ['omega-design-admin-pages'],
-                file_exists($announcement_css_path) ? filemtime($announcement_css_path) : OMEGA_DESIGN_VERSION
-            );
-
-            $announcement_preview_js_path = OMEGA_DESIGN_ASSETS . '/js/admin-announcement-preview.js';
-            wp_enqueue_script(
-                'omega-design-admin-announcement-preview',
-                OMEGA_DESIGN_JS_URI . '/admin-announcement-preview.js',
-                [],
-                file_exists($announcement_preview_js_path) ? filemtime($announcement_preview_js_path) : OMEGA_DESIGN_VERSION,
-                true
-            );
-
-            // Header Navigation form's own live preview - see
-            // render_header_nav_form() and admin-header-nav-preview.js.
-            $header_nav_preview_js_path = OMEGA_DESIGN_ASSETS . '/js/admin-header-nav-preview.js';
-            wp_enqueue_script(
-                'omega-design-admin-header-nav-preview',
-                OMEGA_DESIGN_JS_URI . '/admin-header-nav-preview.js',
-                [],
-                file_exists($header_nav_preview_js_path) ? filemtime($header_nav_preview_js_path) : OMEGA_DESIGN_VERSION,
-                true
-            );
-
-            // Typography form's dropdown + single preview card - see
-            // render_typography_form() and admin-typography-preview.js.
-            $typography_preview_js_path = OMEGA_DESIGN_ASSETS . '/js/admin-typography-preview.js';
-            wp_enqueue_script(
-                'omega-design-admin-typography-preview',
-                OMEGA_DESIGN_JS_URI . '/admin-typography-preview.js',
-                [],
-                file_exists($typography_preview_js_path) ? filemtime($typography_preview_js_path) : OMEGA_DESIGN_VERSION,
-                true
-            );
+            $this->enqueue_settings_page_assets();
         }
+    }
+
+    private function enqueue_settings_page_assets() {
+        self::enqueue_script('omega-design-admin-layout-picker', 'js/admin-layout-picker.js', [], true);
+        self::enqueue_script('omega-design-admin-settings-tabs', 'js/admin-settings-tabs.js', [], true);
+
+        // The real front-end announcement-bar stylesheet, reused as-is so
+        // the Announcement Bar form's live preview strip renders
+        // pixel-identical to what actually shows on the front end - see
+        // render_announcement_form() and admin-announcement-preview.js.
+        self::enqueue_style('omega-design-announcement-bar', 'css/announcement-bar.css', ['omega-design-admin-pages']);
+        self::enqueue_script('omega-design-admin-announcement-preview', 'js/admin-announcement-preview.js', [], true);
+
+        // Header Navigation form's own live preview - see
+        // render_header_nav_form() and admin-header-nav-preview.js.
+        self::enqueue_script('omega-design-admin-header-nav-preview', 'js/admin-header-nav-preview.js', [], true);
+
+        // Typography form's dropdown + single preview card - see
+        // render_typography_form() and admin-typography-preview.js.
+        self::enqueue_script('omega-design-admin-typography-preview', 'js/admin-typography-preview.js', [], true);
     }
 
     /**
@@ -316,203 +221,22 @@ class menus {
 
     /**
      * Handles saves from both the Dashboard's quick color-mode toggle and
-     * the full Settings page. Each form only includes a hidden
-     * "omega_section_*" marker for the sections it actually contains, so
-     * this one handler can't accidentally wipe out settings a given form
-     * never showed (e.g. the dashboard's mode-only form won't touch the
-     * sidebar settings).
+     * the full Settings page - see SAVE_SECTIONS for how a form's sections
+     * are picked out, so this one handler can't accidentally wipe out
+     * settings a given form never showed (e.g. the dashboard's mode-only
+     * form won't touch the sidebar settings).
      */
     public function handle_save_settings() {
         if (!current_user_can('manage_options')) {
             wp_die(esc_html__('You do not have permission to do this.', 'omega-design'));
         }
 
-        if (isset($_POST['omega_section_color_scheme'])) {
-            $nonce_field = 'omega_nonce_color_scheme';
-        } elseif (isset($_POST['omega_section_sidebar'])) {
-            $nonce_field = 'omega_nonce_sidebar';
-        } elseif (isset($_POST['omega_section_typography'])) {
-            $nonce_field = 'omega_nonce_typography';
-        } elseif (isset($_POST['omega_section_design'])) {
-            $nonce_field = 'omega_nonce_design';
-        } elseif (isset($_POST['omega_section_logo'])) {
-            $nonce_field = 'omega_nonce_logo';
-        } elseif (isset($_POST['omega_section_header_nav'])) {
-            $nonce_field = 'omega_nonce_header_nav';
-        } elseif (isset($_POST['omega_section_announcement'])) {
-            $nonce_field = 'omega_nonce_announcement';
-        } elseif (isset($_POST['omega_section_footer'])) {
-            $nonce_field = 'omega_nonce_footer';
-        } elseif (isset($_POST['omega_section_product_page'])) {
-            $nonce_field = 'omega_nonce_product_page';
-        } else {
-            $nonce_field = 'omega_nonce_mode';
-        }
-        check_admin_referer('omega_save_settings', $nonce_field);
+        check_admin_referer('omega_save_settings', self::posted_nonce_field());
 
-        if (isset($_POST['omega_section_color_scheme'])) {
-            $scheme = isset($_POST['omega_color_scheme']) ? wp_unslash($_POST['omega_color_scheme']) : color_scheme::DEFAULT_SCHEME;
-            set_theme_mod('omega_color_scheme', color_scheme::get_instance()->sanitize_scheme($scheme));
-        }
-
-        if (isset($_POST['omega_section_color_mode'])) {
-            $mode = isset($_POST['omega_color_mode']) ? wp_unslash($_POST['omega_color_mode']) : 'auto';
-            set_theme_mod('omega_color_mode', color_mode::get_instance()->sanitize_mode($mode));
-        }
-
-        if (isset($_POST['omega_section_sidebar'])) {
-            set_theme_mod('omega_enable_sidebar', !empty($_POST['omega_enable_sidebar']));
-
-            $position = isset($_POST['omega_sidebar_position']) ? wp_unslash($_POST['omega_sidebar_position']) : 'right';
-            set_theme_mod('omega_sidebar_position', sidebar::get_instance()->sanitize_position($position));
-
-            $width = isset($_POST['omega_sidebar_width']) ? absint($_POST['omega_sidebar_width']) : 30;
-            set_theme_mod('omega_sidebar_width', max(20, min(50, $width)));
-
-            $template = isset($_POST['omega_sidebar_default_template']) ? wp_unslash($_POST['omega_sidebar_default_template']) : 'sidebar';
-            set_theme_mod('omega_sidebar_default_template', sidebar::get_instance()->sanitize_template($template));
-
-            foreach (sidebar::get_instance()->get_sidebar_locations_map() as $option_name) {
-                set_theme_mod($option_name, !empty($_POST[$option_name]));
+        foreach (self::SAVE_SECTIONS as $section => $save_method) {
+            if (isset($_POST['omega_section_' . $section])) {
+                $this->$save_method();
             }
-        }
-
-        if (isset($_POST['omega_section_typography'])) {
-            $heading_font = isset($_POST['omega_heading_font']) ? wp_unslash($_POST['omega_heading_font']) : '';
-            set_theme_mod(typography::HEADING_MOD, typography::get_instance()->sanitize_font($heading_font));
-
-            $body_font = isset($_POST['omega_body_font']) ? wp_unslash($_POST['omega_body_font']) : '';
-            set_theme_mod(typography::BODY_MOD, typography::get_instance()->sanitize_font($body_font));
-        }
-
-        if (isset($_POST['omega_section_design'])) {
-            $radius = isset($_POST['omega_button_radius']) ? wp_unslash($_POST['omega_button_radius']) : 'soft';
-            if (!array_key_exists($radius, self::BUTTON_RADIUS_CHOICES)) {
-                $radius = 'soft';
-            }
-            set_theme_mod('omega_button_radius', $radius);
-
-            $look = isset($_POST['omega_button_look']) ? wp_unslash($_POST['omega_button_look']) : 'fill';
-            if (!array_key_exists($look, self::BUTTON_LOOK_CHOICES)) {
-                $look = 'fill';
-            }
-            set_theme_mod('omega_button_look', $look);
-
-            set_theme_mod('omega_svg_uploads_enabled', !empty($_POST['omega_svg_uploads_enabled']));
-        }
-
-        if (isset($_POST['omega_section_logo'])) {
-            $attachment_id = isset($_POST['omega_custom_logo']) ? absint($_POST['omega_custom_logo']) : 0;
-
-            if ($attachment_id > 0 && 'attachment' === get_post_type($attachment_id)) {
-                set_theme_mod('custom_logo', $attachment_id);
-            } else {
-                remove_theme_mod('custom_logo');
-            }
-
-            $dark_attachment_id = isset($_POST['omega_custom_logo_dark']) ? absint($_POST['omega_custom_logo_dark']) : 0;
-
-            if ($dark_attachment_id > 0 && 'attachment' === get_post_type($dark_attachment_id)) {
-                set_theme_mod('omega_custom_logo_dark', $dark_attachment_id);
-            } else {
-                remove_theme_mod('omega_custom_logo_dark');
-            }
-        }
-
-        if (isset($_POST['omega_section_header_nav'])) {
-            $mode = isset($_POST['omega_nav_mode']) ? wp_unslash($_POST['omega_nav_mode']) : 'block';
-            if (!array_key_exists($mode, classic_header::style_choices())) {
-                $mode = 'block';
-            }
-            set_theme_mod('omega_nav_mode', $mode);
-
-            $menu_id = isset($_POST['omega_classic_menu_id']) ? absint($_POST['omega_classic_menu_id']) : 0;
-            if ($menu_id && wp_get_nav_menu_object($menu_id)) {
-                set_theme_mod('omega_classic_menu_id', $menu_id);
-            } else {
-                set_theme_mod('omega_classic_menu_id', 0);
-            }
-
-            set_theme_mod('omega_header_sticky', !empty($_POST['omega_header_sticky']));
-
-            // All four below are opt-in overrides only - left blank/default,
-            // classic_header.php emits no inline style for them at all and
-            // theme.json keeps deciding, same as everywhere else in this
-            // theme. sanitize_text_field (not sanitize_hex_color) since a
-            // color field may hold a var(--wp--preset--color--*) reference,
-            // not just a hex value - same pattern the Announcement Bar's
-            // own color fields already use.
-            $bg = isset($_POST['omega_header_bg_color']) ? sanitize_text_field(wp_unslash($_POST['omega_header_bg_color'])) : '';
-            set_theme_mod('omega_header_bg_color', $bg);
-
-            $text_color = isset($_POST['omega_header_text_color']) ? sanitize_text_field(wp_unslash($_POST['omega_header_text_color'])) : '';
-            set_theme_mod('omega_header_text_color', $text_color);
-
-            $font_family = isset($_POST['omega_header_font_family']) ? sanitize_text_field(wp_unslash($_POST['omega_header_font_family'])) : '';
-            set_theme_mod('omega_header_font_family', $font_family);
-
-            $font_size = isset($_POST['omega_header_font_size']) ? wp_unslash($_POST['omega_header_font_size']) : 'default';
-            set_theme_mod('omega_header_font_size', classic_header::sanitize_choice($font_size, classic_header::FONT_SIZE_CHOICES, 'default'));
-
-            $height = isset($_POST['omega_header_height']) ? wp_unslash($_POST['omega_header_height']) : 'default';
-            set_theme_mod('omega_header_height', classic_header::sanitize_choice($height, classic_header::HEIGHT_CHOICES, 'default'));
-        }
-
-        if (isset($_POST['omega_section_announcement'])) {
-            set_theme_mod('omega_announcement_enabled', !empty($_POST['omega_announcement_enabled']));
-            set_theme_mod('omega_announcement_dismissible', !empty($_POST['omega_announcement_dismissible']));
-
-            // Trusted admin-authored HTML (phone/social links need real
-            // markup) - same trust model as the Mega Menu's own Custom CSS
-            // field, not stripped down to plain text.
-            $content = isset($_POST['omega_announcement_content']) ? wp_unslash($_POST['omega_announcement_content']) : '';
-            set_theme_mod('omega_announcement_content', $content);
-
-            $bg = isset($_POST['omega_announcement_bg']) ? sanitize_text_field(wp_unslash($_POST['omega_announcement_bg'])) : '';
-            set_theme_mod('omega_announcement_bg', $bg);
-
-            $text_color = isset($_POST['omega_announcement_text_color']) ? sanitize_text_field(wp_unslash($_POST['omega_announcement_text_color'])) : '';
-            set_theme_mod('omega_announcement_text_color', $text_color);
-        }
-
-        if (isset($_POST['omega_section_footer'])) {
-            $footer_mode = isset($_POST['omega_footer_mode']) ? wp_unslash($_POST['omega_footer_mode']) : 'block';
-            if (!array_key_exists($footer_mode, classic_footer::style_choices())) {
-                $footer_mode = 'block';
-            }
-            set_theme_mod('omega_footer_mode', $footer_mode);
-
-            $footer_menu_id = isset($_POST['omega_classic_footer_menu_id']) ? absint($_POST['omega_classic_footer_menu_id']) : 0;
-            if ($footer_menu_id && wp_get_nav_menu_object($footer_menu_id)) {
-                set_theme_mod('omega_classic_footer_menu_id', $footer_menu_id);
-            } else {
-                set_theme_mod('omega_classic_footer_menu_id', 0);
-            }
-
-            $tagline = isset($_POST['omega_footer_tagline']) ? sanitize_text_field(wp_unslash($_POST['omega_footer_tagline'])) : '';
-            set_theme_mod('omega_footer_tagline', $tagline);
-
-            // {year} is a literal token replaced at render time - see
-            // classic_footer.php's copyright_html() - not sanitized away
-            // since it isn't HTML.
-            $copyright = isset($_POST['omega_footer_copyright']) ? sanitize_text_field(wp_unslash($_POST['omega_footer_copyright'])) : '';
-            set_theme_mod('omega_footer_copyright', $copyright);
-
-            $cta_label = isset($_POST['omega_footer_cta_label']) ? sanitize_text_field(wp_unslash($_POST['omega_footer_cta_label'])) : '';
-            set_theme_mod('omega_footer_cta_label', $cta_label);
-
-            $cta_url = isset($_POST['omega_footer_cta_url']) ? esc_url_raw(wp_unslash($_POST['omega_footer_cta_url'])) : '';
-            set_theme_mod('omega_footer_cta_url', $cta_url);
-        }
-
-        if (isset($_POST['omega_section_product_page'])) {
-            $layout = isset($_POST['omega_product_page_layout']) ? wp_unslash($_POST['omega_product_page_layout']) : 'gallery-feature';
-            if (!array_key_exists($layout, product_page::style_choices())) {
-                $layout = 'gallery-feature';
-            }
-            set_theme_mod('omega_product_page_layout', $layout);
-
-            set_theme_mod('omega_related_products_carousel', !empty($_POST['omega_related_products_carousel']));
         }
 
         $redirect_to = isset($_POST['omega_redirect_to'])
@@ -521,6 +245,212 @@ class menus {
 
         wp_safe_redirect(add_query_arg('omega_saved', '1', $redirect_to));
         exit;
+    }
+
+    /**
+     * The nonce field of the first section (NONCE_SECTIONS order) the
+     * submitted form contains.
+     */
+    private static function posted_nonce_field() {
+        foreach (self::NONCE_SECTIONS as $section) {
+            if (isset($_POST['omega_section_' . $section])) {
+                return 'omega_nonce_' . $section;
+            }
+        }
+        return 'omega_nonce_mode';
+    }
+
+    /**
+     * Opening <form> tag of one Settings section plus the hidden fields
+     * handle_save_settings() reads: the admin-post action, the section
+     * marker, where to return to, and the section's own nonce.
+     */
+    private static function render_settings_form_open($section, $nonce_field, $redirect_to, $class = '') {
+        ?>
+        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>"<?php echo $class ? ' class="' . esc_attr($class) . '"' : ''; ?>>
+            <input type="hidden" name="action" value="omega_save_settings" />
+            <input type="hidden" name="omega_section_<?php echo esc_attr($section); ?>" value="1" />
+            <input type="hidden" name="omega_redirect_to" value="<?php echo esc_url($redirect_to); ?>" />
+            <?php wp_nonce_field('omega_save_settings', $nonce_field); ?>
+        <?php
+    }
+
+    /**
+     * A <select> of every classic menu, with a "Select a menu" (0) option.
+     */
+    private static function render_menu_select($name, array $menus, $current_id) {
+        ?>
+        <select name="<?php echo esc_attr($name); ?>" id="<?php echo esc_attr($name); ?>">
+            <option value="0"><?php esc_html_e('— Select a menu —', 'omega-design'); ?></option>
+            <?php foreach ($menus as $menu) : ?>
+                <option value="<?php echo esc_attr($menu->term_id); ?>" <?php selected($current_id, $menu->term_id); ?>><?php echo esc_html($menu->name); ?></option>
+            <?php endforeach; ?>
+        </select>
+        <?php
+    }
+
+    /**
+     * Plain-text titles of a classic menu's top-level items, at most $limit.
+     */
+    private static function menu_top_level_titles($menu_id, $limit) {
+        $items = wp_get_nav_menu_items($menu_id);
+        if (!$items) {
+            return [];
+        }
+
+        $titles = [];
+        foreach ($items as $item) {
+            if (0 === (int) $item->menu_item_parent) {
+                $titles[] = wp_strip_all_tags($item->title);
+            }
+        }
+        return array_slice($titles, 0, $limit);
+    }
+
+    /* ── POST readers ──────────────────────────────────────────── */
+
+    /** The unslashed POST value, or $default when it wasn't submitted. */
+    private static function posted($key, $default = '') {
+        return isset($_POST[$key]) ? wp_unslash($_POST[$key]) : $default;
+    }
+
+    /** A single-line text POST value (colors may be var() references, so not hex-only). */
+    private static function posted_text($key) {
+        return isset($_POST[$key]) ? sanitize_text_field(wp_unslash($_POST[$key])) : '';
+    }
+
+    private static function posted_absint($key, $default = 0) {
+        return isset($_POST[$key]) ? absint($_POST[$key]) : $default;
+    }
+
+    /** A checkbox: true only when submitted and non-empty. */
+    private static function posted_flag($key) {
+        return !empty($_POST[$key]);
+    }
+
+    /* ── Theme mod writers ─────────────────────────────────────── */
+
+    /**
+     * Saves POST $key to theme mod $mod when it's one of $choices' keys,
+     * else $default.
+     */
+    private static function save_choice_mod($mod, $key, array $choices, $default) {
+        $value = self::posted($key, $default);
+        if (!array_key_exists($value, $choices)) {
+            $value = $default;
+        }
+        set_theme_mod($mod, $value);
+    }
+
+    /** Saves a picked classic menu's ID, or 0 when it doesn't exist. */
+    private static function save_menu_mod($mod, $key) {
+        $menu_id = self::posted_absint($key);
+        set_theme_mod($mod, ($menu_id && wp_get_nav_menu_object($menu_id)) ? $menu_id : 0);
+    }
+
+    /** Saves a picked media attachment's ID, or removes the mod. */
+    private static function save_attachment_mod($mod, $key) {
+        $attachment_id = self::posted_absint($key);
+
+        if ($attachment_id > 0 && 'attachment' === get_post_type($attachment_id)) {
+            set_theme_mod($mod, $attachment_id);
+        } else {
+            remove_theme_mod($mod);
+        }
+    }
+
+    private static function save_text_mods(array $mods) {
+        foreach ($mods as $mod) {
+            set_theme_mod($mod, self::posted_text($mod));
+        }
+    }
+
+    private static function save_flag_mods(array $mods) {
+        foreach ($mods as $mod) {
+            set_theme_mod($mod, self::posted_flag($mod));
+        }
+    }
+
+    /* ── Sections ──────────────────────────────────────────────── */
+
+    private function save_color_scheme_section() {
+        $scheme = self::posted('omega_color_scheme', color_scheme::DEFAULT_SCHEME);
+        set_theme_mod('omega_color_scheme', color_scheme::get_instance()->sanitize_scheme($scheme));
+    }
+
+    private function save_color_mode_section() {
+        $mode = self::posted('omega_color_mode', 'auto');
+        set_theme_mod('omega_color_mode', color_mode::get_instance()->sanitize_mode($mode));
+    }
+
+    private function save_sidebar_section() {
+        $sidebar = sidebar::get_instance();
+
+        set_theme_mod('omega_enable_sidebar', self::posted_flag('omega_enable_sidebar'));
+        set_theme_mod('omega_sidebar_position', $sidebar->sanitize_position(self::posted('omega_sidebar_position', 'right')));
+        set_theme_mod('omega_sidebar_width', max(20, min(50, self::posted_absint('omega_sidebar_width', 30))));
+        set_theme_mod('omega_sidebar_default_template', $sidebar->sanitize_template(self::posted('omega_sidebar_default_template', 'sidebar')));
+
+        self::save_flag_mods(array_values($sidebar->get_sidebar_locations_map()));
+    }
+
+    private function save_typography_section() {
+        $typography = typography::get_instance();
+
+        set_theme_mod(typography::HEADING_MOD, $typography->sanitize_font(self::posted('omega_heading_font')));
+        set_theme_mod(typography::BODY_MOD, $typography->sanitize_font(self::posted('omega_body_font')));
+    }
+
+    private function save_design_section() {
+        self::save_choice_mod('omega_button_radius', 'omega_button_radius', self::BUTTON_RADIUS_CHOICES, 'soft');
+        self::save_choice_mod('omega_button_look', 'omega_button_look', self::BUTTON_LOOK_CHOICES, 'fill');
+        self::save_flag_mods(['omega_svg_uploads_enabled']);
+    }
+
+    private function save_logo_section() {
+        self::save_attachment_mod('custom_logo', 'omega_custom_logo');
+        self::save_attachment_mod('omega_custom_logo_dark', 'omega_custom_logo_dark');
+    }
+
+    private function save_header_nav_section() {
+        self::save_choice_mod('omega_nav_mode', 'omega_nav_mode', classic_header::style_choices(), 'block');
+        self::save_menu_mod('omega_classic_menu_id', 'omega_classic_menu_id');
+        self::save_flag_mods(['omega_header_sticky']);
+
+        // Opt-in overrides only - left blank/default, classic_header.php
+        // emits no inline style for them at all and theme.json keeps
+        // deciding, same as everywhere else in this theme.
+        self::save_text_mods(['omega_header_bg_color', 'omega_header_text_color', 'omega_header_font_family']);
+        self::save_choice_mod('omega_header_font_size', 'omega_header_font_size', classic_header::FONT_SIZE_CHOICES, 'default');
+        self::save_choice_mod('omega_header_height', 'omega_header_height', classic_header::HEIGHT_CHOICES, 'default');
+    }
+
+    private function save_announcement_section() {
+        self::save_flag_mods(['omega_announcement_enabled', 'omega_announcement_dismissible']);
+
+        // Trusted admin-authored HTML (phone/social links need real
+        // markup) - same trust model as the Mega Menu's own Custom CSS
+        // field, not stripped down to plain text.
+        set_theme_mod('omega_announcement_content', self::posted('omega_announcement_content'));
+
+        self::save_text_mods(['omega_announcement_bg', 'omega_announcement_text_color']);
+    }
+
+    private function save_footer_section() {
+        self::save_choice_mod('omega_footer_mode', 'omega_footer_mode', classic_footer::style_choices(), 'block');
+        self::save_menu_mod('omega_classic_footer_menu_id', 'omega_classic_footer_menu_id');
+
+        // {year} in the copyright is a literal token replaced at render
+        // time - see classic_footer.php's copyright_html() - not sanitized
+        // away since it isn't HTML.
+        self::save_text_mods(['omega_footer_tagline', 'omega_footer_copyright', 'omega_footer_cta_label']);
+
+        set_theme_mod('omega_footer_cta_url', isset($_POST['omega_footer_cta_url']) ? esc_url_raw(wp_unslash($_POST['omega_footer_cta_url'])) : '');
+    }
+
+    private function save_product_page_section() {
+        self::save_choice_mod('omega_product_page_layout', 'omega_product_page_layout', product_page::style_choices(), 'gallery-feature');
+        self::save_flag_mods(['omega_related_products_carousel']);
     }
 
     public function maybe_show_saved_notice() {
@@ -565,7 +495,7 @@ class menus {
         ?>
         <div class="omega-admin-header">
             <div class="omega-admin-header__brand">
-                <img src="<?php echo esc_url(omega_design_versioned_asset_url('/images/theme-icon.svg')); ?>" alt="" class="omega-admin-header__logo" />
+                <img src="<?php echo esc_url(\OmegaDesign\core\asset_urls::versioned('/images/theme-icon.svg')); ?>" alt="" class="omega-admin-header__logo" />
                 <div>
                     <h1 class="omega-admin-header__title">
                         <?php esc_html_e('Omega Design', 'omega-design'); ?>
@@ -586,11 +516,7 @@ class menus {
     private function render_color_mode_form($redirect_to) {
         $mode = color_mode::get_instance()->get_mode();
         ?>
-        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" class="omega-card omega-card--mode">
-            <input type="hidden" name="action" value="omega_save_settings" />
-            <input type="hidden" name="omega_section_color_mode" value="1" />
-            <input type="hidden" name="omega_redirect_to" value="<?php echo esc_url($redirect_to); ?>" />
-            <?php wp_nonce_field('omega_save_settings', 'omega_nonce_mode'); ?>
+        <?php self::render_settings_form_open('color_mode', 'omega_nonce_mode', $redirect_to, 'omega-card omega-card--mode'); ?>
 
             <div class="omega-card__head">
                 <span class="dashicons dashicons-admin-appearance"></span>
@@ -651,11 +577,7 @@ class menus {
         $logo_id      = (int) get_theme_mod('custom_logo');
         $dark_logo_id = (int) get_theme_mod('omega_custom_logo_dark');
         ?>
-        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" class="omega-card">
-            <input type="hidden" name="action" value="omega_save_settings" />
-            <input type="hidden" name="omega_section_logo" value="1" />
-            <input type="hidden" name="omega_redirect_to" value="<?php echo esc_url($redirect_to); ?>" />
-            <?php wp_nonce_field('omega_save_settings', 'omega_nonce_logo'); ?>
+        <?php self::render_settings_form_open('logo', 'omega_nonce_logo', $redirect_to, 'omega-card'); ?>
 
             <div class="omega-card__head">
                 <span class="dashicons dashicons-format-image"></span>
@@ -817,16 +739,7 @@ class menus {
         // trip for what's already a handful of short strings.
         $menu_items_map = [];
         foreach ($classic_menus as $menu) {
-            $items     = wp_get_nav_menu_items($menu->term_id);
-            $top_level = [];
-            if ($items) {
-                foreach ($items as $item) {
-                    if (0 === (int) $item->menu_item_parent) {
-                        $top_level[] = wp_strip_all_tags($item->title);
-                    }
-                }
-            }
-            $menu_items_map[$menu->term_id] = array_slice($top_level, 0, 6);
+            $menu_items_map[$menu->term_id] = self::menu_top_level_titles($menu->term_id, 6);
         }
 
         // Same maps custom_style_css() uses to build the real front-end
@@ -838,17 +751,9 @@ class menus {
             'large'   => '1.25rem',
             'x-large' => '1.75rem',
         ];
-        $height_map = [
-            'compact'  => '0.55rem',
-            'regular'  => '1rem',
-            'spacious' => '1.6rem',
-        ];
+        $height_map = classic_header::HEIGHT_VALUES;
         ?>
-        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" class="omega-card">
-            <input type="hidden" name="action" value="omega_save_settings" />
-            <input type="hidden" name="omega_section_header_nav" value="1" />
-            <input type="hidden" name="omega_redirect_to" value="<?php echo esc_url($redirect_to); ?>" />
-            <?php wp_nonce_field('omega_save_settings', 'omega_nonce_header_nav'); ?>
+        <?php self::render_settings_form_open('header_nav', 'omega_nonce_header_nav', $redirect_to, 'omega-card'); ?>
 
             <div class="omega-card__head">
                 <span class="dashicons dashicons-menu-alt2"></span>
@@ -902,22 +807,13 @@ class menus {
             <div class="omega-field">
                 <label for="omega_classic_menu_id"><?php esc_html_e('Classic menu to use (Classic styles only)', 'omega-design'); ?></label>
                 <?php if (!empty($classic_menus)) : ?>
-                    <select name="omega_classic_menu_id" id="omega_classic_menu_id">
-                        <option value="0"><?php esc_html_e('— Select a menu —', 'omega-design'); ?></option>
-                        <?php foreach ($classic_menus as $menu) : ?>
-                            <option value="<?php echo esc_attr($menu->term_id); ?>" <?php selected($classic_id, $menu->term_id); ?>><?php echo esc_html($menu->name); ?></option>
-                        <?php endforeach; ?>
-                    </select>
+                    <?php self::render_menu_select('omega_classic_menu_id', $classic_menus, $classic_id); ?>
                 <?php else : ?>
                     <p class="description"><?php esc_html_e('None yet - create one under Appearance > Menus.', 'omega-design'); ?></p>
                 <?php endif; ?>
             </div>
 
-            <label class="omega-toggle">
-                <input type="checkbox" name="omega_header_sticky" value="1" <?php checked($sticky); ?> />
-                <span class="omega-toggle__track"><span class="omega-toggle__thumb"></span></span>
-                <span class="omega-toggle__label"><?php esc_html_e('Sticky header (hides on scroll down, reveals on scroll up)', 'omega-design'); ?></span>
-            </label>
+            <?php self::render_toggle('omega_header_sticky', $sticky, __('Sticky header (hides on scroll down, reveals on scroll up)', 'omega-design')); ?>
 
             <h3><?php esc_html_e('Appearance overrides (Classic styles only)', 'omega-design'); ?></h3>
 
@@ -979,11 +875,7 @@ class menus {
         $text_color  = get_theme_mod('omega_announcement_text_color', '');
         $dismissible = (bool) get_theme_mod('omega_announcement_dismissible', true);
         ?>
-        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" class="omega-card">
-            <input type="hidden" name="action" value="omega_save_settings" />
-            <input type="hidden" name="omega_section_announcement" value="1" />
-            <input type="hidden" name="omega_redirect_to" value="<?php echo esc_url($redirect_to); ?>" />
-            <?php wp_nonce_field('omega_save_settings', 'omega_nonce_announcement'); ?>
+        <?php self::render_settings_form_open('announcement', 'omega_nonce_announcement', $redirect_to, 'omega-card'); ?>
 
             <div class="omega-card__head">
                 <span class="dashicons dashicons-megaphone"></span>
@@ -992,11 +884,7 @@ class menus {
                 </div>
             </div>
 
-            <label class="omega-toggle">
-                <input type="checkbox" name="omega_announcement_enabled" value="1" <?php checked($enabled); ?> />
-                <span class="omega-toggle__track"><span class="omega-toggle__thumb"></span></span>
-                <span class="omega-toggle__label"><?php esc_html_e('Show announcement bar', 'omega-design'); ?></span>
-            </label>
+            <?php self::render_toggle('omega_announcement_enabled', $enabled, __('Show announcement bar', 'omega-design')); ?>
 
             <div class="omega-field">
                 <label><?php esc_html_e('Preview', 'omega-design'); ?></label>
@@ -1035,11 +923,7 @@ class menus {
                 </div>
             </div>
 
-            <label class="omega-toggle">
-                <input type="checkbox" name="omega_announcement_dismissible" value="1" <?php checked($dismissible); ?> />
-                <span class="omega-toggle__track"><span class="omega-toggle__thumb"></span></span>
-                <span class="omega-toggle__label"><?php esc_html_e('Let visitors dismiss it', 'omega-design'); ?></span>
-            </label>
+            <?php self::render_toggle('omega_announcement_dismissible', $dismissible, __('Let visitors dismiss it', 'omega-design')); ?>
 
             <?php submit_button(__('Save Announcement Bar', 'omega-design'), 'omega-btn omega-btn--primary', 'omega_submit_announcement', false); ?>
         </form>
@@ -1057,11 +941,7 @@ class menus {
         $choices         = product_page::style_choices();
         $related_carousel = (bool) get_theme_mod('omega_related_products_carousel', true);
         ?>
-        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" class="omega-card">
-            <input type="hidden" name="action" value="omega_save_settings" />
-            <input type="hidden" name="omega_section_product_page" value="1" />
-            <input type="hidden" name="omega_redirect_to" value="<?php echo esc_url($redirect_to); ?>" />
-            <?php wp_nonce_field('omega_save_settings', 'omega_nonce_product_page'); ?>
+        <?php self::render_settings_form_open('product_page', 'omega_nonce_product_page', $redirect_to, 'omega-card'); ?>
 
             <div class="omega-card__head">
                 <span class="dashicons dashicons-cart"></span>
@@ -1089,11 +969,7 @@ class menus {
 
             <h3><?php esc_html_e('Related Products', 'omega-design'); ?></h3>
 
-            <label class="omega-toggle">
-                <input type="checkbox" name="omega_related_products_carousel" value="1" <?php checked($related_carousel); ?> />
-                <span class="omega-toggle__track"><span class="omega-toggle__thumb"></span></span>
-                <span class="omega-toggle__label"><?php esc_html_e('Show related products as a swipeable carousel', 'omega-design'); ?></span>
-            </label>
+            <?php self::render_toggle('omega_related_products_carousel', $related_carousel, __('Show related products as a swipeable carousel', 'omega-design')); ?>
             <p class="description"><?php esc_html_e('Uses the same slider engine as the rest of the theme (arrows, touch swipe). Turn off to use WooCommerce\'s plain grid instead.', 'omega-design'); ?></p>
 
             <?php submit_button(__('Save Product Page Layout', 'omega-design'), 'omega-btn omega-btn--primary', 'omega_submit_product_page', false); ?>
@@ -1187,11 +1063,7 @@ class menus {
         $cta_label     = get_theme_mod('omega_footer_cta_label', '');
         $cta_url       = get_theme_mod('omega_footer_cta_url', '');
         ?>
-        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" class="omega-card">
-            <input type="hidden" name="action" value="omega_save_settings" />
-            <input type="hidden" name="omega_section_footer" value="1" />
-            <input type="hidden" name="omega_redirect_to" value="<?php echo esc_url($redirect_to); ?>" />
-            <?php wp_nonce_field('omega_save_settings', 'omega_nonce_footer'); ?>
+        <?php self::render_settings_form_open('footer', 'omega_nonce_footer', $redirect_to, 'omega-card'); ?>
 
             <div class="omega-card__head">
                 <span class="dashicons dashicons-align-center"></span>
@@ -1218,12 +1090,7 @@ class menus {
                 <?php if (empty($classic_menus)) : ?>
                     <p class="description"><?php esc_html_e('No classic menus yet. Create one under Appearance > Menus first.', 'omega-design'); ?></p>
                 <?php else : ?>
-                    <select name="omega_classic_footer_menu_id" id="omega_classic_footer_menu_id">
-                        <option value="0"><?php esc_html_e('— Select a menu —', 'omega-design'); ?></option>
-                        <?php foreach ($classic_menus as $menu) : ?>
-                            <option value="<?php echo esc_attr($menu->term_id); ?>" <?php selected($classic_id, $menu->term_id); ?>><?php echo esc_html($menu->name); ?></option>
-                        <?php endforeach; ?>
-                    </select>
+                    <?php self::render_menu_select('omega_classic_footer_menu_id', $classic_menus, $classic_id); ?>
                     <p class="description"><?php esc_html_e('Nest items under a parent to render that parent as a column heading in the "Columns"/"Bold" styles.', 'omega-design'); ?></p>
                 <?php endif; ?>
             </div>
@@ -1288,11 +1155,7 @@ class menus {
         $scheme_obj = color_scheme::get_instance();
         $current = $scheme_obj->get_scheme_key();
         ?>
-        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" class="omega-card">
-            <input type="hidden" name="action" value="omega_save_settings" />
-            <input type="hidden" name="omega_section_color_scheme" value="1" />
-            <input type="hidden" name="omega_redirect_to" value="<?php echo esc_url($redirect_to); ?>" />
-            <?php wp_nonce_field('omega_save_settings', 'omega_nonce_color_scheme'); ?>
+        <?php self::render_settings_form_open('color_scheme', 'omega_nonce_color_scheme', $redirect_to, 'omega-card'); ?>
 
             <div class="omega-card__head">
                 <span class="dashicons dashicons-admin-customizer"></span>
@@ -1327,11 +1190,7 @@ class menus {
         $heading_font = get_theme_mod(typography::HEADING_MOD, '');
         $body_font    = get_theme_mod(typography::BODY_MOD, '');
         ?>
-        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" class="omega-card">
-            <input type="hidden" name="action" value="omega_save_settings" />
-            <input type="hidden" name="omega_section_typography" value="1" />
-            <input type="hidden" name="omega_redirect_to" value="<?php echo esc_url($redirect_to); ?>" />
-            <?php wp_nonce_field('omega_save_settings', 'omega_nonce_typography'); ?>
+        <?php self::render_settings_form_open('typography', 'omega_nonce_typography', $redirect_to, 'omega-card'); ?>
 
             <div class="omega-card__head">
                 <span class="dashicons dashicons-editor-textcolor"></span>
@@ -1387,11 +1246,7 @@ class menus {
         }
         $svg_uploads  = (bool) get_theme_mod('omega_svg_uploads_enabled', true);
         ?>
-        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" class="omega-card">
-            <input type="hidden" name="action" value="omega_save_settings" />
-            <input type="hidden" name="omega_section_design" value="1" />
-            <input type="hidden" name="omega_redirect_to" value="<?php echo esc_url($redirect_to); ?>" />
-            <?php wp_nonce_field('omega_save_settings', 'omega_nonce_design'); ?>
+        <?php self::render_settings_form_open('design', 'omega_nonce_design', $redirect_to, 'omega-card'); ?>
 
             <div class="omega-card__head">
                 <span class="dashicons dashicons-art"></span>
@@ -1428,11 +1283,7 @@ class menus {
 
             <h3><?php esc_html_e('Media', 'omega-design'); ?></h3>
 
-            <label class="omega-toggle">
-                <input type="checkbox" name="omega_svg_uploads_enabled" value="1" <?php checked($svg_uploads); ?> />
-                <span class="omega-toggle__track"><span class="omega-toggle__thumb"></span></span>
-                <span class="omega-toggle__label"><?php esc_html_e('Allow administrators to upload SVG images', 'omega-design'); ?></span>
-            </label>
+            <?php self::render_toggle('omega_svg_uploads_enabled', $svg_uploads, __('Allow administrators to upload SVG images', 'omega-design')); ?>
             <p class="description"><?php esc_html_e('Every SVG is still sanitized on upload either way - this only controls whether the option exists at all. Editors and other roles can never upload SVGs regardless of this setting.', 'omega-design'); ?></p>
 
             <?php submit_button(__('Save Design Settings', 'omega-design'), 'omega-btn omega-btn--primary', 'omega_submit_design', false); ?>
@@ -1461,10 +1312,6 @@ class menus {
 
     public function settings_page() {
         $current_url = admin_url('admin.php?page=omega-settings');
-        $sidebar_enabled = sidebar::get_instance()->is_sidebar_enabled();
-        $sidebar_position = sidebar::get_instance()->get_sidebar_position();
-        $sidebar_width = (int) get_theme_mod('omega_sidebar_width', 30);
-        $sidebar_default_template = get_theme_mod('omega_sidebar_default_template', 'sidebar');
         $status = $this->get_status_data();
         $tabs = $this->settings_tabs();
         // Each form's own redirect target includes its tab's hash, so a
@@ -1498,66 +1345,7 @@ class menus {
                             <div class="omega-stack">
                             <?php $this->render_color_mode_form($tab_url('general')); ?>
 
-                            <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" class="omega-card">
-                                <input type="hidden" name="action" value="omega_save_settings" />
-                                <input type="hidden" name="omega_section_sidebar" value="1" />
-                                <input type="hidden" name="omega_redirect_to" value="<?php echo esc_url($tab_url('general')); ?>" />
-                                <?php wp_nonce_field('omega_save_settings', 'omega_nonce_sidebar'); ?>
-
-                                <div class="omega-card__head">
-                                    <span class="dashicons dashicons-align-right"></span>
-                                    <div>
-                                        <h2><?php esc_html_e('Sidebar', 'omega-design'); ?></h2>
-                                    </div>
-                                </div>
-
-                                <label class="omega-toggle">
-                                    <input type="checkbox" name="omega_enable_sidebar" value="1" <?php checked($sidebar_enabled); ?> />
-                                    <span class="omega-toggle__track"><span class="omega-toggle__thumb"></span></span>
-                                    <span class="omega-toggle__label"><?php esc_html_e('Enable sidebar', 'omega-design'); ?></span>
-                                </label>
-                                <p class="description"><?php esc_html_e('Master switch for every page type below. A single post or page can still override this from its own Page Settings panel in the editor.', 'omega-design'); ?></p>
-
-                                <div class="omega-field">
-                                    <label><?php esc_html_e('Position', 'omega-design'); ?></label>
-                                    <?php
-                                    sidebar::render_position_cards(
-                                        $sidebar_position,
-                                        function ($key) {
-                                            echo 'name="omega_sidebar_position"';
-                                        }
-                                    );
-                                    ?>
-                                </div>
-
-                                <div class="omega-field">
-                                    <label for="omega_sidebar_width"><?php esc_html_e('Width', 'omega-design'); ?> (<span id="omega_sidebar_width_value"><?php echo esc_html($sidebar_width); ?></span>%)</label>
-                                    <input type="range" min="20" max="50" step="1" name="omega_sidebar_width" id="omega_sidebar_width" value="<?php echo esc_attr($sidebar_width); ?>" oninput="document.getElementById('omega_sidebar_width_value').textContent = this.value;" />
-                                </div>
-
-                                <div class="omega-field">
-                                    <label for="omega_sidebar_default_template"><?php esc_html_e('Default Sidebar Content', 'omega-design'); ?></label>
-                                    <select name="omega_sidebar_default_template" id="omega_sidebar_default_template">
-                                        <?php foreach (sidebar::get_instance()->get_template_choices() as $slug => $label) : ?>
-                                            <option value="<?php echo esc_attr($slug); ?>" <?php selected($sidebar_default_template, $slug); ?>><?php echo esc_html($label); ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
-
-                                <p class="omega-field-heading"><strong><?php esc_html_e('Show sidebar on:', 'omega-design'); ?></strong></p>
-                                <?php foreach (sidebar::get_instance()->get_location_labels() as $option_name => $meta) : ?>
-                                    <label class="omega-toggle">
-                                        <input type="checkbox" name="<?php echo esc_attr($option_name); ?>" value="1" <?php checked((bool) get_theme_mod($option_name, $meta['default'])); ?> />
-                                        <span class="omega-toggle__track"><span class="omega-toggle__thumb"></span></span>
-                                        <span class="omega-toggle__label"><?php echo esc_html($meta['label']); ?></span>
-                                    </label>
-                                    <?php if ($meta['description']) : ?>
-                                        <p class="description"><?php echo esc_html($meta['description']); ?></p>
-                                    <?php endif; ?>
-                                <?php endforeach; ?>
-
-                                <?php submit_button(__('Save Sidebar Settings', 'omega-design'), 'omega-btn omega-btn--primary', 'omega_submit_sidebar', false); ?>
-                            </form>
+                            <?php $this->render_sidebar_form($tab_url('general')); ?>
                             </div>
                         </div>
                     </section>
@@ -1581,22 +1369,7 @@ class menus {
                         <div class="omega-grid omega-grid--2">
                             <?php $this->render_megamenu_card($status); ?>
 
-                            <div class="omega-card">
-                                <div class="omega-card__head">
-                                    <span class="dashicons dashicons-heading"></span>
-                                    <div>
-                                        <h2><?php esc_html_e('Page & Post Settings', 'omega-design'); ?></h2>
-                                    </div>
-                                </div>
-                                <p class="description"><?php esc_html_e('Set per page/post in the editor sidebar.', 'omega-design'); ?></p>
-                                <ul class="omega-tip-list">
-                                    <li><?php esc_html_e('Page Width (Normal/Wide/Full) lives in the same Page Settings panel.', 'omega-design'); ?></li>
-                                    <li><?php esc_html_e('Sidebar visibility per-page is set from that page\'s own block settings.', 'omega-design'); ?></li>
-                                </ul>
-                                <p>
-                                    <a class="omega-btn omega-btn--ghost" href="<?php echo esc_url(admin_url('edit.php?post_type=page')); ?>"><span class="dashicons dashicons-admin-page"></span> <?php esc_html_e('Go to Pages', 'omega-design'); ?></a>
-                                </p>
-                            </div>
+                            <?php $this->render_page_settings_card(); ?>
                         </div>
                     </section>
 
@@ -1621,6 +1394,98 @@ class menus {
 
                 </div>
             </div>
+        </div>
+        <?php
+    }
+
+    private function render_sidebar_form($redirect_to) {
+        $sidebar                  = sidebar::get_instance();
+        $sidebar_enabled          = $sidebar->is_sidebar_enabled();
+        $sidebar_position         = $sidebar->get_sidebar_position();
+        $sidebar_width            = (int) get_theme_mod('omega_sidebar_width', 30);
+        $sidebar_default_template = get_theme_mod('omega_sidebar_default_template', 'sidebar');
+        ?>
+        <?php self::render_settings_form_open('sidebar', 'omega_nonce_sidebar', $redirect_to, 'omega-card'); ?>
+
+            <div class="omega-card__head">
+                <span class="dashicons dashicons-align-right"></span>
+                <div>
+                    <h2><?php esc_html_e('Sidebar', 'omega-design'); ?></h2>
+                </div>
+            </div>
+
+            <?php self::render_toggle('omega_enable_sidebar', $sidebar_enabled, __('Enable sidebar', 'omega-design')); ?>
+            <p class="description"><?php esc_html_e('Master switch for every page type below. A single post or page can still override this from its own Page Settings panel in the editor.', 'omega-design'); ?></p>
+
+            <div class="omega-field">
+                <label><?php esc_html_e('Position', 'omega-design'); ?></label>
+                <?php
+                sidebar::render_position_cards(
+                    $sidebar_position,
+                    function ($key) {
+                        echo 'name="omega_sidebar_position"';
+                    }
+                );
+                ?>
+            </div>
+
+            <div class="omega-field">
+                <label for="omega_sidebar_width"><?php esc_html_e('Width', 'omega-design'); ?> (<span id="omega_sidebar_width_value"><?php echo esc_html($sidebar_width); ?></span>%)</label>
+                <input type="range" min="20" max="50" step="1" name="omega_sidebar_width" id="omega_sidebar_width" value="<?php echo esc_attr($sidebar_width); ?>" oninput="document.getElementById('omega_sidebar_width_value').textContent = this.value;" />
+            </div>
+
+            <div class="omega-field">
+                <label for="omega_sidebar_default_template"><?php esc_html_e('Default Sidebar Content', 'omega-design'); ?></label>
+                <select name="omega_sidebar_default_template" id="omega_sidebar_default_template">
+                    <?php foreach ($sidebar->get_template_choices() as $slug => $label) : ?>
+                        <option value="<?php echo esc_attr($slug); ?>" <?php selected($sidebar_default_template, $slug); ?>><?php echo esc_html($label); ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <p class="omega-field-heading"><strong><?php esc_html_e('Show sidebar on:', 'omega-design'); ?></strong></p>
+            <?php foreach ($sidebar->get_location_labels() as $option_name => $meta) : ?>
+                <?php self::render_toggle($option_name, (bool) get_theme_mod($option_name, $meta['default']), $meta['label']); ?>
+                <?php if ($meta['description']) : ?>
+                    <p class="description"><?php echo esc_html($meta['description']); ?></p>
+                <?php endif; ?>
+            <?php endforeach; ?>
+
+            <?php submit_button(__('Save Sidebar Settings', 'omega-design'), 'omega-btn omega-btn--primary', 'omega_submit_sidebar', false); ?>
+        </form>
+        <?php
+    }
+
+    /**
+     * An on/off switch styled checkbox.
+     */
+    private static function render_toggle($name, $is_on, $label) {
+        ?>
+        <label class="omega-toggle">
+            <input type="checkbox" name="<?php echo esc_attr($name); ?>" value="1" <?php checked($is_on); ?> />
+            <span class="omega-toggle__track"><span class="omega-toggle__thumb"></span></span>
+            <span class="omega-toggle__label"><?php echo esc_html($label); ?></span>
+        </label>
+        <?php
+    }
+
+    private function render_page_settings_card() {
+        ?>
+        <div class="omega-card">
+            <div class="omega-card__head">
+                <span class="dashicons dashicons-heading"></span>
+                <div>
+                    <h2><?php esc_html_e('Page & Post Settings', 'omega-design'); ?></h2>
+                </div>
+            </div>
+            <p class="description"><?php esc_html_e('Set per page/post in the editor sidebar.', 'omega-design'); ?></p>
+            <ul class="omega-tip-list">
+                <li><?php esc_html_e('Page Width (Normal/Wide/Full) lives in the same Page Settings panel.', 'omega-design'); ?></li>
+                <li><?php esc_html_e('Sidebar visibility per-page is set from that page\'s own block settings.', 'omega-design'); ?></li>
+            </ul>
+            <p>
+                <a class="omega-btn omega-btn--ghost" href="<?php echo esc_url(admin_url('edit.php?post_type=page')); ?>"><span class="dashicons dashicons-admin-page"></span> <?php esc_html_e('Go to Pages', 'omega-design'); ?></a>
+            </p>
         </div>
         <?php
     }

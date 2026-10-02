@@ -5,7 +5,6 @@
  * Categories: omega-design-general
  * Description: A full cafe/coffee-shop landing page - photo hero, feature strip, tabbed menu, a special-offer band, an our-story section, a live WooCommerce bestsellers grid, an app promo, a multi-card testimonial carousel, latest blog posts and a newsletter signup. Every image, heading and line of copy is editable after inserting.
  * Keywords: landing page, cafe, coffee shop, menu, hero, carousel, woocommerce
- * Block Types: core/post-content
  * Viewport Width: 1400
  *
  * Every block below sticks to a small, deliberately boring vocabulary of

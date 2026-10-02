@@ -14,10 +14,14 @@
 (function (wp) {
 	'use strict';
 
-	if (!wp || !wp.blocks || !wp.element || !wp.blockEditor || !wp.components || !wp.i18n) {
+	var editor = window.OmegaDesignEditor;
+
+	if (!wp || !wp.blocks || !wp.element || !wp.blockEditor || !wp.components || !wp.i18n || !editor) {
 		return;
 	}
 
+	var bindAttribute = editor.bindAttribute;
+	var bindToggle = editor.bindToggle;
 	var registerBlockType = wp.blocks.registerBlockType;
 	var createElement = wp.element.createElement;
 	var Fragment = wp.element.Fragment;
@@ -336,15 +340,52 @@
 
 			// ---- Inspector panels ----
 
+			/** PanelBody props for one of the four region panels, opened/closed independently (and by clicking its region in the preview). */
+			function regionPanel(key, title) {
+				return {
+					title: title,
+					opened: openPanels[key],
+					onToggle: function (isOpen) {
+						var change = {};
+						change[key] = isOpen;
+						setOpenPanels(Object.assign({}, openPanels, change));
+					}
+				};
+			}
+
+			/** value/onChange props binding a control to one field of the selected slide (fallback shown while it's unset). */
+			function bindSlide(key, fallback) {
+				return {
+					value: fallback === undefined ? currentSlide[key] : (currentSlide[key] || fallback),
+					onChange: function (v) {
+						var change = {};
+						change[key] = v;
+						updateCurrentSlide(change);
+					}
+				};
+			}
+
+			function slideColorField(label, key) {
+				var binding = bindSlide(key);
+				return colorField(label, binding.value, binding.onChange);
+			}
+
+			/** The selected slide's media picker preview: the chosen image, if any, above its buttons. */
+			function mediaPickerPreview(url, buttons) {
+				return createElement.apply(null, [
+					'div',
+					{ style: { marginBottom: '12px' } },
+					url
+						? createElement('img', { src: url, style: { width: '100%', display: 'block', marginBottom: '6px', borderRadius: '4px' } })
+						: null
+				].concat(buttons));
+			}
+
 			var backgroundPanel = createElement(
 				PanelBody,
-				{
-					title: __('Selected Slide: Background', 'omega-design'),
-					opened: openPanels.background,
-					onToggle: function (isOpen) { setOpenPanels(Object.assign({}, openPanels, { background: isOpen })); }
-				},
+				regionPanel('background', __('Selected Slide: Background', 'omega-design')),
 				createElement('div', { ref: panelRefs.background },
-					colorField(__('Background color', 'omega-design'), currentSlide.backgroundColor, function (v) { updateCurrentSlide({ backgroundColor: v }); }),
+					slideColorField(__('Background color', 'omega-design'), 'backgroundColor'),
 					createElement(
 						MediaUploadCheck,
 						null,
@@ -353,50 +394,35 @@
 							value: currentSlide.backgroundImageId,
 							onSelect: function (media) { updateCurrentSlide({ backgroundImageUrl: media.url, backgroundImageId: media.id }); },
 							render: function (openMedia) {
-								return createElement(
-									'div',
-									{ style: { marginBottom: '12px' } },
-									currentSlide.backgroundImageUrl
-										? createElement('img', { src: currentSlide.backgroundImageUrl, style: { width: '100%', display: 'block', marginBottom: '6px', borderRadius: '4px' } })
-										: null,
+								return mediaPickerPreview(currentSlide.backgroundImageUrl, [
 									createElement(Button, { variant: 'secondary', onClick: openMedia.open }, currentSlide.backgroundImageUrl ? __('Replace Background Image', 'omega-design') : __('Add Background Image', 'omega-design')),
 									currentSlide.backgroundImageUrl ? createElement(Button, {
 										variant: 'tertiary', isDestructive: true,
 										onClick: function () { updateCurrentSlide({ backgroundImageUrl: '', backgroundImageId: 0 }); }
 									}, __('Remove', 'omega-design')) : null
-								);
+								]);
 							}
 						})
 					),
-					currentSlide.backgroundImageUrl ? createElement(SelectControl, {
+					currentSlide.backgroundImageUrl ? createElement(SelectControl, Object.assign({
 						label: __('Background image size', 'omega-design'),
-						value: currentSlide.backgroundImageSize,
-						options: BG_SIZE_OPTIONS,
-						onChange: function (v) { updateCurrentSlide({ backgroundImageSize: v }); }
-					}) : null,
-					currentSlide.backgroundImageUrl ? colorField(__('Darken/tint overlay color', 'omega-design'), currentSlide.backgroundOverlayColor, function (v) { updateCurrentSlide({ backgroundOverlayColor: v }); }) : null,
-					currentSlide.backgroundImageUrl ? createElement(RangeControl, {
+						options: BG_SIZE_OPTIONS
+					}, bindSlide('backgroundImageSize'))) : null,
+					currentSlide.backgroundImageUrl ? slideColorField(__('Darken/tint overlay color', 'omega-design'), 'backgroundOverlayColor') : null,
+					currentSlide.backgroundImageUrl ? createElement(RangeControl, Object.assign({
 						label: __('Overlay opacity (%)', 'omega-design'),
-						value: currentSlide.backgroundOverlayOpacity,
-						min: 0, max: 100,
-						onChange: function (v) { updateCurrentSlide({ backgroundOverlayOpacity: v }); }
-					}) : null,
-					createElement(TextControl, {
+						min: 0, max: 100
+					}, bindSlide('backgroundOverlayOpacity'))) : null,
+					createElement(TextControl, Object.assign({
 						label: __('Slider height (CSS value, applies to all slides)', 'omega-design'),
-						value: attributes.sliderHeight,
-						help: __('e.g. 480px, 60vh', 'omega-design'),
-						onChange: function (v) { setAttributes({ sliderHeight: v }); }
-					})
+						help: __('e.g. 480px, 60vh', 'omega-design')
+					}, bindAttribute(props, 'sliderHeight')))
 				)
 			);
 
 			var imagePanel = createElement(
 				PanelBody,
-				{
-					title: __('Selected Slide: Image', 'omega-design'),
-					opened: openPanels.image,
-					onToggle: function (isOpen) { setOpenPanels(Object.assign({}, openPanels, { image: isOpen })); }
-				},
+				regionPanel('image', __('Selected Slide: Image', 'omega-design')),
 				createElement('div', { ref: panelRefs.image },
 					createElement(
 						MediaUploadCheck,
@@ -406,169 +432,94 @@
 							value: currentSlide.imageId,
 							onSelect: function (media) { updateCurrentSlide({ imageUrl: media.url, imageId: media.id, imageAlt: media.alt || '' }); },
 							render: function (openMedia) {
-								return createElement(
-									'div',
-									{ style: { marginBottom: '12px' } },
-									currentSlide.imageUrl
-										? createElement('img', { src: currentSlide.imageUrl, style: { width: '100%', display: 'block', marginBottom: '6px', borderRadius: '4px' } })
-										: null,
+								return mediaPickerPreview(currentSlide.imageUrl, [
 									createElement(Button, { variant: 'primary', onClick: openMedia.open }, currentSlide.imageUrl ? __('Replace Image', 'omega-design') : __('Select Image', 'omega-design'))
-								);
+								]);
 							}
 						})
 					),
-					createElement(TextControl, {
-						label: __('Alt text', 'omega-design'),
-						value: currentSlide.imageAlt,
-						onChange: function (v) { updateCurrentSlide({ imageAlt: v }); }
-					}),
-					createElement(TextControl, {
+					createElement(TextControl, Object.assign({ label: __('Alt text', 'omega-design') }, bindSlide('imageAlt'))),
+					createElement(TextControl, Object.assign({
 						label: __('Image width (CSS value)', 'omega-design'),
-						value: currentSlide.imageWidth,
-						help: __('e.g. 100%, 480px', 'omega-design'),
-						onChange: function (v) { updateCurrentSlide({ imageWidth: v }); }
-					}),
-					createElement(TextControl, {
+						help: __('e.g. 100%, 480px', 'omega-design')
+					}, bindSlide('imageWidth'))),
+					createElement(TextControl, Object.assign({
 						label: __('Image height (CSS value)', 'omega-design'),
-						value: currentSlide.imageHeight,
-						help: __('e.g. 420px, 60vh', 'omega-design'),
-						onChange: function (v) { updateCurrentSlide({ imageHeight: v }); }
-					}),
-					createElement(SelectControl, {
+						help: __('e.g. 420px, 60vh', 'omega-design')
+					}, bindSlide('imageHeight'))),
+					createElement(SelectControl, Object.assign({
 						label: __('Image fit', 'omega-design'),
-						value: currentSlide.imageObjectFit,
-						options: OBJECT_FIT_OPTIONS,
-						onChange: function (v) { updateCurrentSlide({ imageObjectFit: v }); }
-					}),
-					createElement(RangeControl, {
+						options: OBJECT_FIT_OPTIONS
+					}, bindSlide('imageObjectFit'))),
+					createElement(RangeControl, Object.assign({
 						label: __('Border radius (px)', 'omega-design'),
-						value: currentSlide.imageBorderRadius,
-						min: 0, max: 100,
-						onChange: function (v) { updateCurrentSlide({ imageBorderRadius: v }); }
-					}),
-					createElement(RangeControl, {
+						min: 0, max: 100
+					}, bindSlide('imageBorderRadius'))),
+					createElement(RangeControl, Object.assign({
 						label: __('Border width (px)', 'omega-design'),
-						value: currentSlide.imageBorderWidth,
-						min: 0, max: 20,
-						onChange: function (v) { updateCurrentSlide({ imageBorderWidth: v }); }
-					}),
-					currentSlide.imageBorderWidth > 0 ? createElement(SelectControl, {
+						min: 0, max: 20
+					}, bindSlide('imageBorderWidth'))),
+					currentSlide.imageBorderWidth > 0 ? createElement(SelectControl, Object.assign({
 						label: __('Border style', 'omega-design'),
-						value: currentSlide.imageBorderStyle,
-						options: BORDER_STYLE_OPTIONS,
-						onChange: function (v) { updateCurrentSlide({ imageBorderStyle: v }); }
-					}) : null,
-					currentSlide.imageBorderWidth > 0 ? colorField(__('Border color', 'omega-design'), currentSlide.imageBorderColor, function (v) { updateCurrentSlide({ imageBorderColor: v }); }) : null
+						options: BORDER_STYLE_OPTIONS
+					}, bindSlide('imageBorderStyle'))) : null,
+					currentSlide.imageBorderWidth > 0 ? slideColorField(__('Border color', 'omega-design'), 'imageBorderColor') : null
 				)
 			);
 
 			var textPanel = createElement(
 				PanelBody,
-				{
-					title: __('Selected Slide: Text & Button', 'omega-design'),
-					opened: openPanels.text,
-					onToggle: function (isOpen) { setOpenPanels(Object.assign({}, openPanels, { text: isOpen })); }
-				},
+				regionPanel('text', __('Selected Slide: Text & Button', 'omega-design')),
 				createElement('div', { ref: panelRefs.text },
-					createElement(TextControl, {
-						label: __('Heading', 'omega-design'),
-						value: currentSlide.heading,
-						onChange: function (v) { updateCurrentSlide({ heading: v }); }
-					}),
-					colorField(__('Heading color', 'omega-design'), currentSlide.headingColor, function (v) { updateCurrentSlide({ headingColor: v }); }),
-					createElement(TextareaControl, {
-						label: __('Body text', 'omega-design'),
-						value: currentSlide.bodyText,
-						onChange: function (v) { updateCurrentSlide({ bodyText: v }); }
-					}),
-					colorField(__('Body text color', 'omega-design'), currentSlide.bodyColor, function (v) { updateCurrentSlide({ bodyColor: v }); }),
-					createElement(TextControl, {
-						label: __('Button text', 'omega-design'),
-						value: currentSlide.buttonText,
-						onChange: function (v) { updateCurrentSlide({ buttonText: v }); }
-					}),
-					createElement(TextControl, {
-						label: __('Button link', 'omega-design'),
-						value: currentSlide.buttonUrl,
-						onChange: function (v) { updateCurrentSlide({ buttonUrl: v }); }
-					}),
-					colorField(__('Button background', 'omega-design'), currentSlide.buttonBackgroundColor, function (v) { updateCurrentSlide({ buttonBackgroundColor: v }); }),
-					colorField(__('Button text color', 'omega-design'), currentSlide.buttonTextColor, function (v) { updateCurrentSlide({ buttonTextColor: v }); }),
-					createElement(RangeControl, {
+					createElement(TextControl, Object.assign({ label: __('Heading', 'omega-design') }, bindSlide('heading'))),
+					slideColorField(__('Heading color', 'omega-design'), 'headingColor'),
+					createElement(TextareaControl, Object.assign({ label: __('Body text', 'omega-design') }, bindSlide('bodyText'))),
+					slideColorField(__('Body text color', 'omega-design'), 'bodyColor'),
+					createElement(TextControl, Object.assign({ label: __('Button text', 'omega-design') }, bindSlide('buttonText'))),
+					createElement(TextControl, Object.assign({ label: __('Button link', 'omega-design') }, bindSlide('buttonUrl'))),
+					slideColorField(__('Button background', 'omega-design'), 'buttonBackgroundColor'),
+					slideColorField(__('Button text color', 'omega-design'), 'buttonTextColor'),
+					createElement(RangeControl, Object.assign({
 						label: __('Button border radius (px)', 'omega-design'),
-						value: currentSlide.buttonBorderRadius,
-						min: 0, max: 60,
-						onChange: function (v) { updateCurrentSlide({ buttonBorderRadius: v }); }
-					}),
-					createElement(SelectControl, {
+						min: 0, max: 60
+					}, bindSlide('buttonBorderRadius'))),
+					createElement(SelectControl, Object.assign({
 						label: __('Content position', 'omega-design'),
-						value: currentSlide.contentPosition || 'left',
 						options: CONTENT_POSITION_OPTIONS,
-						help: __('Set independently per slide, so you can alternate left/right for visual rhythm.', 'omega-design'),
-						onChange: function (v) { updateCurrentSlide({ contentPosition: v }); }
-					}),
-					createElement(SelectControl, {
+						help: __('Set independently per slide, so you can alternate left/right for visual rhythm.', 'omega-design')
+					}, bindSlide('contentPosition', 'left'))),
+					createElement(SelectControl, Object.assign({
 						label: __('Text vertical position', 'omega-design'),
-						value: currentSlide.contentVerticalAlign || 'center',
 						options: VERTICAL_ALIGN_OPTIONS,
-						help: __('Where the text/button panel sits within the slide - top, center or bottom.', 'omega-design'),
-						onChange: function (v) { updateCurrentSlide({ contentVerticalAlign: v }); }
-					}),
-					createElement(SelectControl, {
+						help: __('Where the text/button panel sits within the slide - top, center or bottom.', 'omega-design')
+					}, bindSlide('contentVerticalAlign', 'center'))),
+					createElement(SelectControl, Object.assign({
 						label: __('Text alignment', 'omega-design'),
-						value: currentSlide.textAlign || 'left',
-						options: TEXT_ALIGN_OPTIONS,
-						onChange: function (v) { updateCurrentSlide({ textAlign: v }); }
-					}),
-					createElement(SelectControl, {
+						options: TEXT_ALIGN_OPTIONS
+					}, bindSlide('textAlign', 'left'))),
+					createElement(SelectControl, Object.assign({
 						label: __('Entrance animation', 'omega-design'),
-						value: currentSlide.animation,
 						options: ANIMATION_OPTIONS,
-						help: __('Plays every time this slide becomes active.', 'omega-design'),
-						onChange: function (v) { updateCurrentSlide({ animation: v }); }
-					})
+						help: __('Plays every time this slide becomes active.', 'omega-design')
+					}, bindSlide('animation')))
 				)
 			);
 
 			var behaviorPanel = createElement(
 				PanelBody,
-				{
-					title: __('Slider Behavior', 'omega-design'),
-					opened: openPanels.behavior,
-					onToggle: function (isOpen) { setOpenPanels(Object.assign({}, openPanels, { behavior: isOpen })); }
-				},
-				createElement(SelectControl, {
+				regionPanel('behavior', __('Slider Behavior', 'omega-design')),
+				createElement(SelectControl, Object.assign({
 					label: __('Transition effect', 'omega-design'),
-					value: attributes.effect,
-					options: EFFECT_OPTIONS,
-					onChange: function (v) { setAttributes({ effect: v }); }
-				}),
-				createElement(ToggleControl, {
-					label: __('Autoplay', 'omega-design'),
-					checked: !!attributes.autoplay,
-					onChange: function (v) { setAttributes({ autoplay: v }); }
-				}),
-				attributes.autoplay ? createElement(RangeControl, {
+					options: EFFECT_OPTIONS
+				}, bindAttribute(props, 'effect'))),
+				createElement(ToggleControl, Object.assign({ label: __('Autoplay', 'omega-design') }, bindToggle(props, 'autoplay'))),
+				attributes.autoplay ? createElement(RangeControl, Object.assign({
 					label: __('Autoplay speed (ms)', 'omega-design'),
-					value: attributes.autoplaySpeed,
-					min: 2000, max: 12000, step: 500,
-					onChange: function (v) { setAttributes({ autoplaySpeed: v }); }
-				}) : null,
-				createElement(ToggleControl, {
-					label: __('Loop', 'omega-design'),
-					checked: !!attributes.loop,
-					onChange: function (v) { setAttributes({ loop: v }); }
-				}),
-				createElement(ToggleControl, {
-					label: __('Show arrows', 'omega-design'),
-					checked: !!attributes.showArrows,
-					onChange: function (v) { setAttributes({ showArrows: v }); }
-				}),
-				createElement(ToggleControl, {
-					label: __('Show dots', 'omega-design'),
-					checked: !!attributes.showDots,
-					onChange: function (v) { setAttributes({ showDots: v }); }
-				})
+					min: 2000, max: 12000, step: 500
+				}, bindAttribute(props, 'autoplaySpeed'))) : null,
+				createElement(ToggleControl, Object.assign({ label: __('Loop', 'omega-design') }, bindToggle(props, 'loop'))),
+				createElement(ToggleControl, Object.assign({ label: __('Show arrows', 'omega-design') }, bindToggle(props, 'showArrows'))),
+				createElement(ToggleControl, Object.assign({ label: __('Show dots', 'omega-design') }, bindToggle(props, 'showDots')))
 			);
 
 			return createElement(

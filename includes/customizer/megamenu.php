@@ -21,16 +21,23 @@
 
 namespace OmegaDesign\customizer;
 
+use OmegaDesign\traits\assets;
+use OmegaDesign\traits\singleton;
+
 defined('ABSPATH') || exit;
 
 class megamenu {
 
-    private static $instance = null;
+    use singleton;
+    use assets;
 
     const POST_TYPE       = 'mega_menu';
     const META_CSS        = '_omega_mega_menu_css';
     const CSS_NONCE       = 'omega_mega_menu_css_nonce';
     const SEED_MAP_OPTION = 'omega_megamenu_seed_map';
+
+    /** Prefix of a nav item's "mega_menu:{post_id}" reference. */
+    const REF_PREFIX = 'mega_menu:';
 
     /**
      * Panels collected while rendering the current request's main site
@@ -39,13 +46,6 @@ class megamenu {
      * panel_class => "mega_menu:{post_id}"
      */
     private $collected_panels = [];
-
-    public static function get_instance() {
-        if (null === self::$instance) {
-            self::$instance = new self();
-        }
-        return self::$instance;
-    }
 
     private function __construct() {
         add_action('init', [$this, 'register_post_type']);
@@ -69,8 +69,6 @@ class megamenu {
         // that panels are attribute-driven, so clean them up once.
         add_action('init', [$this, 'cleanup_legacy_navigation']);
     }
-
-    public function init() {}
 
     /* ── Post type ──────────────────────────────────────────────── */
 
@@ -255,7 +253,7 @@ class megamenu {
         $pattern_slug = substr($value, strlen('mega_menu:seed:'));
         $seed_map     = get_option(self::SEED_MAP_OPTION, []);
 
-        return isset($seed_map[$pattern_slug]) ? 'mega_menu:' . (int) $seed_map[$pattern_slug] : '';
+        return isset($seed_map[$pattern_slug]) ? self::menu_reference($seed_map[$pattern_slug]) : '';
     }
 
     public function cleanup_legacy_navigation() {
@@ -315,35 +313,10 @@ class megamenu {
     /* ── Assets ─────────────────────────────────────────────────── */
 
     public function enqueue_assets() {
-        // filemtime() as the *primary* version, not a fallback - `$ver ??
-        // filemtime(...)` never actually ran filemtime() at all, since
-        // OMEGA_DESIGN_VERSION is a constant that's never null, so every
-        // CSS/JS edit here kept enqueuing under the exact same unchanged
-        // version string and browsers had every reason to keep serving a
-        // stale cached copy instead of re-fetching. Matches hooks.php's own
-        // asset_version() helper, which gets this right already.
-
-        $css_path = get_template_directory() . '/assets/css/megamenu.css';
-        if (file_exists($css_path)) {
-            wp_enqueue_style(
-                'omega-design-megamenu',
-                get_template_directory_uri() . '/assets/css/megamenu.css',
-                [],
-                filemtime($css_path)
-            );
-        }
+        self::enqueue_style('omega-design-megamenu', 'css/megamenu.css');
 
         if (!is_admin()) {
-            $js_path = get_template_directory() . '/assets/js/megamenu.js';
-            if (file_exists($js_path)) {
-                wp_enqueue_script(
-                    'omega-design-megamenu',
-                    get_template_directory_uri() . '/assets/js/megamenu.js',
-                    [],
-                    filemtime($js_path),
-                    true
-                );
-            }
+            self::enqueue_script('omega-design-megamenu', 'js/megamenu.js', [], true);
         }
     }
 
@@ -548,7 +521,7 @@ class megamenu {
             // no children actually remain to open a sub-menu for.
             $classes = array_diff($classes, ['menu-item-has-children']);
             $classes[] = 'omega-megamenu-trigger';
-            $classes[] = $this->panel_class('mega_menu:' . (int) $item->omega_mega_menu_id);
+            $classes[] = $this->panel_class(self::menu_reference($item->omega_mega_menu_id));
         }
         return $classes;
     }
@@ -576,7 +549,7 @@ class megamenu {
         $item_output .= '<button type="button" class="omega-classic-header__submenu-toggle" aria-expanded="false" aria-label="' . esc_attr__('Toggle submenu', 'omega-design') . '"><span></span></button>';
 
         if ($has_mega) {
-            $value   = 'mega_menu:' . (int) $item->omega_mega_menu_id;
+            $value   = self::menu_reference($item->omega_mega_menu_id);
             $content = $this->render_panel_content($value);
             if ('' !== trim($content)) {
                 $item_output .= '<div class="omega-megamenu-panel omega-megamenu-panel--inline ' . esc_attr($this->panel_class($value)) . '">' . $content . '</div>';
@@ -587,10 +560,24 @@ class megamenu {
     }
 
     private function panel_class($value) {
-        if (0 === strpos($value, 'mega_menu:')) {
-            return 'omega-panel--' . absint(substr($value, strlen('mega_menu:')));
+        $id = self::referenced_menu_id($value);
+        if (null !== $id) {
+            return 'omega-panel--' . $id;
         }
         return 'omega-panel--' . substr(md5($value), 0, 12);
+    }
+
+    /** The "mega_menu:{post_id}" reference for a Mega Menu post. */
+    private static function menu_reference($post_id) {
+        return self::REF_PREFIX . (int) $post_id;
+    }
+
+    /** The post ID in a "mega_menu:{post_id}" reference, or null when $value isn't one. */
+    private static function referenced_menu_id($value) {
+        if (0 !== strpos($value, self::REF_PREFIX)) {
+            return null;
+        }
+        return absint(substr($value, strlen(self::REF_PREFIX)));
     }
 
     /**
@@ -600,17 +587,16 @@ class megamenu {
      * its Custom CSS field if one was set.
      */
     private function render_panel_content($value) {
-        if (0 !== strpos($value, 'mega_menu:')) {
-            return '';
-        }
-
-        $id = absint(substr($value, strlen('mega_menu:')));
+        $id = self::referenced_menu_id($value);
         if (!$id || self::POST_TYPE !== get_post_type($id) || 'publish' !== get_post_status($id)) {
             return '';
         }
 
         $post = get_post($id);
-        $html = do_blocks($post->post_content);
+        // Every panel is rendered into every page but stays hidden until
+        // its trigger is hovered/opened, so its images only load when it's
+        // actually shown.
+        $html = \OmegaDesign\core\lazy_images::add_lazy_attrs(do_blocks($post->post_content));
 
         $css = get_post_meta($id, self::META_CSS, true);
         if (is_string($css) && '' !== trim($css)) {

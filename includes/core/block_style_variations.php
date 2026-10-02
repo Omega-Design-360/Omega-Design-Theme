@@ -11,25 +11,20 @@
 
 namespace OmegaDesign\core;
 
+use OmegaDesign\traits\assets;
+use OmegaDesign\traits\singleton;
+
 defined('ABSPATH') || exit;
 
 class block_style_variations {
 
-    private static $instance = null;
-
-    public static function get_instance() {
-        if (null === self::$instance) {
-            self::$instance = new self();
-        }
-        return self::$instance;
-    }
+    use singleton;
+    use assets;
 
     private function __construct() {
         add_action('init', [$this, 'register_styles']);
         add_action('enqueue_block_assets', [$this, 'enqueue_assets']);
     }
-
-    public function init() {}
 
     public function register_styles() {
         $styles = [
@@ -65,16 +60,6 @@ class block_style_variations {
      * after publishing.
      */
     public function enqueue_assets() {
-        $css_path = OMEGA_DESIGN_ASSETS . '/css/block-style-variations.css';
-        if (!file_exists($css_path)) {
-            return;
-        }
-
-        wp_enqueue_style(
-            'omega-design-block-style-variations',
-            OMEGA_DESIGN_CSS_URI . '/block-style-variations.css',
-            [],
-            filemtime($css_path)
-        );
+        self::enqueue_style('omega-design-block-style-variations', 'css/block-style-variations.css');
     }
 }

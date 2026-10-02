@@ -28,9 +28,13 @@
 
 namespace OmegaDesign\core;
 
+use OmegaDesign\traits\singleton;
+
 defined('ABSPATH') || exit;
 
 class license {
+
+    use singleton;
 
     const API_URL     = 'https://wpbeudynppqqizghovbj.supabase.co/functions/v1/license-activation';
     const OPTION_KEY   = 'omega_design_license';
@@ -43,15 +47,6 @@ class license {
     // different product than the one asking. Without this, a key bought
     // for either product would silently unlock the other too.
     const PRODUCT = 'omega-design';
-
-    private static $instance = null;
-
-    public static function get_instance() {
-        if (null === self::$instance) {
-            self::$instance = new self();
-        }
-        return self::$instance;
-    }
 
     private function __construct() {
         add_action('admin_notices', [$this, 'admin_notice']);
@@ -68,8 +63,6 @@ class license {
             wp_schedule_event(time() + HOUR_IN_SECONDS, 'daily', self::CRON_HOOK);
         }
     }
-
-    public function init() {}
 
     public function clear_scheduled_check() {
         $timestamp = wp_next_scheduled(self::CRON_HOOK);
@@ -99,6 +92,7 @@ class license {
     public function get_state() {
         $defaults = [
             'key'          => '',
+            'email'        => '',
             'status'       => 'unactivated',
             'plan'         => null,
             'expires_at'   => null,
@@ -163,14 +157,19 @@ class license {
      * who just clicked "Activate" rather than silently swallowed, but
      * still never overwrites whatever license state already existed.
      */
-    public function activate($key) {
+    public function activate($key, $email) {
         $key = trim((string) $key);
         if ('' === $key) {
             return ['ok' => false, 'message' => __('Enter a license key.', 'omega-design')];
         }
 
+        $email = sanitize_email((string) $email);
+        if (!is_email($email)) {
+            return ['ok' => false, 'message' => __('Enter the email address the license was purchased with.', 'omega-design')];
+        }
+
         $domain = self::site_domain();
-        $result = $this->api_request('activate', ['license_key' => $key, 'domain' => $domain, 'product' => self::PRODUCT]);
+        $result = $this->api_request('activate', self::license_payload($key, $domain, true, $email));
 
         if (!$result['transport_ok']) {
             return ['ok' => false, 'message' => sprintf(
@@ -182,27 +181,12 @@ class license {
 
         $body = $result['body'];
         if (empty($body['valid'])) {
-            $this->save_state([
-                'key'          => $key,
-                'status'       => 'invalid',
-                'plan'         => null,
-                'expires_at'   => null,
-                'domain'       => $domain,
-                'last_checked' => time(),
-                'last_error'   => $body['error'] ?? __('This license key could not be activated.', 'omega-design'),
-            ]);
-            return ['ok' => false, 'message' => $body['error'] ?? __('This license key could not be activated.', 'omega-design')];
+            $error = $body['error'] ?? __('This license key could not be activated.', 'omega-design');
+            $this->save_state(self::license_record($key, $email, 'invalid', $domain, null, null, $error));
+            return ['ok' => false, 'message' => $error];
         }
 
-        $this->save_state([
-            'key'          => $key,
-            'status'       => 'valid',
-            'plan'         => $body['plan'] ?? null,
-            'expires_at'   => $body['expires_at'] ?? null,
-            'domain'       => $domain,
-            'last_checked' => time(),
-            'last_error'   => '',
-        ]);
+        $this->save_state(self::license_record($key, $email, 'valid', $domain, $body['plan'] ?? null, $body['expires_at'] ?? null, ''));
 
         return ['ok' => true, 'message' => __('License activated.', 'omega-design')];
     }
@@ -218,11 +202,7 @@ class license {
             return;
         }
 
-        $result = $this->api_request('validate', [
-            'license_key' => $state['key'],
-            'domain'      => self::site_domain(),
-            'product'     => self::PRODUCT,
-        ]);
+        $result = $this->api_request('validate', self::license_payload($state['key'], self::site_domain(), true, $state['email']));
 
         if (!$result['transport_ok']) {
             $state['last_checked'] = time();
@@ -259,10 +239,7 @@ class license {
     public function deactivate() {
         $state = $this->get_state();
         if ('' !== $state['key']) {
-            $this->api_request('deactivate', [
-                'license_key' => $state['key'],
-                'domain'      => self::site_domain(),
-            ]);
+            $this->api_request('deactivate', self::license_payload($state['key'], self::site_domain(), false));
         }
 
         delete_option(self::OPTION_KEY);
@@ -282,14 +259,55 @@ class license {
         return admin_url('admin.php?page=omega-dashboard');
     }
 
-    public function handle_activate_request() {
+    /**
+     * Only an admin, from the theme's own license form (nonce-checked).
+     */
+    private function verify_license_request() {
         if (!current_user_can('manage_options')) {
             wp_die(esc_html__('You do not have permission to do this.', 'omega-design'));
         }
         check_admin_referer(self::NONCE_ACTION, 'omega_nonce_license');
+    }
+
+    /**
+     * The license API's per-site payload. activate/validate also send which
+     * product is asking (see PRODUCT); deactivate doesn't need it. The
+     * purchase email is sent whenever we have one - the API checks it
+     * against the email the key was sold to.
+     */
+    private static function license_payload($key, $domain, $with_product, $email = '') {
+        $payload = ['license_key' => $key, 'domain' => $domain];
+        if ($with_product) {
+            $payload['product'] = self::PRODUCT;
+        }
+        if ('' !== $email) {
+            $payload['email'] = $email;
+        }
+        return $payload;
+    }
+
+    /**
+     * A complete stored license state, checked just now.
+     */
+    private static function license_record($key, $email, $status, $domain, $plan, $expires_at, $error) {
+        return [
+            'key'          => $key,
+            'email'        => $email,
+            'status'       => $status,
+            'plan'         => $plan,
+            'expires_at'   => $expires_at,
+            'domain'       => $domain,
+            'last_checked' => time(),
+            'last_error'   => $error,
+        ];
+    }
+
+    public function handle_activate_request() {
+        $this->verify_license_request();
 
         $key = isset($_POST['omega_license_key']) ? sanitize_text_field(wp_unslash($_POST['omega_license_key'])) : '';
-        $result = $this->activate($key);
+        $email = isset($_POST['omega_license_email']) ? sanitize_email(wp_unslash($_POST['omega_license_email'])) : '';
+        $result = $this->activate($key, $email);
 
         $redirect = add_query_arg([
             'omega_license'      => $result['ok'] ? 'activated' : 'error',
@@ -301,10 +319,7 @@ class license {
     }
 
     public function handle_deactivate_request() {
-        if (!current_user_can('manage_options')) {
-            wp_die(esc_html__('You do not have permission to do this.', 'omega-design'));
-        }
-        check_admin_referer(self::NONCE_ACTION, 'omega_nonce_license');
+        $this->verify_license_request();
 
         $this->deactivate();
 
@@ -330,7 +345,8 @@ class license {
             <p>
                 <strong><?php esc_html_e('Omega Design is not licensed.', 'omega-design'); ?></strong>
                 <?php esc_html_e('The front end of this site is showing a "not licensed" notice to visitors until a valid license key is activated.', 'omega-design'); ?>
-                <a href="#" data-omega-license-open><?php esc_html_e('Activate your license', 'omega-design'); ?></a>
+                <?php // Real link to Settings > License so it works on every screen; on the theme's own screens the popup script intercepts it and opens the popup instead. ?>
+                <a href="<?php echo esc_url(admin_url('admin.php?page=omega-settings#license')); ?>" data-omega-license-open><?php esc_html_e('Activate your license', 'omega-design'); ?></a>
             </p>
         </div>
         <?php
@@ -396,14 +412,18 @@ class license {
         $type = sanitize_key(wp_unslash($_GET['omega_license']));
         $msg  = isset($_GET['omega_license_msg']) ? sanitize_text_field(rawurldecode(wp_unslash($_GET['omega_license_msg']))) : '';
 
-        if ('activated' === $type) {
-            $notice = ['success', __('License activated.', 'omega-design')];
-        } elseif ('deactivated' === $type) {
-            $notice = ['success', __('License deactivated on this site.', 'omega-design')];
-        } elseif ('error' === $type) {
-            $notice = ['error', $msg ?: __('Could not activate this license key.', 'omega-design')];
-        } else {
-            return;
+        switch ((string) $type) {
+            case 'activated':
+                $notice = ['success', __('License activated.', 'omega-design')];
+                break;
+            case 'deactivated':
+                $notice = ['success', __('License deactivated on this site.', 'omega-design')];
+                break;
+            case 'error':
+                $notice = ['error', $msg ?: __('Could not activate this license key.', 'omega-design')];
+                break;
+            default:
+                return;
         }
 
         printf(
@@ -451,7 +471,10 @@ class license {
         }
 
         $state = $this->get_state();
-        $redirect_to = home_url(add_query_arg(null, null));
+        // admin_url(), not home_url(add_query_arg(null, null)) - the request
+        // URI already carries the install's subdirectory, so prefixing it
+        // with home_url() doubled it on sites not installed at the web root.
+        $redirect_to = admin_url('admin.php?page=' . $page);
         ?>
         <div id="omega-license-modal" class="omega-license-modal" role="dialog" aria-modal="true" aria-labelledby="omega-license-modal-title">
             <div class="omega-license-modal__overlay"></div>
@@ -473,6 +496,9 @@ class license {
                     <label for="omega_license_key_modal"><?php esc_html_e('License Key', 'omega-design'); ?></label>
                     <input type="text" id="omega_license_key_modal" name="omega_license_key" value="<?php echo esc_attr($state['key']); ?>" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false" />
 
+                    <label for="omega_license_email_modal"><?php esc_html_e('Purchase Email', 'omega-design'); ?></label>
+                    <input type="email" id="omega_license_email_modal" name="omega_license_email" value="<?php echo esc_attr($state['email']); ?>" placeholder="you@example.com" autocomplete="email" required />
+
                     <?php submit_button(__('Activate', 'omega-design'), 'primary', 'omega_submit_activate_license', false); ?>
                 </form>
             </div>
@@ -485,7 +511,8 @@ class license {
             .omega-license-modal__box h2 { margin: 0 0 10px; font-size: 1.2rem; }
             .omega-license-modal__box p { margin: 0 0 14px; line-height: 1.5; }
             .omega-license-modal__box label { display: block; font-weight: 600; margin-bottom: 6px; }
-            .omega-license-modal__box input[type="text"] { width: 100%; box-sizing: border-box; padding: 8px 10px; margin-bottom: 14px; border: 1px solid #ccc; border-radius: 4px; }
+            .omega-license-modal__box input[type="text"],
+            .omega-license-modal__box input[type="email"] { width: 100%; box-sizing: border-box; padding: 8px 10px; margin-bottom: 14px; border: 1px solid #ccc; border-radius: 4px; }
             .omega-license-modal__close { position: absolute; top: 10px; right: 12px; background: none; border: none; font-size: 1.4rem; line-height: 1; cursor: pointer; color: #666; padding: 4px; }
             .omega-license-modal__close:hover { color: #000; }
         </style>
@@ -580,6 +607,11 @@ class license {
                     <div class="omega-field">
                         <label for="omega_license_key"><?php esc_html_e('License Key', 'omega-design'); ?></label>
                         <input type="text" id="omega_license_key" name="omega_license_key" value="<?php echo esc_attr($state['key']); ?>" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false" />
+                    </div>
+
+                    <div class="omega-field">
+                        <label for="omega_license_email"><?php esc_html_e('Purchase Email', 'omega-design'); ?></label>
+                        <input type="email" id="omega_license_email" name="omega_license_email" value="<?php echo esc_attr($state['email']); ?>" placeholder="you@example.com" autocomplete="email" required />
                     </div>
 
                     <?php submit_button(__('Activate', 'omega-design'), 'omega-btn omega-btn--primary', 'omega_submit_activate_license', false); ?>

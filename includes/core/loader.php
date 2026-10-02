@@ -1,17 +1,20 @@
 <?php
 /**
  * Theme Loader Class
- * 
+ *
  * @package OmegaDesign\core
  */
 
 namespace OmegaDesign\core;
 
+use OmegaDesign\traits\singleton;
+
 defined('ABSPATH') || exit;
 
 class loader {
 
-    private static $instance = null;
+    use singleton;
+
     private $modules = [];
     private $configs = [];
 
@@ -19,16 +22,9 @@ class loader {
         $this->load_configs();
     }
 
-    public static function get_instance() {
-        if (null === self::$instance) {
-            self::$instance = new self();
-        }
-        return self::$instance;
-    }
-
     public function init() {
         $this->load_modules();
-        
+
         if (is_admin()) {
             $this->init_admin();
         } else {
@@ -36,273 +32,86 @@ class loader {
         }
 
         do_action('omega_design_loader_initialized', $this);
-        
+
         return $this;
     }
 
     private function init_admin() {
-        $admin_class = 'OmegaDesign\\customizer\\menus';
-        if (class_exists($admin_class) && method_exists($admin_class, 'get_instance')) {
-            $admin_class::get_instance();
-        }
+        $this->boot_singleton('OmegaDesign\\customizer\\menus');
     }
 
     private function init_public() {
-        $public_class = 'OmegaDesign\\public\\public';
-        if (class_exists($public_class) && method_exists($public_class, 'get_instance')) {
-            $public_class::get_instance();
+        $this->boot_singleton('OmegaDesign\\public\\public');
+    }
+
+    private function boot_singleton($class) {
+        if (class_exists($class) && method_exists($class, 'get_instance')) {
+            $class::get_instance();
         }
     }
 
+    /**
+     * One module config entry. Modules are loaded in ascending priority
+     * order; a module is skipped when any of its deps hasn't loaded.
+     */
+    private static function module($class, $priority = 20, $deps = ['hooks'], $required = false) {
+        return [
+            'class'    => $class,
+            'priority' => $priority,
+            'required' => $required,
+            'deps'     => $deps,
+            'enabled'  => true,
+        ];
+    }
+
     private function load_configs() {
-    $this->configs = [
-        'hooks' => [
-            'class'    => 'OmegaDesign\\core\\hooks',
-            'priority' => 10,
-            'required' => true,
-            'deps'     => [],
-            'enabled'  => true,
-        ],
-        'top_bar_menu' => [
-            'class'    => 'OmegaDesign\\customizer\\menus',
-            'priority' => 20,
-            'required' => false,
-            'deps'     => ['hooks'],
-            'enabled'  => true,
-        ],
-        'sidebar' => [
-            'class'    => 'OmegaDesign\\customizer\\sidebar',
-            'priority' => 20,
-            'required' => false,
-            'deps'     => ['hooks'],
-            'enabled'  => true,
-        ],
-        'megamenu' => [
-            'class'    => 'OmegaDesign\\customizer\\megamenu',
-            'priority' => 30,
-            'required' => false,
-            'deps'     => ['hooks'],
-            'enabled'  => true,
-        ],
-        'header_visibility' => [
-            'class'    => 'OmegaDesign\\customizer\\header_visibility',
-            'priority' => 20,
-            'required' => false,
-            'deps'     => ['hooks'],
-            'enabled'  => true,
-        ],
-        'announcement_bar' => [
-            'class'    => 'OmegaDesign\\customizer\\announcement_bar',
-            'priority' => 20,
-            'required' => false,
-            'deps'     => ['hooks'],
-            'enabled'  => true,
-        ],
-        'classic_header' => [
-            'class'    => 'OmegaDesign\\customizer\\classic_header',
-            'priority' => 31,
-            'required' => false,
-            'deps'     => ['hooks', 'megamenu', 'header_visibility'],
-            'enabled'  => true,
-        ],
-        'woocommerce_header' => [
-            'class'    => 'OmegaDesign\\customizer\\woocommerce_header',
-            'priority' => 31,
-            'required' => false,
-            'deps'     => ['hooks', 'classic_header'],
-            'enabled'  => true,
-        ],
-        'product_page' => [
-            'class'    => 'OmegaDesign\\customizer\\product_page',
-            'priority' => 31,
-            'required' => false,
-            'deps'     => ['hooks'],
-            'enabled'  => true,
-        ],
-        'shop_layouts' => [
-            'class'    => 'OmegaDesign\\customizer\\shop_layouts',
-            'priority' => 31,
-            'required' => false,
-            'deps'     => ['hooks'],
-            'enabled'  => true,
-        ],
-        'footer_visibility' => [
-            'class'    => 'OmegaDesign\\customizer\\footer_visibility',
-            'priority' => 20,
-            'required' => false,
-            'deps'     => ['hooks'],
-            'enabled'  => true,
-        ],
-        'featured_image_visibility' => [
-            'class'    => 'OmegaDesign\\customizer\\featured_image_visibility',
-            'priority' => 20,
-            'required' => false,
-            'deps'     => ['hooks'],
-            'enabled'  => true,
-        ],
-        'classic_footer' => [
-            'class'    => 'OmegaDesign\\customizer\\classic_footer',
-            'priority' => 31,
-            'required' => false,
-            'deps'     => ['hooks', 'footer_visibility'],
-            'enabled'  => true,
-        ],
-        'patterns' => [
-            'class'    => 'OmegaDesign\\customizer\\patterns',
-            'priority' => 40,
-            'required' => false,
-            'deps'     => ['hooks'],
-            'enabled'  => true,
-        ],
-        'title_visibility' => [
-            'class'    => 'OmegaDesign\\customizer\\title',
-            'priority' => 20,
-            'required' => false,
-            'deps'     => ['hooks'],
-            'enabled'  => true,
-        ],
-        'content_width' => [
-            'class'    => 'OmegaDesign\\customizer\\content_width',
-            'priority' => 21,
-            'required' => false,
-            'deps'     => ['hooks', 'title_visibility'],
-            'enabled'  => true,
-        ],
-        'background_color' => [
-            'class'    => 'OmegaDesign\\customizer\\background_color',
-            'priority' => 22,
-            'required' => false,
-            'deps'     => ['hooks', 'content_width'],
-            'enabled'  => true,
-        ],
-        'color_mode' => [
-            'class'    => 'OmegaDesign\\customizer\\color_mode',
-            'priority' => 20,
-            'required' => false,
-            'deps'     => ['hooks'],
-            'enabled'  => true,
-        ],
-        'visitor_language' => [
-            'class'    => 'OmegaDesign\core\visitor_language',
-            'priority' => 20,
-            'required' => false,
-            'deps'     => ['hooks'],
-            'enabled'  => true,
-        ],
-        'color_scheme' => [
-            'class'    => 'OmegaDesign\\customizer\\color_scheme',
-            'priority' => 19,
-            'required' => false,
-            'deps'     => ['hooks'],
-            'enabled'  => true,
-        ],
-        'typography' => [
-            'class'    => 'OmegaDesign\\customizer\\typography',
-            'priority' => 20,
-            'required' => false,
-            'deps'     => ['hooks'],
-            'enabled'  => true,
-        ],
-        'buttons' => [
-            'class'    => 'OmegaDesign\\customizer\\buttons',
-            'priority' => 21,
-            'required' => false,
-            'deps'     => ['hooks', 'top_bar_menu'],
-            'enabled'  => true,
-        ],
-        'responsive_styles' => [
-            'class'    => 'OmegaDesign\\core\\responsive_styles',
-            'priority' => 20,
-            'required' => false,
-            'deps'     => ['hooks'],
-            'enabled'  => true,
-        ],
-        'color_scheme' => [
-            'class'    => 'OmegaDesign\\core\\color_scheme',
-            'priority' => 20,
-            'required' => false,
-            'deps'     => ['hooks'],
-            'enabled'  => true,
-        ],
-        'icons' => [
-            'class'    => 'OmegaDesign\\core\\icons',
-            'priority' => 20,
-            'required' => false,
-            'deps'     => ['hooks'],
-            'enabled'  => true,
-        ],
-        'patterns_cache' => [
-            'class'    => 'OmegaDesign\\core\\patterns_cache',
-            'priority' => 20,
-            'required' => false,
-            'deps'     => ['hooks'],
-            'enabled'  => true,
-        ],
-        'page_cache' => [
-            'class'    => 'OmegaDesign\\core\\page_cache',
-            'priority' => 20,
-            'required' => false,
-            'deps'     => ['hooks'],
-            'enabled'  => true,
-        ],
-        'blocks' => [
-            'class'    => 'OmegaDesign\\core\\blocks',
-            'priority' => 20,
-            'required' => false,
-            'deps'     => ['hooks'],
-            'enabled'  => true,
-        ],
-        'leads' => [
-            'class'    => 'OmegaDesign\\core\\leads',
-            'priority' => 20,
-            'required' => false,
-            'deps'     => ['hooks'],
-            'enabled'  => true,
-        ],
-        'scroll_animations' => [
-            'class'    => 'OmegaDesign\\core\\scroll_animations',
-            'priority' => 20,
-            'required' => false,
-            'deps'     => ['hooks'],
-            'enabled'  => true,
-        ],
-        'svg_upload' => [
-            'class'    => 'OmegaDesign\\core\\svg_upload',
-            'priority' => 20,
-            'required' => false,
-            'deps'     => ['hooks'],
-            'enabled'  => true,
-        ],
-        'block_style_variations' => [
-            'class'    => 'OmegaDesign\\core\\block_style_variations',
-            'priority' => 20,
-            'required' => false,
-            'deps'     => ['hooks'],
-            'enabled'  => true,
-        ],
-        'loading_bar' => [
-            'class'    => 'OmegaDesign\\core\\loading_bar',
-            'priority' => 20,
-            'required' => false,
-            'deps'     => ['hooks'],
-            'enabled'  => true,
-        ],
-        'github_updater' => [
-            'class'    => 'OmegaDesign\\core\\github_updater',
-            'priority' => 20,
-            'required' => false,
-            'deps'     => ['hooks'],
-            'enabled'  => true,
-        ],
-        'license' => [
-            'class'    => 'OmegaDesign\\core\\license',
-            'priority' => 5,
-            'required' => false,
-            'deps'     => [],
-            'enabled'  => true,
-        ],
-    ];
-}
+        $core       = 'OmegaDesign\\core\\';
+        $customizer = 'OmegaDesign\\customizer\\';
+
+        $this->configs = [
+            'hooks'                     => self::module($core . 'hooks', 10, [], true),
+            'top_bar_menu'              => self::module($customizer . 'menus'),
+            'sidebar'                   => self::module($customizer . 'sidebar'),
+            'megamenu'                  => self::module($customizer . 'megamenu', 30),
+            'header_visibility'         => self::module($customizer . 'header_visibility'),
+            'announcement_bar'          => self::module($customizer . 'announcement_bar'),
+            'classic_header'            => self::module($customizer . 'classic_header', 31, ['hooks', 'megamenu', 'header_visibility']),
+            'woocommerce_header'        => self::module($customizer . 'woocommerce_header', 31, ['hooks', 'classic_header']),
+            'product_page'              => self::module($customizer . 'product_page', 31),
+            'shop_layouts'              => self::module($customizer . 'shop_layouts', 31),
+            'footer_visibility'         => self::module($customizer . 'footer_visibility'),
+            'featured_image_visibility' => self::module($customizer . 'featured_image_visibility'),
+            'classic_footer'            => self::module($customizer . 'classic_footer', 31, ['hooks', 'footer_visibility']),
+            'patterns'                  => self::module($customizer . 'patterns', 40),
+            'title_visibility'          => self::module($customizer . 'title'),
+            'content_width'             => self::module($customizer . 'content_width', 21, ['hooks', 'title_visibility']),
+            'background_color'          => self::module($customizer . 'background_color', 22, ['hooks', 'content_width']),
+            'color_mode'                => self::module($customizer . 'color_mode'),
+            'visitor_language'          => self::module($core . 'visitor_language'),
+            // Site-wide palette picker (Customize > Omega Design > Color
+            // Scheme). Its own key - it used to share 'color_scheme' with
+            // the per-page scheme module below, which silently replaced it,
+            // so the picked palette never reached the front end.
+            'site_color_scheme'         => self::module($customizer . 'color_scheme', 19),
+            'color_scheme'              => self::module($core . 'color_scheme'),
+            'typography'                => self::module($customizer . 'typography'),
+            'buttons'                   => self::module($customizer . 'buttons', 21, ['hooks', 'top_bar_menu']),
+            'responsive_styles'         => self::module($core . 'responsive_styles'),
+            'icons'                     => self::module($core . 'icons'),
+            'patterns_cache'            => self::module($core . 'patterns_cache'),
+            'page_cache'                => self::module($core . 'page_cache'),
+            'blocks'                    => self::module($core . 'blocks'),
+            'leads'                     => self::module($core . 'leads'),
+            'scroll_animations'         => self::module($core . 'scroll_animations'),
+            'svg_upload'                => self::module($core . 'svg_upload'),
+            'block_style_variations'    => self::module($core . 'block_style_variations'),
+            'loading_bar'               => self::module($core . 'loading_bar'),
+            'lazy_images'               => self::module($core . 'lazy_images'),
+            'github_updater'            => self::module($core . 'github_updater'),
+            'license'                   => self::module($core . 'license', 5, []),
+            'theme_setup'               => self::module($core . 'theme_setup', 10, []),
+        ];
+    }
 
     private function load_modules() {
         uasort($this->configs, function($a, $b) {

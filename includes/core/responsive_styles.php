@@ -20,11 +20,13 @@
 
 namespace OmegaDesign\core;
 
+use OmegaDesign\traits\singleton;
+
 defined('ABSPATH') || exit;
 
 class responsive_styles {
 
-    private static $instance = null;
+    use singleton;
 
     const HOVER_BLOCKS = ['core/group', 'core/columns', 'core/column'];
     const SIZE_BLOCKS   = ['core/group', 'core/columns'];
@@ -34,19 +36,34 @@ class responsive_styles {
         'mobile' => '599px',
     ];
 
-    public static function get_instance() {
-        if (null === self::$instance) {
-            self::$instance = new self();
-        }
-        return self::$instance;
-    }
+    const BOX_SIDES = ['top', 'right', 'bottom', 'left'];
+
+    /** Layout keyword => flex alignment value (core's own flex layout mapping). */
+    const FLEX_MAP = [
+        'left'          => 'flex-start',
+        'top'           => 'flex-start',
+        'center'        => 'center',
+        'right'         => 'flex-end',
+        'bottom'        => 'flex-end',
+        'stretch'       => 'stretch',
+        'space-between' => 'space-between',
+    ];
+
+    /** Layout keyword => grid item alignment value. */
+    const GRID_MAP = [
+        'left'    => 'start',
+        'top'     => 'start',
+        'center'  => 'center',
+        'right'   => 'end',
+        'bottom'  => 'end',
+        'stretch' => 'stretch',
+    ];
 
     private function __construct() {
         add_filter('render_block', [$this, 'inject_responsive_styles'], 10, 2);
         add_filter('render_block', [$this, 'inject_element_styles'], 10, 2);
         add_filter('render_block', [$this, 'inject_image_size_styles'], 10, 2);
     }
-
 
     /**
      * "Image Size" panel (editor.js) for the Image block: desktop rules
@@ -66,21 +83,11 @@ class responsive_styles {
         $fit = $settings['desktop']['objectFit'] ?? '';
         $css = $this->build_image_size_rules($settings['desktop'] ?? [], '');
         foreach (self::BREAKPOINTS as $device => $max_width) {
-            $rules = $this->build_image_size_rules($settings[$device] ?? [], $fit);
-            $fit   = $settings[$device]['objectFit'] ?? $fit;
-            if ($rules !== '') {
-                $css .= '@media (max-width:' . $max_width . '){' . $rules . '}';
-            }
+            $css .= self::media_query($max_width, $this->build_image_size_rules($settings[$device] ?? [], $fit));
+            $fit  = $settings[$device]['objectFit'] ?? $fit;
         }
 
-        if ($css === '') {
-            return $block_content;
-        }
-
-        $unique_class = 'omega-img-' . wp_unique_id();
-        $css          = str_replace('STRONG', ':is(.' . $unique_class . ',#' . $unique_class . ')', $css);
-
-        return '<style>' . $css . '</style>' . $this->add_class_to_first_tag($block_content, $unique_class);
+        return self::prepend_scoped_style($block_content, $css, 'omega-img-');
     }
 
     /**
@@ -92,7 +99,7 @@ class responsive_styles {
         }
 
         $get = function ($key) use ($settings) {
-            return trim($this->sanitize_css_value($settings[$key] ?? ''));
+            return trim(self::sanitize_css_value($settings[$key] ?? ''));
         };
 
         $width      = $get('width');
@@ -148,7 +155,7 @@ class responsive_styles {
             $fig .= 'border-radius:' . $radius . ' !important;';
         }
 
-        return ($fig !== '' ? 'STRONG{' . $fig . '}' : '') . ($img !== '' ? 'STRONG img{' . $img . '}' : '');
+        return self::rule('STRONG', $fig) . self::rule('STRONG img', $img);
     }
 
     /**
@@ -167,20 +174,10 @@ class responsive_styles {
 
         $css = '';
         foreach (self::BREAKPOINTS as $device => $max_width) {
-            $rules = $this->build_element_rules($settings[$device] ?? [], $name);
-            if ($rules !== '') {
-                $css .= '@media (max-width:' . $max_width . '){' . $rules . '}';
-            }
+            $css .= self::media_query($max_width, $this->build_element_rules($settings[$device] ?? [], $name));
         }
 
-        if ($css === '') {
-            return $block_content;
-        }
-
-        $unique_class = 'omega-rid-' . wp_unique_id();
-        $css          = str_replace('STRONG', ':is(.' . $unique_class . ',#' . $unique_class . ')', $css);
-
-        return '<style>' . $css . '</style>' . $this->add_class_to_first_tag($block_content, $unique_class);
+        return self::prepend_scoped_style($block_content, $css, 'omega-rid-');
     }
 
     /**
@@ -191,30 +188,15 @@ class responsive_styles {
             return '';
         }
 
-        $self  = '';
+        $self  = self::element_align_declarations($settings['textAlign'] ?? '', $name);
         $extra = '';
 
-        $align = $settings['textAlign'] ?? '';
-        if (in_array($align, ['left', 'center', 'right', 'justify'], true)) {
-            $self .= 'text-align:' . $align . ' !important;';
-            // Flex-based blocks line their items up with justify-content,
-            // not text-align.
-            if (in_array($name, ['core/buttons', 'core/social-links'], true) && 'justify' !== $align) {
-                $self .= 'justify-content:' . ['left' => 'flex-start', 'center' => 'center', 'right' => 'flex-end'][$align] . ' !important;';
-            }
-            // A floated/aligned image figure shrinks to the image, so
-            // text-align alone wouldn't move it.
-            if ('core/image' === $name && 'justify' !== $align) {
-                $self .= 'float:none !important;display:block !important;margin-left:0 !important;margin-right:0 !important;';
-            }
-        }
-
-        $font_size = $this->sanitize_css_value($settings['fontSize'] ?? '');
+        $font_size = self::sanitize_css_value($settings['fontSize'] ?? '');
         if ($font_size !== '') {
             $self .= 'font-size:' . $font_size . ' !important;';
         }
 
-        $width = $this->sanitize_css_value($settings['width'] ?? '');
+        $width = self::sanitize_css_value($settings['width'] ?? '');
         if ($width !== '') {
             if ('core/image' === $name) {
                 $extra .= 'STRONG img{width:' . $width . ' !important;max-width:100%;height:auto !important;}';
@@ -224,24 +206,43 @@ class responsive_styles {
         }
 
         foreach (['margin', 'padding'] as $property) {
-            if (!empty($settings[$property]) && is_array($settings[$property])) {
-                foreach (['top', 'right', 'bottom', 'left'] as $side) {
-                    $value = $this->sanitize_css_value($settings[$property][$side] ?? '');
-                    if ($value !== '') {
-                        $self .= $property . '-' . $side . ':' . $value . ' !important;';
-                    }
-                }
-            }
+            $self .= self::box_side_declarations($property, $settings[$property] ?? []);
         }
 
         if (!empty($settings['hide'])) {
             $self .= 'display:none !important;';
         }
 
-        return ($self !== '' ? 'STRONG{' . $self . '}' : '') . $extra;
+        return self::rule('STRONG', $self) . $extra;
     }
 
-    public function init() {}
+    private static function element_align_declarations($align, $name) {
+        if (!in_array($align, ['left', 'center', 'right', 'justify'], true)) {
+            return '';
+        }
+
+        $declarations = 'text-align:' . $align . ' !important;';
+
+        if ('justify' === $align) {
+            return $declarations;
+        }
+
+        switch ((string) $name) {
+            // Flex-based blocks line their items up with justify-content,
+            // not text-align.
+            case 'core/buttons':
+            case 'core/social-links':
+                return $declarations . 'justify-content:' . self::FLEX_MAP[$align] . ' !important;';
+
+            // A floated/aligned image figure shrinks to the image, so
+            // text-align alone wouldn't move it.
+            case 'core/image':
+                return $declarations . 'float:none !important;display:block !important;margin-left:0 !important;margin-right:0 !important;';
+
+            default:
+                return $declarations;
+        }
+    }
 
     public function inject_responsive_styles($block_content, $block) {
         $name         = $block['blockName'] ?? '';
@@ -262,14 +263,7 @@ class responsive_styles {
         // "Responsive Layout" (editor.js) - {tablet:{...}, mobile:{...}}.
         $responsive = $is_hover_block ? ($style['omegaResponsive'] ?? []) : [];
 
-        // Group "Content Position" (editor.js renderContentPosition()) -
-        // a class, not a style, and only for flow/constrained Groups; Row/
-        // Stack/Grid have core's own alignment controls.
-        $valign      = $dimensions['omegaVAlign'] ?? '';
-        $layout_type = $block['attrs']['layout']['type'] ?? '';
-        if ('core/group' === $name && in_array($valign, ['center', 'bottom'], true) && !in_array($layout_type, ['flex', 'grid'], true)) {
-            $block_content = $this->add_class_to_first_tag($block_content, 'omega-valign-' . $valign);
-        }
+        $block_content = $this->maybe_add_valign_class($block_content, $name, $dimensions['omegaVAlign'] ?? '', $block['attrs']['layout']['type'] ?? '');
 
         if (empty($hover) && empty($dimensions) && empty($align) && empty($background) && empty($responsive)) {
             return $block_content;
@@ -277,42 +271,31 @@ class responsive_styles {
 
         $css = '';
         foreach (self::BREAKPOINTS as $device => $max_width) {
-            $hover_decl  = $this->build_hover_declarations($hover, $device);
-            $base_decl   = $this->build_size_declarations($dimensions, $device)
+            $base_decl = $this->build_size_declarations($dimensions, $device)
                 . $this->build_align_declarations($align, $device)
                 . $this->build_background_declarations($background, $device, $style['background'] ?? []);
-            $layout_css  = $this->build_layout_rules($responsive[$device] ?? [], $name, $block['attrs']['layout'] ?? []);
 
-            if ($hover_decl === '' && $base_decl === '' && $layout_css === '') {
-                continue;
-            }
-
-            $css .= '@media (max-width:' . $max_width . '){';
-            if ($base_decl !== '') {
-                $css .= 'SELECTOR{' . $base_decl . '}';
-            }
-            if ($hover_decl !== '') {
-                $css .= 'SELECTOR:hover{' . $hover_decl . '}';
-            }
-            $css .= $layout_css . '}';
+            $css .= self::media_query(
+                $max_width,
+                self::rule('SELECTOR', $base_decl)
+                    . self::rule('SELECTOR:hover', $this->build_hover_declarations($hover, $device))
+                    . $this->build_layout_rules($responsive[$device] ?? [], $name, $block['attrs']['layout'] ?? [])
+            );
         }
 
-        if ($css === '') {
-            return $block_content;
+        return self::prepend_scoped_style($block_content, $css, 'omega-rid-');
+    }
+
+    /**
+     * Group "Content Position" (editor.js renderContentPosition()) - a
+     * class, not a style, and only for flow/constrained Groups; Row/Stack/
+     * Grid have core's own alignment controls.
+     */
+    private function maybe_add_valign_class($block_content, $name, $valign, $layout_type) {
+        if ('core/group' === $name && in_array($valign, ['center', 'bottom'], true) && !in_array($layout_type, ['flex', 'grid'], true)) {
+            return block_html::add_class_to_first_tag($block_content, 'omega-valign-' . $valign);
         }
-
-        $unique_class = 'omega-rid-' . wp_unique_id();
-        // STRONG: same element, but at id-level specificity via :is() - the
-        // layout rules below have to beat core's own layout/columns CSS,
-        // some of which is already !important with 3-class specificity
-        // (e.g. the stacked-on-mobile column flex-basis).
-        $css = str_replace(
-            ['STRONG', 'SELECTOR'],
-            [':is(.' . $unique_class . ',#' . $unique_class . ')', '.' . $unique_class],
-            $css
-        );
-
-        return '<style>' . $css . '</style>' . $this->add_class_to_first_tag($block_content, $unique_class);
+        return $block_content;
     }
 
     private function build_hover_declarations($hover, $device) {
@@ -330,25 +313,29 @@ class responsive_styles {
         foreach ($property_map as $suffix => $property) {
             $value = $hover[$device . $suffix] ?? '';
             if ($value !== '') {
-                $declarations .= $property . ':' . $this->sanitize_css_value($value) . ';';
+                $declarations .= $property . ':' . self::sanitize_css_value($value) . ';';
             }
         }
 
-        $size = $hover[$device . 'ShadowSize'] ?? null;
-        if (!empty($size) && is_numeric($size)) {
-            $size     = (int) $size;
-            $offset_x = isset($hover[$device . 'ShadowOffsetX']) && is_numeric($hover[$device . 'ShadowOffsetX'])
-                ? (int) $hover[$device . 'ShadowOffsetX']
-                : 0;
-            $offset_y = isset($hover[$device . 'ShadowOffsetY']) && is_numeric($hover[$device . 'ShadowOffsetY'])
-                ? (int) $hover[$device . 'ShadowOffsetY']
-                : (int) round($size / 3);
-            $color = $hover[$device . 'ShadowColor'] ?? 'rgba(0, 0, 0, 0.35)';
+        return $declarations . self::hover_shadow_declaration($hover, $device);
+    }
 
-            $declarations .= 'box-shadow:' . $offset_x . 'px ' . $offset_y . 'px ' . $size . 'px ' . $this->sanitize_css_value($color) . ';';
+    private static function hover_shadow_declaration($hover, $device) {
+        $size = $hover[$device . 'ShadowSize'] ?? null;
+        if (empty($size) || !is_numeric($size)) {
+            return '';
         }
 
-        return $declarations;
+        $size     = (int) $size;
+        $offset_x = self::numeric_or($hover[$device . 'ShadowOffsetX'] ?? null, 0);
+        $offset_y = self::numeric_or($hover[$device . 'ShadowOffsetY'] ?? null, (int) round($size / 3));
+        $color    = $hover[$device . 'ShadowColor'] ?? 'rgba(0, 0, 0, 0.35)';
+
+        return 'box-shadow:' . $offset_x . 'px ' . $offset_y . 'px ' . $size . 'px ' . self::sanitize_css_value($color) . ';';
+    }
+
+    private static function numeric_or($value, $default) {
+        return null !== $value && is_numeric($value) ? (int) $value : $default;
     }
 
     private function build_size_declarations($dimensions, $device) {
@@ -356,18 +343,15 @@ class responsive_styles {
             return '';
         }
 
-        $width  = $dimensions[$device . 'Width'] ?? '';
-        $height = $dimensions[$device . 'Height'] ?? '';
-
         // !important: the desktop value is baked into the block's own inline
         // style at save time (editor.js), and an inline style beats any
         // stylesheet rule - without it these overrides never applied.
         $declarations = '';
-        if ($width !== '') {
-            $declarations .= 'width:' . $this->sanitize_css_value($width) . ' !important;';
-        }
-        if ($height !== '') {
-            $declarations .= 'height:' . $this->sanitize_css_value($height) . ' !important;';
+        foreach (['width' => 'Width', 'height' => 'Height'] as $property => $suffix) {
+            $value = $dimensions[$device . $suffix] ?? '';
+            if ($value !== '') {
+                $declarations .= $property . ':' . self::sanitize_css_value($value) . ' !important;';
+            }
         }
 
         return $declarations;
@@ -398,165 +382,224 @@ class responsive_styles {
             return '';
         }
 
-        $self     = '';
-        $children = '';
-        $type     = $layout['type'] ?? ('core/group' === $name ? 'flow' : '');
-        $pick     = function ($key, $allowed) use ($settings) {
+        $type = $layout['type'] ?? ('core/group' === $name ? 'flow' : '');
+        $pick = function ($key, $allowed) use ($settings) {
             $value = $settings[$key] ?? '';
             return in_array($value, $allowed, true) ? $value : '';
         };
-        $flex_map = [
-            'left'          => 'flex-start',
-            'top'           => 'flex-start',
-            'center'        => 'center',
-            'right'         => 'flex-end',
-            'bottom'        => 'flex-end',
-            'stretch'       => 'stretch',
-            'space-between' => 'space-between',
-        ];
 
-        if ('core/group' === $name && 'flex' === $type) {
-            $orientation = $pick('orientation', ['horizontal', 'vertical']);
-            if ($orientation !== '') {
-                $self .= 'flex-direction:' . ('vertical' === $orientation ? 'column' : 'row') . ' !important;';
-            }
-            $is_vertical = ('' !== $orientation ? $orientation : ($layout['orientation'] ?? 'horizontal')) === 'vertical';
+        list($self, $children) = self::block_type_layout($pick, $name, $type, $layout, $settings);
 
-            $justify = $pick('justify', ['left', 'center', 'right', 'space-between']);
-            $valign  = $pick('valign', ['top', 'center', 'bottom', 'stretch', 'space-between']);
-            // A direction change swaps which axis each setting drives, so
-            // whatever a larger screen set would otherwise land on the wrong
-            // axis - reset both to core's own Row/Stack defaults unless set.
-            if ($orientation !== '') {
-                $justify = $justify !== '' ? $justify : 'left';
-                $valign  = $valign !== '' ? $valign : ($is_vertical ? 'top' : 'center');
-            }
-            // Justification runs along the main axis of a Row but across a
-            // Stack, and vertical alignment the other way round - core's
-            // own flex layout maps them exactly like this.
-            if ($justify !== '') {
-                $value = $is_vertical && 'space-between' === $justify ? 'flex-start' : $flex_map[$justify];
-                $self .= ($is_vertical ? 'align-items:' : 'justify-content:') . $value . ' !important;';
-            }
-            if ($valign !== '') {
-                $value = !$is_vertical && 'space-between' === $valign ? 'stretch' : $flex_map[$valign];
-                $self .= ($is_vertical ? 'justify-content:' : 'align-items:') . $value . ' !important;';
-            }
-
-            $wrap = $pick('wrap', ['wrap', 'nowrap']);
-            if ($wrap !== '') {
-                $self .= 'flex-wrap:' . $wrap . ' !important;';
-            }
-        }
-
-        if ('core/group' === $name && 'grid' === $type) {
-            $columns = isset($settings['gridColumns']) && is_numeric($settings['gridColumns']) ? (int) $settings['gridColumns'] : 0;
-            if ($columns >= 1 && $columns <= 12) {
-                $self .= 'grid-template-columns:repeat(' . $columns . ',minmax(0,1fr)) !important;';
-            }
-
-            // Content justification/alignment of each item within its cell.
-            $grid_map = ['left' => 'start', 'top' => 'start', 'center' => 'center', 'right' => 'end', 'bottom' => 'end', 'stretch' => 'stretch'];
-            $justify  = $pick('justify', ['left', 'center', 'right', 'stretch']);
-            $valign   = $pick('valign', ['top', 'center', 'bottom', 'stretch']);
-            if ($justify !== '') {
-                $self .= 'justify-items:' . $grid_map[$justify] . ' !important;';
-            }
-            if ($valign !== '') {
-                $self .= 'align-items:' . $grid_map[$valign] . ' !important;';
-            }
-        }
-
-        // Plain Group (flow/constrained) and Column: both are normal block
-        // flow with no alignment of their own, so either setting switches
-        // them to a flex column - Content alignment then moves the content
-        // up/down within the block's height, Content justification moves
-        // it left/right (text included).
-        if (('core/group' === $name && in_array($type, ['flow', 'constrained'], true)) || 'core/column' === $name) {
-            $justify = $pick('justify', ['left', 'center', 'right']);
-            $valign  = $pick('valign', ['top', 'center', 'bottom']);
-
-            if ('constrained' === $type && $justify !== '') {
-                // Constrained keeps core's own approach: the content column
-                // (contentSize wide) moves, not each child separately.
-                $margins   = ['left' => ['0', 'auto'], 'center' => ['auto', 'auto'], 'right' => ['auto', '0']][$justify];
-                $children .= 'STRONG>:not(.alignleft):not(.alignright):not(.alignfull){margin-left:' . $margins[0] . ' !important;margin-right:' . $margins[1] . ' !important;}';
-            }
-
-            $use_flex_justify = $justify !== '' && 'constrained' !== $type;
-            if ($valign !== '' || $use_flex_justify) {
-                $self .= 'display:flex !important;flex-direction:column !important;';
-                if ($valign !== '') {
-                    $self .= 'justify-content:' . $flex_map[$valign] . ' !important;';
-                }
-                if ('core/column' === $name && $valign !== '') {
-                    // Fill the row's full height so there's room to move
-                    // the content within it.
-                    $self .= 'align-self:stretch !important;';
-                }
-                if ($use_flex_justify) {
-                    $self     .= 'align-items:' . $flex_map[$justify] . ' !important;text-align:' . $justify . ' !important;';
-                    $children .= 'STRONG>*{max-width:100%;}';
-                } elseif ('constrained' === $type) {
-                    // Constrained children carry auto side margins, which
-                    // would shrink them to their content as flex items.
-                    $children .= 'STRONG>*{width:100%;box-sizing:border-box;}';
-                }
-            }
-        }
-
-        if ('core/columns' === $name) {
-            $valign = $pick('valign', ['top', 'center', 'bottom', 'stretch']);
-            if ($valign !== '') {
-                $children .= 'STRONG>.wp-block-column{align-self:' . $flex_map[$valign] . ' !important;}';
-            }
-            // Only visible when the columns don't fill the row (fixed widths).
-            $justify = $pick('justify', ['left', 'center', 'right', 'space-between']);
-            if ($justify !== '') {
-                $self .= 'justify-content:' . $flex_map[$justify] . ' !important;';
-            }
-
-            $stack = $pick('stack', ['stack', 'row']);
-            if ('stack' === $stack) {
-                $self     .= 'flex-wrap:wrap !important;';
-                $children .= 'STRONG>.wp-block-column{flex-basis:100% !important;flex-grow:0 !important;}';
-            } elseif ('row' === $stack) {
-                $self     .= 'flex-wrap:nowrap !important;';
-                $children .= 'STRONG>.wp-block-column{flex-basis:0 !important;flex-grow:1 !important;min-width:0;}';
-            }
-        }
-
-        if ('core/column' === $name) {
-            $width = $this->sanitize_css_value($settings['width'] ?? '');
-            if ($width !== '') {
-                $self .= 'flex-basis:' . $width . ' !important;flex-grow:0 !important;max-width:100%;';
-            }
-        }
-
-        $gap = $this->sanitize_css_value($settings['gap'] ?? '');
-        if ($gap !== '' && in_array($name, ['core/group', 'core/columns'], true)) {
-            $self .= 'gap:' . $gap . ' !important;';
-        }
-
-        if (!empty($settings['padding']) && is_array($settings['padding'])) {
-            foreach (['top', 'right', 'bottom', 'left'] as $side) {
-                $value = $this->sanitize_css_value($settings['padding'][$side] ?? '');
-                if ($value !== '') {
-                    $self .= 'padding-' . $side . ':' . $value . ' !important;';
-                }
-            }
-        }
-
-        if (!empty($settings['hide'])) {
-            $self .= 'display:none !important;';
-        }
+        $self .= self::shared_layout_declarations($settings, $name);
 
         // A Column's own rule has to outweigh its parent Columns' child rule
         // (STRONG>.wp-block-column, e.g. "Side by side"); matching that
         // specificity lets the Column's rule, printed later, win.
         $self_selector = 'core/column' === $name ? '.wp-block-columns>STRONG' : 'STRONG';
 
-        return ($self !== '' ? $self_selector . '{' . $self . '}' : '') . $children;
+        return self::rule($self_selector, $self) . $children;
+    }
+
+    /**
+     * The layout rules specific to this block and layout type, as
+     * [self declarations, children rules].
+     */
+    private static function block_type_layout(callable $pick, $name, $type, $layout, $settings) {
+        switch ((string) $name) {
+            case 'core/group':
+                switch ((string) $type) {
+                    case 'flex':
+                        return [self::flex_group_layout($pick, $layout), ''];
+                    case 'grid':
+                        return [self::grid_group_layout($pick, $settings), ''];
+                    case 'flow':
+                    case 'constrained':
+                        return self::flow_layout($pick, $name, $type);
+                    default:
+                        return ['', ''];
+                }
+
+            case 'core/column':
+                return self::flow_layout($pick, $name, $type);
+
+            case 'core/columns':
+                return self::columns_layout($pick);
+
+            default:
+                return ['', ''];
+        }
+    }
+
+    /**
+     * Row/Stack (flex Group): direction, justification, alignment, wrap.
+     */
+    private static function flex_group_layout(callable $pick, $layout) {
+        $self = '';
+
+        $orientation = $pick('orientation', ['horizontal', 'vertical']);
+        if ($orientation !== '') {
+            $self .= 'flex-direction:' . ('vertical' === $orientation ? 'column' : 'row') . ' !important;';
+        }
+        $is_vertical = ('' !== $orientation ? $orientation : ($layout['orientation'] ?? 'horizontal')) === 'vertical';
+
+        $justify = $pick('justify', ['left', 'center', 'right', 'space-between']);
+        $valign  = $pick('valign', ['top', 'center', 'bottom', 'stretch', 'space-between']);
+        // A direction change swaps which axis each setting drives, so
+        // whatever a larger screen set would otherwise land on the wrong
+        // axis - reset both to core's own Row/Stack defaults unless set.
+        if ($orientation !== '') {
+            $justify = $justify !== '' ? $justify : 'left';
+            $valign  = $valign !== '' ? $valign : ($is_vertical ? 'top' : 'center');
+        }
+        // Justification runs along the main axis of a Row but across a
+        // Stack, and vertical alignment the other way round - core's
+        // own flex layout maps them exactly like this.
+        if ($justify !== '') {
+            $value = $is_vertical && 'space-between' === $justify ? 'flex-start' : self::FLEX_MAP[$justify];
+            $self .= ($is_vertical ? 'align-items:' : 'justify-content:') . $value . ' !important;';
+        }
+        if ($valign !== '') {
+            $value = !$is_vertical && 'space-between' === $valign ? 'stretch' : self::FLEX_MAP[$valign];
+            $self .= ($is_vertical ? 'justify-content:' : 'align-items:') . $value . ' !important;';
+        }
+
+        $wrap = $pick('wrap', ['wrap', 'nowrap']);
+        if ($wrap !== '') {
+            $self .= 'flex-wrap:' . $wrap . ' !important;';
+        }
+
+        return $self;
+    }
+
+    /**
+     * Grid Group: column count, plus each item's justification/alignment
+     * within its cell.
+     */
+    private static function grid_group_layout(callable $pick, $settings) {
+        $self = '';
+
+        $columns = isset($settings['gridColumns']) && is_numeric($settings['gridColumns']) ? (int) $settings['gridColumns'] : 0;
+        if ($columns >= 1 && $columns <= 12) {
+            $self .= 'grid-template-columns:repeat(' . $columns . ',minmax(0,1fr)) !important;';
+        }
+
+        $justify = $pick('justify', ['left', 'center', 'right', 'stretch']);
+        $valign  = $pick('valign', ['top', 'center', 'bottom', 'stretch']);
+        if ($justify !== '') {
+            $self .= 'justify-items:' . self::GRID_MAP[$justify] . ' !important;';
+        }
+        if ($valign !== '') {
+            $self .= 'align-items:' . self::GRID_MAP[$valign] . ' !important;';
+        }
+
+        return $self;
+    }
+
+    /**
+     * Plain Group (flow/constrained) and Column: both are normal block
+     * flow with no alignment of their own, so either setting switches them
+     * to a flex column - Content alignment then moves the content up/down
+     * within the block's height, Content justification moves it left/right
+     * (text included). Returns [self declarations, children rules].
+     */
+    private static function flow_layout(callable $pick, $name, $type) {
+        $self     = '';
+        $children = '';
+
+        $justify = $pick('justify', ['left', 'center', 'right']);
+        $valign  = $pick('valign', ['top', 'center', 'bottom']);
+
+        if ('constrained' === $type && $justify !== '') {
+            // Constrained keeps core's own approach: the content column
+            // (contentSize wide) moves, not each child separately.
+            $margins   = ['left' => ['0', 'auto'], 'center' => ['auto', 'auto'], 'right' => ['auto', '0']][$justify];
+            $children .= 'STRONG>:not(.alignleft):not(.alignright):not(.alignfull){margin-left:' . $margins[0] . ' !important;margin-right:' . $margins[1] . ' !important;}';
+        }
+
+        $use_flex_justify = $justify !== '' && 'constrained' !== $type;
+        if ($valign === '' && !$use_flex_justify) {
+            return [$self, $children];
+        }
+
+        $self .= 'display:flex !important;flex-direction:column !important;';
+        if ($valign !== '') {
+            $self .= 'justify-content:' . self::FLEX_MAP[$valign] . ' !important;';
+        }
+        if ('core/column' === $name && $valign !== '') {
+            // Fill the row's full height so there's room to move the
+            // content within it.
+            $self .= 'align-self:stretch !important;';
+        }
+        if ($use_flex_justify) {
+            $self     .= 'align-items:' . self::FLEX_MAP[$justify] . ' !important;text-align:' . $justify . ' !important;';
+            $children .= 'STRONG>*{max-width:100%;}';
+        } elseif ('constrained' === $type) {
+            // Constrained children carry auto side margins, which would
+            // shrink them to their content as flex items.
+            $children .= 'STRONG>*{width:100%;box-sizing:border-box;}';
+        }
+
+        return [$self, $children];
+    }
+
+    /**
+     * Columns: column alignment, row justification, stacking. Returns
+     * [self declarations, children rules].
+     */
+    private static function columns_layout(callable $pick) {
+        $self     = '';
+        $children = '';
+
+        $valign = $pick('valign', ['top', 'center', 'bottom', 'stretch']);
+        if ($valign !== '') {
+            $children .= 'STRONG>.wp-block-column{align-self:' . self::FLEX_MAP[$valign] . ' !important;}';
+        }
+        // Only visible when the columns don't fill the row (fixed widths).
+        $justify = $pick('justify', ['left', 'center', 'right', 'space-between']);
+        if ($justify !== '') {
+            $self .= 'justify-content:' . self::FLEX_MAP[$justify] . ' !important;';
+        }
+
+        switch ((string) $pick('stack', ['stack', 'row'])) {
+            case 'stack':
+                $self     .= 'flex-wrap:wrap !important;';
+                $children .= 'STRONG>.wp-block-column{flex-basis:100% !important;flex-grow:0 !important;}';
+                break;
+            case 'row':
+                $self     .= 'flex-wrap:nowrap !important;';
+                $children .= 'STRONG>.wp-block-column{flex-basis:0 !important;flex-grow:1 !important;min-width:0;}';
+                break;
+        }
+
+        return [$self, $children];
+    }
+
+    /**
+     * Column width, gap, padding and hide - the settings every layout type
+     * shares.
+     */
+    private static function shared_layout_declarations($settings, $name) {
+        $self = '';
+
+        if ('core/column' === $name) {
+            $width = self::sanitize_css_value($settings['width'] ?? '');
+            if ($width !== '') {
+                $self .= 'flex-basis:' . $width . ' !important;flex-grow:0 !important;max-width:100%;';
+            }
+        }
+
+        $gap = self::sanitize_css_value($settings['gap'] ?? '');
+        if ($gap !== '' && in_array($name, ['core/group', 'core/columns'], true)) {
+            $self .= 'gap:' . $gap . ' !important;';
+        }
+
+        $self .= self::box_side_declarations('padding', $settings['padding'] ?? []);
+
+        if (!empty($settings['hide'])) {
+            $self .= 'display:none !important;';
+        }
+
+        return $self;
     }
 
     /**
@@ -597,30 +640,67 @@ class responsive_styles {
     }
 
     /**
-     * Keeps only characters valid in a CSS color/length/var() value, so a
-     * stray value can't break out of the generated <style> tag.
+     * "{property}-{side}:{value} !important;" for each set side of a
+     * {top,right,bottom,left} box value.
      */
-    private function sanitize_css_value($value) {
-        return preg_replace('/[^a-zA-Z0-9#.,%\-\s()]/', '', (string) $value);
+    private static function box_side_declarations($property, $box) {
+        if (empty($box) || !is_array($box)) {
+            return '';
+        }
+
+        $declarations = '';
+        foreach (self::BOX_SIDES as $side) {
+            $value = self::sanitize_css_value($box[$side] ?? '');
+            if ($value !== '') {
+                $declarations .= $property . '-' . $side . ':' . $value . ' !important;';
+            }
+        }
+        return $declarations;
     }
 
     /**
-     * Injects a class into the block's root element - the element the
-     * generated `@media` rules above target via `.$unique_class`.
+     * "selector{declarations}", or '' when there are no declarations.
      */
-    private function add_class_to_first_tag($html, $class) {
-        $class = esc_attr($class);
+    private static function rule($selector, $declarations) {
+        return $declarations !== '' ? $selector . '{' . $declarations . '}' : '';
+    }
 
-        // Skip any <style> blocks another filter here already prepended
-        // (an Image can carry both Responsive Settings and Image Size).
-        if (preg_match('#^((?:\s*<style>.*?</style>)+)(.*)$#s', $html, $parts)) {
-            return $parts[1] . $this->add_class_to_first_tag($parts[2], $class);
+    /**
+     * Wraps $rules in a max-width media query, or '' when there are none.
+     */
+    private static function media_query($max_width, $rules) {
+        return $rules !== '' ? '@media (max-width:' . $max_width . '){' . $rules . '}' : '';
+    }
+
+    /**
+     * Prepends a <style> block with $css scoped to a class generated fresh
+     * for this render (so duplicated blocks never share a selector) and
+     * adds that class to the block's root element. STRONG becomes the same
+     * element at id-level specificity via :is() - layout rules have to beat
+     * core's own layout/columns CSS, some of which is already !important
+     * with 3-class specificity (e.g. the stacked-on-mobile column
+     * flex-basis); SELECTOR becomes the plain class.
+     */
+    private static function prepend_scoped_style($block_content, $css, $class_prefix) {
+        if ($css === '') {
+            return $block_content;
         }
 
-        if (preg_match('/^\s*<[a-z0-9]+[^>]*\sclass="/i', $html)) {
-            return preg_replace('/^(\s*<[a-z0-9]+[^>]*\sclass=")/i', '$1' . $class . ' ', $html, 1);
-        }
+        $unique_class = $class_prefix . wp_unique_id();
+        $css = str_replace(
+            ['STRONG', 'SELECTOR'],
+            [':is(.' . $unique_class . ',#' . $unique_class . ')', '.' . $unique_class],
+            $css
+        );
 
-        return preg_replace('/^(\s*<[a-z0-9]+)/i', '$1 class="' . $class . '"', $html, 1);
+        return '<style>' . $css . '</style>' . block_html::add_class_to_first_tag($block_content, $unique_class);
+    }
+
+    /**
+     * Keeps only characters valid in a CSS color/length/var() value, so a
+     * stray value can't break out of the generated <style> tag.
+     */
+    private static function sanitize_css_value($value) {
+        return preg_replace('/[^a-zA-Z0-9#.,%\-\s()]/', '', (string) $value);
     }
 }

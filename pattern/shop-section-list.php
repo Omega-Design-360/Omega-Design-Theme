@@ -7,12 +7,12 @@
  * Keywords: shop, products, woocommerce, store, list, catalog, rows
  * Viewport Width: 1400
  *
- * Built from templates/shop-list.html by omega_pattern_shop_section(), so it
+ * Built from templates/shop-list.html by pattern_helpers::shop_section(), so it
  * always matches the "Compact List" Shop Layout.
  */
 
 defined('ABSPATH') || exit;
 
-require_once OMEGA_DESIGN_DIR . '/includes/patterns/pattern-helpers.php';
+use OmegaDesign\patterns\pattern_helpers;
 
-echo omega_pattern_shop_section('shop-list', 85, __('All Products', 'omega-design'));
+echo pattern_helpers::shop_section('shop-list', 85, __('All Products', 'omega-design'));

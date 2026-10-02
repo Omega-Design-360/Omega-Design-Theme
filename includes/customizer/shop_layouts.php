@@ -24,20 +24,17 @@
 
 namespace OmegaDesign\customizer;
 
+use OmegaDesign\traits\assets;
+use OmegaDesign\traits\singleton;
+
 defined('ABSPATH') || exit;
 
 class shop_layouts {
 
+    use singleton;
+    use assets;
+
     const META_KEY = 'omega_shop_layout';
-
-    private static $instance = null;
-
-    public static function get_instance() {
-        if (null === self::$instance) {
-            self::$instance = new self();
-        }
-        return self::$instance;
-    }
 
     private function __construct() {
         add_action('init', [$this, 'register_meta']);
@@ -124,24 +121,48 @@ class shop_layouts {
             return $content;
         }
 
-        $badge = '';
+        return preg_replace('/^(\s*<[^>]+>)/', '$1' . self::glass_badge_html($product) . self::wishlist_button_html($product), $content, 1);
+    }
+
+    /**
+     * The first badge that applies, in priority order: sale percentage,
+     * low stock, bestseller, new (last 30 days) - or '' for none.
+     */
+    private static function glass_badge_html($product) {
         if ($product->is_on_sale()) {
-            $regular = (float) $product->get_regular_price();
-            $sale    = (float) $product->get_sale_price();
-            $pct     = ($regular > 0 && $sale > 0) ? (int) round(100 - $sale / $regular * 100) : 0;
-            $badge   = '<span class="omega-glass-badge omega-glass-badge--sale">' . ($pct > 0 ? '-' . $pct . '%' : esc_html__('Sale', 'omega-design')) . '</span>';
-        } elseif ($product->managing_stock() && $product->get_stock_quantity() !== null && $product->get_stock_quantity() <= 5 && $product->is_in_stock()) {
-            $badge = '<span class="omega-glass-badge omega-glass-badge--limited">' . esc_html__('Limited', 'omega-design') . '</span>';
-        } elseif ((int) $product->get_total_sales() >= 100) {
-            $badge = '<span class="omega-glass-badge omega-glass-badge--best">' . esc_html__('Bestseller', 'omega-design') . '</span>';
-        } elseif ($product->get_date_created() && $product->get_date_created()->getTimestamp() > time() - 30 * DAY_IN_SECONDS) {
-            $badge = '<span class="omega-glass-badge omega-glass-badge--new">' . esc_html__('New', 'omega-design') . '</span>';
+            $pct = self::sale_percent($product);
+            return self::glass_badge('sale', $pct > 0 ? '-' . $pct . '%' : esc_html__('Sale', 'omega-design'));
         }
 
-        $heart = '<button type="button" class="omega-glass-wish" data-product="' . (int) $product->get_id() . '" aria-pressed="false" aria-label="' . esc_attr(sprintf(__('Add %s to wishlist', 'omega-design'), $product->get_name())) . '">'
-            . '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 20.7 4.9 13.9a4.8 4.8 0 0 1 6.8-6.8l.3.3.3-.3a4.8 4.8 0 0 1 6.8 6.8Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg></button>';
+        if ($product->managing_stock() && $product->get_stock_quantity() !== null && $product->get_stock_quantity() <= 5 && $product->is_in_stock()) {
+            return self::glass_badge('limited', esc_html__('Limited', 'omega-design'));
+        }
 
-        return preg_replace('/^(\s*<[^>]+>)/', '$1' . $badge . $heart, $content, 1);
+        if ((int) $product->get_total_sales() >= 100) {
+            return self::glass_badge('best', esc_html__('Bestseller', 'omega-design'));
+        }
+
+        if ($product->get_date_created() && $product->get_date_created()->getTimestamp() > time() - 30 * DAY_IN_SECONDS) {
+            return self::glass_badge('new', esc_html__('New', 'omega-design'));
+        }
+
+        return '';
+    }
+
+    private static function sale_percent($product) {
+        $regular = (float) $product->get_regular_price();
+        $sale    = (float) $product->get_sale_price();
+        return ($regular > 0 && $sale > 0) ? (int) round(100 - $sale / $regular * 100) : 0;
+    }
+
+    /** $text must already be escaped. */
+    private static function glass_badge($modifier, $text) {
+        return '<span class="omega-glass-badge omega-glass-badge--' . $modifier . '">' . $text . '</span>';
+    }
+
+    private static function wishlist_button_html($product) {
+        return '<button type="button" class="omega-glass-wish" data-product="' . (int) $product->get_id() . '" aria-pressed="false" aria-label="' . esc_attr(sprintf(__('Add %s to wishlist', 'omega-design'), $product->get_name())) . '">'
+            . '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 20.7 4.9 13.9a4.8 4.8 0 0 1 6.8-6.8l.3.3.3-.3a4.8 4.8 0 0 1 6.8 6.8Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg></button>';
     }
 
     /**
@@ -161,11 +182,7 @@ class shop_layouts {
 
         $dots = '';
         foreach (array_slice($terms, 0, 5) as $term) {
-            $hex = sanitize_hex_color((string) get_term_meta($term->term_id, 'color', true));
-            if (!$hex) {
-                continue;
-            }
-            $dots .= '<span class="omega-glass-swatch" style="--omega-swatch:' . esc_attr($hex) . '" title="' . esc_attr($term->name) . '"></span>';
+            $dots .= self::swatch_dot_html($term);
         }
 
         if ('' === $dots) {
@@ -173,6 +190,19 @@ class shop_layouts {
         }
 
         return '<div class="omega-glass-card__swatches" role="img" aria-label="' . esc_attr(sprintf(__('Colors: %s', 'omega-design'), implode(', ', wp_list_pluck($terms, 'name')))) . '">' . $dots . '</div>';
+    }
+
+    /**
+     * One color dot for a pa_color term, from the color saved on the term -
+     * '' when it has none.
+     */
+    private static function swatch_dot_html($term) {
+        $hex = sanitize_hex_color((string) get_term_meta($term->term_id, 'color', true));
+        if (!$hex) {
+            return '';
+        }
+
+        return '<span class="omega-glass-swatch" style="--omega-swatch:' . esc_attr($hex) . '" title="' . esc_attr($term->name) . '"></span>';
     }
 
     /** The hero photo ships with the theme; point it at the theme's real URL. */
@@ -187,8 +217,6 @@ class shop_layouts {
             $content
         );
     }
-
-    public function init() {}
 
     /**
      * Template slug => label/description. The slug is also the file name
@@ -227,6 +255,22 @@ class shop_layouts {
         ];
     }
 
+    /**
+     * layouts() as a list of {value, label, description} for the editor
+     * panel's select control.
+     */
+    private static function layout_options() {
+        $options = [];
+        foreach (self::layouts() as $slug => $layout) {
+            $options[] = [
+                'value'       => $slug,
+                'label'       => $layout['label'],
+                'description' => $layout['description'],
+            ];
+        }
+        return $options;
+    }
+
     private function shop_page_id() {
         return function_exists('wc_get_page_id') ? (int) wc_get_page_id('shop') : 0;
     }
@@ -260,14 +304,18 @@ class shop_layouts {
             'single'            => true,
             'type'              => 'string',
             'default'           => '',
-            'sanitize_callback' => function ($value) {
-                $value = sanitize_key($value);
-                return array_key_exists($value, self::layouts()) ? $value : '';
-            },
-            'auth_callback'     => function () {
-                return current_user_can('edit_pages');
-            },
+            'sanitize_callback' => [$this, 'sanitize_layout'],
+            'auth_callback'     => [$this, 'can_edit_layout'],
         ]);
+    }
+
+    public function sanitize_layout($value) {
+        $value = sanitize_key($value);
+        return array_key_exists($value, self::layouts()) ? $value : '';
+    }
+
+    public function can_edit_layout() {
+        return current_user_can('edit_pages');
     }
 
     public function prepend_layout_template($templates) {
@@ -312,10 +360,7 @@ class shop_layouts {
 
     /** Grid/list toggle, wishlist hearts and collapsible filter groups. */
     private function enqueue_glass_script() {
-        $js_path = OMEGA_DESIGN_ASSETS . '/js/shop-glass.js';
-        if (file_exists($js_path)) {
-            wp_enqueue_script('omega-design-shop-glass', OMEGA_DESIGN_JS_URI . '/shop-glass.js', [], filemtime($js_path), ['in_footer' => true, 'strategy' => 'defer']);
-        }
+        self::enqueue_script('omega-design-shop-glass', 'js/shop-glass.js', [], ['in_footer' => true, 'strategy' => 'defer']);
     }
 
     /**
@@ -336,12 +381,9 @@ class shop_layouts {
     }
 
     private function enqueue_stylesheet() {
-        $css_path = OMEGA_DESIGN_ASSETS . '/css/shop-layouts.css';
-        if (file_exists($css_path)) {
-            // After style.css, whose generic product-card rules this overrides.
-            $deps = wp_style_is('omega-design-style', 'registered') ? ['omega-design-style'] : [];
-            wp_enqueue_style('omega-design-shop-layouts', OMEGA_DESIGN_CSS_URI . '/shop-layouts.css', $deps, filemtime($css_path));
-        }
+        // After style.css, whose generic product-card rules this overrides.
+        $deps = wp_style_is('omega-design-style', 'registered') ? ['omega-design-style'] : [];
+        self::enqueue_style('omega-design-shop-layouts', 'css/shop-layouts.css', $deps);
     }
 
     /**
@@ -354,31 +396,19 @@ class shop_layouts {
             return;
         }
 
-        $js_path = OMEGA_DESIGN_ASSETS . '/js/shop-layout.js';
-        if (!file_exists($js_path)) {
-            return;
-        }
-
-        wp_enqueue_script(
+        $enqueued = self::enqueue_script(
             'omega-design-shop-layout',
-            OMEGA_DESIGN_JS_URI . '/shop-layout.js',
+            'js/shop-layout.js',
             ['wp-plugins', 'wp-editor', 'wp-element', 'wp-components', 'wp-data', 'wp-i18n'],
-            filemtime($js_path),
             true
         );
-
-        $layouts = [];
-        foreach (self::layouts() as $slug => $layout) {
-            $layouts[] = [
-                'value'       => $slug,
-                'label'       => $layout['label'],
-                'description' => $layout['description'],
-            ];
+        if (!$enqueued) {
+            return;
         }
 
         wp_localize_script('omega-design-shop-layout', 'OmegaShopLayouts', [
             'metaKey'         => self::META_KEY,
-            'layouts'         => $layouts,
+            'layouts'         => self::layout_options(),
             'siteEditorUrl'   => admin_url('site-editor.php?p=%2Fwp_template%2F' . rawurlencode(get_stylesheet() . '//')),
             'shopUrl'         => function_exists('wc_get_page_permalink') ? wc_get_page_permalink('shop') : '',
         ]);

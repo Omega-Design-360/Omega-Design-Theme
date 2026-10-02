@@ -5,7 +5,6 @@
  * Categories: omega-design-general
  * Description: A full furniture & home decor landing page - hero, trust strip, a shop-by-room row, tabbed featured products (live WooCommerce data), a promo banner, a feature strip, a testimonial slider, and a newsletter signup. Every image, heading and line of copy is editable after inserting.
  * Keywords: landing page, furniture, home decor, interior, shop, woocommerce
- * Block Types: core/post-content
  * Viewport Width: 1400
  *
  * Follows the same conventions as pattern/landing-digital-agency.php: a
@@ -19,9 +18,9 @@
 
 defined('ABSPATH') || exit;
 
-require_once OMEGA_DESIGN_DIR . '/includes/patterns/pattern-helpers.php';
+use OmegaDesign\patterns\pattern_helpers;
 
-$omega_ph = omega_pattern_placeholder_url();
+$omega_ph = pattern_helpers::placeholder_url();
 
 /** One room card: icon, title, inside a Group carrying a numbered `omega-category-card--N` class (tint in assets/css/landing-furniture-store.css). */
 $build_category_card = function ($icon, $title, $variant) {
@@ -56,7 +55,7 @@ $build_category_row = function ($items) use ($build_category_card) {
 
 <!-- wp:column {"verticalAlignment":"center","width":"55%"} -->
 <div class="wp-block-column is-vertically-aligned-center" style="flex-basis:55%">
-<?php echo omega_pattern_eyebrow(__('Timeless Comfort', 'omega-design')); ?>
+<?php echo pattern_helpers::eyebrow(__('Timeless Comfort', 'omega-design')); ?>
 <!-- wp:heading {"level":1} --><h1 class="wp-block-heading"><?php esc_html_e('Furniture That Feels Like Home', 'omega-design'); ?></h1><!-- /wp:heading -->
 <!-- wp:paragraph --><p><?php esc_html_e('Handcrafted pieces for every room, built to last and designed to make your space feel like you.', 'omega-design'); ?></p><!-- /wp:paragraph -->
 <!-- wp:buttons -->
@@ -97,7 +96,7 @@ $build_category_row = function ($items) use ($build_category_card) {
 <!-- wp:group {"align":"wide","style":{"spacing":{"padding":{"top":"var:preset|spacing|l","bottom":"var:preset|spacing|l"}}},"omegaAnimation":"fade-up"} -->
 <div class="wp-block-group alignwide omega-animate" style="padding-top:var(--wp--preset--spacing--l);padding-bottom:var(--wp--preset--spacing--l)" data-omega-animate="fade-up" data-omega-animate-duration="600" data-omega-animate-delay="0">
 <?php
-echo omega_pattern_icon_row_left([
+echo pattern_helpers::icon_row_left([
 	['icon' => 'local-shipping', 'title' => __('Free Delivery', 'omega-design'),   'desc' => __('White-glove & assembly', 'omega-design')],
 	['icon' => 'verified',       'title' => __('Quality Guarantee', 'omega-design'), 'desc' => __('Built to last', 'omega-design')],
 	['icon' => 'security',       'title' => __('Secure Payment', 'omega-design'),  'desc' => __('100% protected checkout', 'omega-design')],
@@ -111,7 +110,7 @@ echo omega_pattern_icon_row_left([
 <?php // SHOP BY ROOM ?>
 <!-- wp:group {"align":"wide","style":{"spacing":{"padding":{"top":"var:preset|spacing|l","bottom":"var:preset|spacing|l"}}},"omegaAnimation":"fade-up"} -->
 <div class="wp-block-group alignwide omega-animate" style="padding-top:var(--wp--preset--spacing--l);padding-bottom:var(--wp--preset--spacing--l)" data-omega-animate="fade-up" data-omega-animate-duration="600" data-omega-animate-delay="0">
-<?php echo omega_pattern_eyebrow(__('Shop by Room', 'omega-design')); ?>
+<?php echo pattern_helpers::eyebrow(__('Shop by Room', 'omega-design')); ?>
 <!-- wp:heading {"level":2} --><h2 class="wp-block-heading"><?php esc_html_e('Furnish Every Corner', 'omega-design'); ?></h2><!-- /wp:heading -->
 <?php
 echo $build_category_row([
@@ -133,22 +132,22 @@ echo $build_category_row([
 <?php // FEATURED PRODUCTS (TABS) ?>
 <!-- wp:group {"align":"wide","backgroundColor":"surface","style":{"spacing":{"padding":{"top":"var:preset|spacing|l","bottom":"var:preset|spacing|l"}}},"omegaAnimation":"fade-up"} -->
 <div class="wp-block-group alignwide has-surface-background-color has-background omega-animate" style="padding-top:var(--wp--preset--spacing--l);padding-bottom:var(--wp--preset--spacing--l)" data-omega-animate="fade-up" data-omega-animate-duration="600" data-omega-animate-delay="0">
-<?php echo omega_pattern_eyebrow(__('Featured Pieces', 'omega-design')); ?>
+<?php echo pattern_helpers::eyebrow(__('Featured Pieces', 'omega-design')); ?>
 <!-- wp:heading {"level":2} --><h2 class="wp-block-heading"><?php esc_html_e('Customer Favorites', 'omega-design'); ?></h2><!-- /wp:heading -->
 
 <!-- wp:omega-design/tabs -->
 <div class="wp-block-omega-design-tabs omega-tabs"><div class="omega-tabs__panels">
 
 <!-- wp:omega-design/tabs-item {"label":"<?php echo esc_attr__('Best Sellers', 'omega-design'); ?>"} -->
-<div class="wp-block-omega-design-tabs-item omega-tabs__panel"><div class="omega-tabs__panel-content"><?php echo omega_pattern_product_collection(31, 'popularity'); ?></div></div>
+<div class="wp-block-omega-design-tabs-item omega-tabs__panel"><div class="omega-tabs__panel-content"><?php echo pattern_helpers::product_collection(31, 'popularity'); ?></div></div>
 <!-- /wp:omega-design/tabs-item -->
 
 <!-- wp:omega-design/tabs-item {"label":"<?php echo esc_attr__('New Arrivals', 'omega-design'); ?>"} -->
-<div class="wp-block-omega-design-tabs-item omega-tabs__panel"><div class="omega-tabs__panel-content"><?php echo omega_pattern_product_collection(32, 'date'); ?></div></div>
+<div class="wp-block-omega-design-tabs-item omega-tabs__panel"><div class="omega-tabs__panel-content"><?php echo pattern_helpers::product_collection(32, 'date'); ?></div></div>
 <!-- /wp:omega-design/tabs-item -->
 
 <!-- wp:omega-design/tabs-item {"label":"<?php echo esc_attr__('On Sale', 'omega-design'); ?>"} -->
-<div class="wp-block-omega-design-tabs-item omega-tabs__panel"><div class="omega-tabs__panel-content"><?php echo omega_pattern_product_collection(33, 'date', true); ?></div></div>
+<div class="wp-block-omega-design-tabs-item omega-tabs__panel"><div class="omega-tabs__panel-content"><?php echo pattern_helpers::product_collection(33, 'date', true); ?></div></div>
 <!-- /wp:omega-design/tabs-item -->
 
 </div></div>
@@ -161,7 +160,7 @@ echo $build_category_row([
 <!-- wp:group {"align":"wide","style":{"spacing":{"padding":{"top":"var:preset|spacing|l","bottom":"var:preset|spacing|l"}}},"omegaAnimation":"fade-up"} -->
 <div class="wp-block-group alignwide omega-animate" style="padding-top:var(--wp--preset--spacing--l);padding-bottom:var(--wp--preset--spacing--l)" data-omega-animate="fade-up" data-omega-animate-duration="600" data-omega-animate-delay="0">
 <?php
-echo omega_pattern_split_promo([
+echo pattern_helpers::split_promo([
 	'bg'          => 'secondary',
 	'offer_color' => 'accent',
 	'eyebrow'     => __('Limited Time', 'omega-design'),
@@ -180,7 +179,7 @@ echo omega_pattern_split_promo([
 <!-- wp:group {"align":"wide","backgroundColor":"surface","style":{"spacing":{"padding":{"top":"var:preset|spacing|l","bottom":"var:preset|spacing|l"}}},"omegaAnimation":"fade-up"} -->
 <div class="wp-block-group alignwide has-surface-background-color has-background omega-animate" style="padding-top:var(--wp--preset--spacing--l);padding-bottom:var(--wp--preset--spacing--l)" data-omega-animate="fade-up" data-omega-animate-duration="600" data-omega-animate-delay="0">
 <?php
-echo omega_pattern_icon_row_left([
+echo pattern_helpers::icon_row_left([
 	['icon' => 'build',             'title' => __('Handcrafted Quality', 'omega-design'), 'desc' => __('Real wood, real joinery', 'omega-design')],
 	['icon' => 'yard',               'title' => __('Sustainably Sourced', 'omega-design'), 'desc' => __('Responsibly harvested materials', 'omega-design')],
 	['icon' => 'local-shipping',     'title' => __('White-Glove Delivery', 'omega-design'), 'desc' => __('Placed exactly where you want it', 'omega-design')],

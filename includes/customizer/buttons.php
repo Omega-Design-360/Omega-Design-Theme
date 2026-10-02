@@ -16,9 +16,17 @@
 
 namespace OmegaDesign\customizer;
 
+use OmegaDesign\traits\assets;
+use OmegaDesign\traits\customizer_section;
+use OmegaDesign\traits\singleton;
+
 defined('ABSPATH') || exit;
 
 class buttons {
+
+    use singleton;
+    use assets;
+    use customizer_section;
 
     /**
      * Matches the <select> option labels render_design_form() used before
@@ -34,21 +42,10 @@ class buttons {
         'pill'    => 'Pill',
     ];
 
-    private static $instance = null;
-
-    public static function get_instance() {
-        if (null === self::$instance) {
-            self::$instance = new self();
-        }
-        return self::$instance;
-    }
-
     private function __construct() {
         add_action('customize_register', [$this, 'register_customizer']);
         add_action('customize_controls_enqueue_scripts', [$this, 'enqueue_control_assets']);
     }
-
-    public function init() {}
 
     /**
      * The theme's own Settings page (menus.php) draws the same preview
@@ -58,33 +55,16 @@ class buttons {
      * real preview in the Customizer too.
      */
     public function enqueue_control_assets() {
-        $css_path = OMEGA_DESIGN_ASSETS . '/css/admin-pages.css';
-        wp_enqueue_style(
-            'omega-design-admin-pages',
-            OMEGA_DESIGN_CSS_URI . '/admin-pages.css',
-            [],
-            file_exists($css_path) ? filemtime($css_path) : OMEGA_DESIGN_ASSET_VERSION
-        );
-
         // The Customizer's controls pane is a plain wp-admin page like the
-        // Settings page (see menus.php's own enqueue_admin_page_assets()),
-        // and never prints the theme.json-derived --wp--preset--color--*
-        // variables on its own - every var(--wp--preset--color--...) in
-        // these swatches has an explicit fallback already, so this was
-        // invisible (the fallback happened to match this site's actual
-        // primary color), but without it the previews would silently stop
-        // tracking the real color scheme the moment that ever changed.
-        wp_add_inline_style('omega-design-admin-pages', wp_get_global_stylesheet(['variables']));
+        // Settings page and never prints the theme.json-derived
+        // --wp--preset--color--* variables on its own, so they're printed
+        // alongside the stylesheet to keep the previews tracking the real
+        // color scheme.
+        self::enqueue_admin_pages_style(true);
     }
 
     public function register_customizer($wp_customize) {
-        if (!$wp_customize->get_panel('omega_design_panel')) {
-            $wp_customize->add_panel('omega_design_panel', [
-                'title'       => __('Omega Design', 'omega-design'),
-                'description' => __('Theme-specific options for Omega Design. General site identity, colors, typography and layout are managed in Global Styles via the Site Editor.', 'omega-design'),
-                'priority'    => 30,
-            ]);
-        }
+        self::ensure_design_panel($wp_customize);
 
         $wp_customize->add_section('omega_button_settings', [
             'title'       => __('Buttons', 'omega-design'),
@@ -104,34 +84,25 @@ class buttons {
             'transport'         => 'refresh',
         ]);
 
-        // WP_Customize_Control only exists once the Customizer's own class
-        // files have loaded, right before 'customize_register' fires - see
-        // omega_define_button_controls()'s own comment for why this is
-        // called here rather than the classes being declared at this
-        // file's top level.
-        omega_define_button_controls();
-
-        $wp_customize->add_control(new omega_button_radius_control($wp_customize, 'omega_button_radius', [
+        self::add_card_control($wp_customize, 'omega_button_radius', 'omega_button_radius', [__CLASS__, 'render_radius_cards'], [
             'label'    => __('Corner Style', 'omega-design'),
             'section'  => 'omega_button_settings',
             'priority' => 10,
-        ]));
+        ]);
 
-        $wp_customize->add_control(new omega_button_look_control($wp_customize, 'omega_button_look', [
+        self::add_card_control($wp_customize, 'omega_button_look', 'omega_button_look', [__CLASS__, 'render_look_cards'], [
             'label'    => __('Default Look', 'omega-design'),
             'section'  => 'omega_button_settings',
             'priority' => 20,
-        ]));
+        ]);
     }
 
     public function sanitize_radius($value) {
-        $value = sanitize_key((string) $value);
-        return array_key_exists($value, menus::BUTTON_RADIUS_CHOICES) ? $value : 'soft';
+        return self::sanitize_key_choice($value, menus::BUTTON_RADIUS_CHOICES, 'soft');
     }
 
     public function sanitize_look($value) {
-        $value = sanitize_key((string) $value);
-        return array_key_exists($value, menus::BUTTON_LOOK_CHOICES) ? $value : 'fill';
+        return self::sanitize_key_choice($value, menus::BUTTON_LOOK_CHOICES, 'fill');
     }
 
     /**
@@ -146,28 +117,9 @@ class buttons {
      * own name + $this->link() for two-way JS binding.
      */
     public static function render_radius_cards($current, $link_callback) {
-        ?>
-        <div class="omega-btn-radius-grid">
-            <?php foreach (menus::BUTTON_RADIUS_CHOICES as $key => $px) : ?>
-                <label class="omega-btn-radius-card">
-                    <input
-                        type="radio"
-                        <?php call_user_func($link_callback, $key); ?>
-                        value="<?php echo esc_attr($key); ?>"
-                        <?php checked($current, $key); ?>
-                        class="omega-btn-radius-card__input"
-                    />
-                    <span class="omega-btn-radius-card__radio"></span>
-                    <span class="omega-btn-radius-card__preview">
-                        <span class="omega-btn-radius-card__swatch" style="border-radius:<?php echo esc_attr($px); ?>;">
-                            <?php esc_html_e('Button', 'omega-design'); ?>
-                        </span>
-                    </span>
-                    <span class="omega-btn-radius-card__name"><?php echo esc_html(self::RADIUS_LABELS[$key] ?? $key); ?></span>
-                </label>
-            <?php endforeach; ?>
-        </div>
-        <?php
+        self::render_radio_card_grid('omega-btn-radius', menus::BUTTON_RADIUS_CHOICES, $current, $link_callback, function ($key, $px) {
+            self::render_button_card_body('omega-btn-radius', '', 'border-radius:' . $px . ';', self::RADIUS_LABELS[$key] ?? $key);
+        });
     }
 
     /**
@@ -179,90 +131,26 @@ class buttons {
      * separate Corner Style setting), so this grid previews look alone.
      */
     public static function render_look_cards($current, $link_callback) {
+        self::render_radio_card_grid('omega-btn-look', menus::BUTTON_LOOK_CHOICES, $current, $link_callback, function ($key, $label) {
+            self::render_button_card_body('omega-btn-look', 'omega-btn-look-card__swatch--' . $key, '', $label);
+        });
+    }
+
+    /**
+     * Radio dot + a "Button" swatch (with an optional extra class and
+     * inline style) + the card's name.
+     */
+    private static function render_button_card_body($prefix, $modifier_class, $style, $name) {
+        $swatch_class = trim($prefix . '-card__swatch ' . $modifier_class);
+
+        self::render_card_radio_dot($prefix);
         ?>
-        <div class="omega-btn-look-grid">
-            <?php foreach (menus::BUTTON_LOOK_CHOICES as $key => $label) : ?>
-                <label class="omega-btn-look-card">
-                    <input
-                        type="radio"
-                        <?php call_user_func($link_callback, $key); ?>
-                        value="<?php echo esc_attr($key); ?>"
-                        <?php checked($current, $key); ?>
-                        class="omega-btn-look-card__input"
-                    />
-                    <span class="omega-btn-look-card__radio"></span>
-                    <span class="omega-btn-look-card__preview">
-                        <span class="omega-btn-look-card__swatch omega-btn-look-card__swatch--<?php echo esc_attr($key); ?>">
-                            <?php esc_html_e('Button', 'omega-design'); ?>
-                        </span>
-                    </span>
-                    <span class="omega-btn-look-card__name"><?php echo esc_html($label); ?></span>
-                </label>
-            <?php endforeach; ?>
-        </div>
+        <span class="<?php echo esc_attr($prefix); ?>-card__preview">
+            <span class="<?php echo esc_attr($swatch_class); ?>"<?php echo $style ? ' style="' . esc_attr($style) . '"' : ''; ?>>
+                <?php esc_html_e('Button', 'omega-design'); ?>
+            </span>
+        </span>
+        <span class="<?php echo esc_attr($prefix); ?>-card__name"><?php echo esc_html($name); ?></span>
         <?php
-    }
-}
-
-/**
- * Declared lazily (called from register_customizer(), which only ever runs
- * on 'customize_register') rather than at this file's top level, since
- * WP_Customize_Control doesn't exist yet when this file is first required
- * during theme bootstrap - the same fatal-error trap the color_mode control
- * hit before this pattern was established (see
- * includes/customizer/color_mode.php's own version of this function).
- */
-function omega_define_button_controls() {
-    if (class_exists(__NAMESPACE__ . '\\omega_button_radius_control')) {
-        return;
-    }
-
-    class omega_button_radius_control extends \WP_Customize_Control {
-        public $type = 'omega_button_radius';
-
-        public function render_content() {
-            ?>
-            <?php if ($this->label) : ?>
-                <span class="customize-control-title"><?php echo esc_html($this->label); ?></span>
-            <?php endif; ?>
-            <?php if ($this->description) : ?>
-                <span class="description customize-control-description"><?php echo esc_html($this->description); ?></span>
-            <?php endif; ?>
-            <?php
-            $name    = '_customize-radio-' . $this->id;
-            $control = $this;
-            buttons::render_radius_cards(
-                $this->value(),
-                function ($key) use ($name, $control) {
-                    printf('name="%s" ', esc_attr($name));
-                    $control->link();
-                }
-            );
-            ?>
-            <?php
-        }
-    }
-
-    class omega_button_look_control extends \WP_Customize_Control {
-        public $type = 'omega_button_look';
-
-        public function render_content() {
-            ?>
-            <?php if ($this->label) : ?>
-                <span class="customize-control-title"><?php echo esc_html($this->label); ?></span>
-            <?php endif; ?>
-            <?php
-            $name    = '_customize-radio-' . $this->id;
-            $control = $this;
-            buttons::render_look_cards(
-                $this->value(),
-                function ($key) use ($name, $control) {
-                    printf('name="%s" ', esc_attr($name));
-                    $control->link();
-                }
-            );
-            ?>
-            <?php
-        }
     }
 }

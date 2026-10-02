@@ -1,26 +1,25 @@
-( function ( wp ) {
-	if ( ! wp || ! wp.plugins || ! wp.editPost ) {
+( function ( wp, editor ) {
+	if ( ! wp || ! wp.plugins || ! wp.editPost || ! editor ) {
 		return;
 	}
 
 	var BaseControl = wp.components.BaseControl;
 	var Button = wp.components.Button;
 	var ButtonGroup = wp.components.ButtonGroup;
-	var withSelect = wp.data.withSelect;
-	var withDispatch = wp.data.withDispatch;
-	var compose = wp.compose.compose;
 	var createElement = wp.element.createElement;
 	var useEffect = wp.element.useEffect;
 	var __ = wp.i18n.__;
-
-	var META_KEY = 'omega_content_width';
-	var PREVIEW_STYLE_ID = 'omega-content-width-preview';
 
 	var WIDTH_OPTIONS = [
 		{ label: __( 'Standard', 'omega-design' ), value: '' },
 		{ label: __( 'Wide', 'omega-design' ), value: 'wide' },
 		{ label: __( 'Full', 'omega-design' ), value: 'full' }
 	];
+
+	var WIDTH_CSS = {
+		wide: ':root{--wp--style--global--content-size: var(--wp--style--global--wide-size) !important;}',
+		full: ':root{--wp--style--global--content-size: 100% !important;}'
+	};
 
 	/**
 	 * core/post-content only ever renders through render_block_core/post-content
@@ -31,62 +30,13 @@
 	 * straight into the editor canvas iframe's stylesheet instead.
 	 */
 	function previewWidthInCanvas( width ) {
-		var css = '';
-		if ( 'wide' === width ) {
-			css = ':root{--wp--style--global--content-size: var(--wp--style--global--wide-size) !important;}';
-		} else if ( 'full' === width ) {
-			css = ':root{--wp--style--global--content-size: 100% !important;}';
-		}
-
-		function apply() {
-			var iframe = document.querySelector( 'iframe[name="editor-canvas"]' );
-			var doc = iframe && iframe.contentDocument;
-			if ( ! doc || ! doc.head ) {
-				return false;
-			}
-			var styleTag = doc.getElementById( PREVIEW_STYLE_ID );
-			if ( ! styleTag ) {
-				styleTag = doc.createElement( 'style' );
-				styleTag.id = PREVIEW_STYLE_ID;
-				doc.head.appendChild( styleTag );
-			}
-			styleTag.textContent = css;
-			return true;
-		}
-
-		if ( apply() ) {
-			return function () {};
-		}
-
-		// The iframe may not have mounted yet on first load; keep trying briefly.
-		var attempts = 0;
-		var intervalId = setInterval( function () {
-			attempts++;
-			if ( apply() || attempts > 20 ) {
-				clearInterval( intervalId );
-			}
-		}, 250 );
-
-		return function () {
-			clearInterval( intervalId );
-		};
+		var css = Object.prototype.hasOwnProperty.call( WIDTH_CSS, width ) ? WIDTH_CSS[ width ] : '';
+		return editor.previewCanvasStyle( 'omega-content-width-preview', css );
 	}
 
-	var ContentWidthControl = compose(
-		withSelect( function ( select ) {
-			var meta = select( 'core/editor' ).getEditedPostAttribute( 'meta' ) || {};
-			return { width: meta[ META_KEY ] || '' };
-		} ),
-		withDispatch( function ( dispatch ) {
-			return {
-				setWidth: function ( value ) {
-					var meta = {};
-					meta[ META_KEY ] = value;
-					dispatch( 'core/editor' ).editPost( { meta: meta } );
-				},
-			};
-		} )
-	)( function ( props ) {
+	var ContentWidthControl = editor.withPostMeta( {
+		width: editor.textMeta( 'omega_content_width' ),
+	} )( function ( props ) {
 		useEffect( function () {
 			return previewWidthInCanvas( props.width );
 		}, [ props.width ] );
@@ -119,6 +69,5 @@
 
 	// Exposed on a shared namespace instead of self-registering a plugin;
 	// see title-toggle.js for why.
-	window.OmegaDesignPageSettings = window.OmegaDesignPageSettings || {};
-	window.OmegaDesignPageSettings.ContentWidthControl = ContentWidthControl;
-} )( window.wp );
+	editor.registerPageSetting( 'ContentWidthControl', ContentWidthControl );
+} )( window.wp, window.OmegaDesignEditor );

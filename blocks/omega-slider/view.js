@@ -165,6 +165,13 @@
 		resetAnimatedEl(findAnimatedEl(slides[slideIndex]));
 	}
 
+	/** Every way a pointer drag can end - released, left the element, or cancelled. */
+	function onPointerEnd(el, handler) {
+		el.addEventListener('pointerup', handler);
+		el.addEventListener('pointerleave', handler);
+		el.addEventListener('pointercancel', handler);
+	}
+
 	function init(root) {
 		var chrome = buildChrome(root);
 		var track = chrome.track;
@@ -284,6 +291,30 @@
 			return Math.max(0, N - spv);
 		}
 
+		/** A dot/thumbnail button that jumps straight to slide `target`. */
+		function slideNavButton(className, target) {
+			var button = document.createElement('button');
+			button.type = 'button';
+			button.className = className;
+			button.setAttribute('aria-label', 'Go to slide ' + (target + 1));
+			button.addEventListener('click', function () { goTo(target, true); });
+			return button;
+		}
+
+		/** Marks the current slide's dot/thumbnail active (and, for dots, aria-selected). */
+		function markActive(wrap, withAriaSelected) {
+			if (!wrap) {
+				return;
+			}
+			var items = wrap.children;
+			for (var i = 0; i < items.length; i++) {
+				items[i].classList.toggle('is-active', i === index);
+				if (withAriaSelected) {
+					items[i].setAttribute('aria-selected', i === index ? 'true' : 'false');
+				}
+			}
+		}
+
 		function buildDots() {
 			if (!dotsWrap) {
 				return;
@@ -291,14 +322,8 @@
 			dotsWrap.innerHTML = '';
 			var pages = maxIndex() + 1;
 			for (var i = 0; i < pages; i++) {
-				var dot = document.createElement('button');
-				dot.type = 'button';
-				dot.className = 'omega-slider__dot';
+				var dot = slideNavButton('omega-slider__dot', i);
 				dot.setAttribute('role', 'tab');
-				dot.setAttribute('aria-label', 'Go to slide ' + (i + 1));
-				(function (target) {
-					dot.addEventListener('click', function () { goTo(target, true); });
-				})(i);
 				dotsWrap.appendChild(dot);
 			}
 			updateDots();
@@ -310,10 +335,7 @@
 			}
 			thumbsWrap.innerHTML = '';
 			slides.forEach(function (slide, i) {
-				var thumb = document.createElement('button');
-				thumb.type = 'button';
-				thumb.className = 'omega-slider__thumbnail';
-				thumb.setAttribute('aria-label', 'Go to slide ' + (i + 1));
+				var thumb = slideNavButton('omega-slider__thumbnail', i);
 
 				var img = slide.querySelector('img');
 				if (img && img.src) {
@@ -325,31 +347,17 @@
 					thumb.textContent = String(i + 1);
 				}
 
-				thumb.addEventListener('click', function () { goTo(i, true); });
 				thumbsWrap.appendChild(thumb);
 			});
 			updateThumbnails();
 		}
 
 		function updateDots() {
-			if (!dotsWrap) {
-				return;
-			}
-			var dots = dotsWrap.children;
-			for (var i = 0; i < dots.length; i++) {
-				dots[i].classList.toggle('is-active', i === index);
-				dots[i].setAttribute('aria-selected', i === index ? 'true' : 'false');
-			}
+			markActive(dotsWrap, true);
 		}
 
 		function updateThumbnails() {
-			if (!thumbsWrap) {
-				return;
-			}
-			var thumbs = thumbsWrap.children;
-			for (var i = 0; i < thumbs.length; i++) {
-				thumbs[i].classList.toggle('is-active', i === index);
-			}
+			markActive(thumbsWrap, false);
 		}
 
 		/**
@@ -1080,9 +1088,7 @@
 				render(true);
 				restartAutoplay();
 			}
-			track.addEventListener('pointerup', endDrag);
-			track.addEventListener('pointerleave', endDrag);
-			track.addEventListener('pointercancel', endDrag);
+			onPointerEnd(track, endDrag);
 		} else {
 			// Stacked effects (fade/zoom/coverflow): a simple horizontal
 			// swipe gesture on touch/mouse, since there's no native scroll
@@ -1113,9 +1119,7 @@
 				}
 				restartAutoplay();
 			}
-			track.addEventListener('pointerup', endStackedDrag);
-			track.addEventListener('pointerleave', endStackedDrag);
-			track.addEventListener('pointercancel', endStackedDrag);
+			onPointerEnd(track, endStackedDrag);
 		}
 
 		buildThumbnails();

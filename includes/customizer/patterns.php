@@ -15,33 +15,23 @@
 
 namespace OmegaDesign\customizer;
 
+use OmegaDesign\traits\singleton;
+
 defined('ABSPATH') || exit;
 
 class patterns {
 
-    private static $instance = null;
+    use singleton;
 
     /**
      * Pattern category slug shown in the editor pattern area.
      */
     const CATEGORY_MEGAMENU = 'omega-design-megamenu';
 
-    public static function get_instance() {
-        if (null === self::$instance) {
-            self::$instance = new self();
-        }
-        return self::$instance;
-    }
-
     private function __construct() {
         add_action('init', [$this, 'register_pattern_categories']);
         add_action('init', [$this, 'register_patterns']);
     }
-
-    /**
-     * Loader entry point.
-     */
-    public function init() {}
 
     /**
      * Register the theme's custom block pattern categories.
@@ -54,37 +44,30 @@ class patterns {
             return;
         }
 
-        register_block_pattern_category(
-            self::CATEGORY_MEGAMENU,
-            [
+        foreach (self::pattern_categories() as $slug => $properties) {
+            register_block_pattern_category($slug, $properties);
+        }
+    }
+
+    private static function pattern_categories() {
+        return [
+            self::CATEGORY_MEGAMENU => [
                 'label'       => __('Mega Menu', 'omega-design'),
                 'description' => __('Full-width category mega menu layouts for the site navigation.', 'omega-design'),
-            ]
-        );
-
-        register_block_pattern_category(
-            'omega-design-general',
-            [
+            ],
+            'omega-design-general' => [
                 'label'       => __('Omega Design', 'omega-design'),
                 'description' => __('General layout patterns provided by the Omega Design theme.', 'omega-design'),
-            ]
-        );
-
-        register_block_pattern_category(
-            'omega-design-sections',
-            [
+            ],
+            'omega-design-sections' => [
                 'label'       => __('Omega Design - Sections', 'omega-design'),
                 'description' => __('Individual sections split out of the full landing pages, so any one of them can be inserted on its own, on any page.', 'omega-design'),
-            ]
-        );
-
-        register_block_pattern_category(
-            'omega-design-shop',
-            [
+            ],
+            'omega-design-shop' => [
                 'label'       => __('Shop', 'omega-design'),
                 'description' => __('WooCommerce shop sections - product grids with filters, category pills, a hero banner, an editorial grid and a compact list - for any page.', 'omega-design'),
-            ]
-        );
+            ],
+        ];
     }
 
     /**
@@ -164,43 +147,25 @@ class patterns {
      * the very next request rebuilds fresh - nothing to manually bust.
      */
     private function get_patterns_data($pattern_dir, $files) {
-        // The Shop section patterns are built from templates/shop-*.html
-        // (see omega_pattern_shop_section()), so those files' mtimes count too.
-        $source_files = array_merge($files, (array) glob(get_template_directory() . '/templates/shop-*.html'));
-        $cache_key = 'omega_patterns_' . md5(implode('|', array_map(function ($file) {
-            return $file . ':' . filemtime($file);
-        }, $source_files)));
+        $cache_key = self::patterns_cache_key($files);
 
-        $cached = get_transient($cache_key);
-        if (is_string($cached) && function_exists('gzuncompress')) {
-            $inflated = @gzuncompress((string) base64_decode($cached, true));
-            $cached   = false === $inflated ? false : @unserialize($inflated, ['allowed_classes' => false]);
-        }
+        $cached = self::read_patterns_cache($cache_key);
         if (is_array($cached)) {
             return $cached;
         }
 
-        $default_headers = [
-            'title'         => 'Title',
-            'slug'          => 'Slug',
-            'description'   => 'Description',
-            'categories'    => 'Categories',
-            'keywords'      => 'Keywords',
-            'blockTypes'    => 'Block Types',
-            'viewportWidth' => 'Viewport Width',
-            'inserter'      => 'Inserter',
-        ];
-
         $patterns_data = [];
 
         foreach ($files as $file) {
-            $headers = get_file_data($file, $default_headers);
+            $headers = get_file_data($file, self::PATTERN_HEADERS);
 
             if (empty($headers['slug']) || empty($headers['title'])) {
                 continue;
             }
 
-            // Capture the markup output of the pattern file.
+            // Capture the markup output of the pattern file. Kept inline
+            // (not in a helper method) so every pattern file keeps running
+            // in this same scope.
             ob_start();
             include $file;
             $content = ob_get_clean();
@@ -209,56 +174,94 @@ class patterns {
                 continue;
             }
 
-            $properties = [
-                'title'   => $headers['title'],
-                'content' => $content,
-            ];
-
-            if (!empty($headers['description'])) {
-                $properties['description'] = $headers['description'];
-            }
-
-            if (!empty($headers['categories'])) {
-                $properties['categories'] = array_map('trim', explode(',', $headers['categories']));
-            }
-
-            if (!empty($headers['keywords'])) {
-                $properties['keywords'] = array_map('trim', explode(',', $headers['keywords']));
-            }
-
-            if (!empty($headers['blockTypes'])) {
-                $properties['blockTypes'] = array_map('trim', explode(',', $headers['blockTypes']));
-            }
-
-            if (!empty($headers['viewportWidth'])) {
-                $properties['viewportWidth'] = (int) $headers['viewportWidth'];
-            }
-
-            if ('' !== $headers['inserter']) {
-                $properties['inserter'] = in_array(
-                    strtolower($headers['inserter']),
-                    ['yes', 'true', '1'],
-                    true
-                );
-            }
-
-            $patterns_data[$headers['slug']] = $properties;
+            $patterns_data[$headers['slug']] = self::pattern_properties($headers, $content);
         }
 
-        // A day is generous purely as a safety net (in case a pattern file
-        // is somehow touched without its mtime changing) - the mtime-based
-        // key above is what actually keeps this fresh in the normal case.
-        //
-        // Stored compressed: all patterns' markup together is well over a
-        // megabyte, and MySQL's default max_allowed_packet (1 MB on many
-        // hosts and on XAMPP) rejects a single option that large - the
-        // cache then silently never saved. Compressed it is ~10x smaller.
+        self::write_patterns_cache($cache_key, $patterns_data);
+
+        return $patterns_data;
+    }
+
+    /** Pattern file header => get_file_data() key. */
+    const PATTERN_HEADERS = [
+        'title'         => 'Title',
+        'slug'          => 'Slug',
+        'description'   => 'Description',
+        'categories'    => 'Categories',
+        'keywords'      => 'Keywords',
+        'blockTypes'    => 'Block Types',
+        'viewportWidth' => 'Viewport Width',
+        'inserter'      => 'Inserter',
+    ];
+
+    /**
+     * Changes whenever a pattern file - or a templates/shop-*.html file the
+     * Shop section patterns are built from (see pattern_helpers::
+     * shop_section()) - is added, removed or edited.
+     */
+    private static function patterns_cache_key(array $files) {
+        $source_files = array_merge($files, (array) glob(get_template_directory() . '/templates/shop-*.html'));
+
+        return 'omega_patterns_' . md5(implode('|', array_map(function ($file) {
+            return $file . ':' . filemtime($file);
+        }, $source_files)));
+    }
+
+    private static function read_patterns_cache($cache_key) {
+        $cached = get_transient($cache_key);
+        if (is_string($cached) && function_exists('gzuncompress')) {
+            $inflated = @gzuncompress((string) base64_decode($cached, true));
+            $cached   = false === $inflated ? false : @unserialize($inflated, ['allowed_classes' => false]);
+        }
+        return $cached;
+    }
+
+    /**
+     * A day is generous purely as a safety net (in case a pattern file is
+     * somehow touched without its mtime changing) - the mtime-based key is
+     * what actually keeps this fresh in the normal case.
+     *
+     * Stored compressed: all patterns' markup together is well over a
+     * megabyte, and MySQL's default max_allowed_packet (1 MB on many hosts
+     * and on XAMPP) rejects a single option that large - the cache then
+     * silently never saved. Compressed it is ~10x smaller.
+     */
+    private static function write_patterns_cache($cache_key, array $patterns_data) {
         $to_store = function_exists('gzcompress')
             ? base64_encode(gzcompress(serialize($patterns_data), 6))
             : $patterns_data;
         set_transient($cache_key, $to_store, DAY_IN_SECONDS);
+    }
 
-        return $patterns_data;
+    /**
+     * register_block_pattern() properties from a pattern file's headers and
+     * rendered markup.
+     */
+    private static function pattern_properties(array $headers, $content) {
+        $properties = [
+            'title'   => $headers['title'],
+            'content' => $content,
+        ];
+
+        if (!empty($headers['description'])) {
+            $properties['description'] = $headers['description'];
+        }
+
+        foreach (['categories', 'keywords', 'blockTypes'] as $list_header) {
+            if (!empty($headers[$list_header])) {
+                $properties[$list_header] = array_map('trim', explode(',', $headers[$list_header]));
+            }
+        }
+
+        if (!empty($headers['viewportWidth'])) {
+            $properties['viewportWidth'] = (int) $headers['viewportWidth'];
+        }
+
+        if ('' !== $headers['inserter']) {
+            $properties['inserter'] = in_array(strtolower($headers['inserter']), ['yes', 'true', '1'], true);
+        }
+
+        return $properties;
     }
 }
 

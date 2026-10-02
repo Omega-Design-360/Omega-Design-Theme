@@ -1,36 +1,12 @@
-( function ( css ) {
-	if ( ! css ) {
+/**
+ * Writes the active color scheme's CSS (window.omegaColorSchemeCSS, from
+ * customizer/color_scheme.php) into the editor canvas iframe, which never
+ * receives the front end's own <style>.
+ */
+( function ( css, editor ) {
+	if ( ! css || ! editor ) {
 		return;
 	}
 
-	var STYLE_ID = 'omega-color-scheme-editor';
-
-	function apply() {
-		var iframe = document.querySelector( 'iframe[name="editor-canvas"]' );
-		var doc = iframe && iframe.contentDocument;
-		if ( ! doc || ! doc.head ) {
-			return false;
-		}
-		var styleTag = doc.getElementById( STYLE_ID );
-		if ( ! styleTag ) {
-			styleTag = doc.createElement( 'style' );
-			styleTag.id = STYLE_ID;
-			doc.head.appendChild( styleTag );
-		}
-		styleTag.textContent = css;
-		return true;
-	}
-
-	if ( apply() ) {
-		return;
-	}
-
-	// The iframe may not have mounted yet on first load; keep trying briefly.
-	var attempts = 0;
-	var intervalId = setInterval( function () {
-		attempts++;
-		if ( apply() || attempts > 20 ) {
-			clearInterval( intervalId );
-		}
-	}, 250 );
-} )( window.omegaColorSchemeCSS );
+	editor.previewCanvasStyle( 'omega-color-scheme-editor', css );
+} )( window.omegaColorSchemeCSS, window.OmegaDesignEditor );

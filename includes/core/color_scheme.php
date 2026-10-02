@@ -27,11 +27,15 @@
 
 namespace OmegaDesign\core;
 
+use OmegaDesign\traits\assets;
+use OmegaDesign\traits\singleton;
+
 defined('ABSPATH') || exit;
 
 class color_scheme {
 
-    private static $instance = null;
+    use singleton;
+    use assets;
 
     const META_KEY   = '_omega_color_scheme';
     const OPTION_KEY = 'omega_template_color_schemes';
@@ -45,13 +49,6 @@ class color_scheme {
     /** Resolved scheme for the current request (false = not resolved yet). */
     private $resolved = false;
 
-    public static function get_instance() {
-        if (null === self::$instance) {
-            self::$instance = new self();
-        }
-        return self::$instance;
-    }
-
     private function __construct() {
         add_action('init', [$this, 'register_storage']);
         add_filter('body_class', [$this, 'add_body_classes']);
@@ -60,8 +57,6 @@ class color_scheme {
         add_action('update_option_' . self::OPTION_KEY, [$this, 'flush_page_cache']);
         add_action('add_option_' . self::OPTION_KEY, [$this, 'flush_page_cache']);
     }
-
-    public function init() {}
 
     private function scheme_schema() {
         return [
@@ -84,9 +79,7 @@ class color_scheme {
             'default'           => [],
             'show_in_rest'      => ['schema' => $this->scheme_schema()],
             'sanitize_callback' => [$this, 'sanitize_scheme'],
-            'auth_callback'     => function ($allowed, $meta_key, $post_id) {
-                return current_user_can('edit_post', $post_id);
-            },
+            'auth_callback'     => [$this, 'can_edit_scheme'],
         ]);
 
         register_setting('omega_design', self::OPTION_KEY, [
@@ -102,6 +95,10 @@ class color_scheme {
         ]);
     }
 
+    public function can_edit_scheme($allowed, $meta_key, $post_id) {
+        return current_user_can('edit_post', $post_id);
+    }
+
     /** Keeps only a known mode and palette colors whose values are plain CSS colors. */
     public function sanitize_scheme($scheme) {
         if (!is_array($scheme)) {
@@ -112,18 +109,24 @@ class color_scheme {
         $out  = $mode ? ['mode' => $mode] : [];
 
         if (!empty($scheme['colors']) && is_array($scheme['colors'])) {
-            $colors = [];
-            foreach (self::SLUGS as $slug) {
-                $color = $this->sanitize_color($scheme['colors'][$slug] ?? '');
-                if ($color !== '') {
-                    $colors[$slug] = $color;
-                }
-            }
+            $colors = $this->sanitize_colors($scheme['colors']);
             if ($colors) {
                 $out['colors'] = $colors;
             }
         }
 
+        return $out;
+    }
+
+    /** slug => color for every known palette slug holding a valid CSS color. */
+    private function sanitize_colors(array $colors) {
+        $out = [];
+        foreach (self::SLUGS as $slug) {
+            $color = $this->sanitize_color($colors[$slug] ?? '');
+            if ($color !== '') {
+                $out[$slug] = $color;
+            }
+        }
         return $out;
     }
 
@@ -170,15 +173,21 @@ class color_scheme {
         }
 
         if (empty($scheme['mode'])) {
-            $templates = get_option(self::OPTION_KEY, []);
-            $slug      = $this->current_template_slug();
-            if ($slug && is_array($templates) && !empty($templates[$slug])) {
-                $scheme = $this->sanitize_scheme($templates[$slug]);
-            }
+            $scheme = $this->template_scheme() ?: $scheme;
         }
 
         $this->resolved = empty($scheme['mode']) ? [] : $scheme;
         return $this->resolved;
+    }
+
+    /** The scheme saved for the block template rendering this request, or []. */
+    private function template_scheme() {
+        $templates = get_option(self::OPTION_KEY, []);
+        $slug      = $this->current_template_slug();
+        if ($slug && is_array($templates) && !empty($templates[$slug])) {
+            return $this->sanitize_scheme($templates[$slug]);
+        }
+        return [];
     }
 
     public function add_body_classes($classes) {
@@ -230,18 +239,15 @@ class color_scheme {
             return;
         }
 
-        $path = OMEGA_DESIGN_ASSETS . '/js/color-scheme-panel.js';
-        if (!file_exists($path)) {
-            return;
-        }
-
-        wp_enqueue_script(
+        $enqueued = self::enqueue_script(
             'omega-design-color-scheme-panel',
-            OMEGA_DESIGN_JS_URI . '/color-scheme-panel.js',
+            'js/color-scheme-panel.js',
             ['wp-plugins', 'wp-editor', 'wp-data', 'wp-core-data', 'wp-components', 'wp-element', 'wp-i18n'],
-            filemtime($path),
             true
         );
+        if (!$enqueued) {
+            return;
+        }
 
         wp_localize_script('omega-design-color-scheme-panel', 'omegaColorScheme', [
             'metaKey'   => self::META_KEY,

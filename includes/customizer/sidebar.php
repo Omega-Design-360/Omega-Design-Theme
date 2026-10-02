@@ -7,29 +7,27 @@
 
 namespace OmegaDesign\customizer;
 
+use OmegaDesign\traits\customizer_section;
+use OmegaDesign\traits\editor_meta;
+use OmegaDesign\traits\singleton;
+
 defined('ABSPATH') || exit;
 
 class sidebar {
 
+    use singleton;
+    use editor_meta;
+    use customizer_section;
+
     const META_MODE     = 'omega_sidebar_mode';
     const META_TEMPLATE = 'omega_sidebar_template';
-
-    private static $instance = null;
-
-    public static function get_instance() {
-        if (null === self::$instance) {
-            self::$instance = new self();
-        }
-        return self::$instance;
-    }
 
     private function __construct() {
         add_action('customize_register', [$this, 'register_sidebar_settings']);
         add_action('customize_controls_enqueue_scripts', [$this, 'enqueue_control_assets']);
         add_filter('default_wp_template_part_areas', [$this, 'register_sidebar_area']);
 
-        add_action('init', [$this, 'register_meta']);
-        add_action('enqueue_block_editor_assets', [$this, 'enqueue_editor_assets']);
+        $this->register_editor_meta_hooks();
 
         // Swaps in the resolved sidebar template part (or removes it
         // entirely) wherever a template references {"slug":"sidebar"}.
@@ -39,8 +37,6 @@ class sidebar {
         add_filter('body_class', [$this, 'filter_body_classes']);
         add_action('wp_head', [$this, 'output_layout_styles']);
     }
-
-    public function init() {}
 
     /**
      * The sidebar template parts admins can pick between, both as a global
@@ -64,8 +60,8 @@ class sidebar {
      * script builds (see background-color.js's PageSettingsPanel), so the
      * panel simply never mounts on any post type this list omits.
      */
-    public function get_supported_post_types() {
-        return apply_filters('omega_design_sidebar_post_types', ['post', 'page']);
+    protected function post_types_filter() {
+        return 'omega_design_sidebar_post_types';
     }
 
     /**
@@ -108,63 +104,33 @@ class sidebar {
         return null;
     }
 
-    public function register_meta() {
-        foreach ($this->get_supported_post_types() as $post_type) {
-            register_post_meta($post_type, self::META_MODE, [
-                'show_in_rest'      => true,
-                'single'            => true,
-                'type'              => 'string',
-                'default'           => '',
-                'sanitize_callback' => [$this, 'sanitize_mode'],
-                'auth_callback'     => function () {
-                    return current_user_can('edit_posts');
-                },
-            ]);
-
-            register_post_meta($post_type, self::META_TEMPLATE, [
-                'show_in_rest'      => true,
-                'single'            => true,
-                'type'              => 'string',
-                'default'           => '',
-                'sanitize_callback' => [$this, 'sanitize_template'],
-                'auth_callback'     => function () {
-                    return current_user_can('edit_posts');
-                },
-            ]);
-        }
+    protected function meta_fields() {
+        return [
+            self::META_MODE     => self::string_meta_field([$this, 'sanitize_mode']),
+            self::META_TEMPLATE => self::string_meta_field([$this, 'sanitize_template']),
+        ];
     }
 
     public function sanitize_mode($value) {
-        $value = sanitize_key((string) $value);
-        return in_array($value, ['show', 'hide'], true) ? $value : '';
+        return self::sanitize_key_choice($value, ['show', 'hide'], '', false);
     }
 
     public function sanitize_template($value) {
-        $value = sanitize_key((string) $value);
-        return isset($this->get_template_choices()[$value]) ? $value : '';
+        return self::sanitize_key_choice($value, $this->get_template_choices(), '');
     }
 
-    public function enqueue_editor_assets() {
-        $screen = get_current_screen();
-
-        if (!$screen || !in_array($screen->post_type, $this->get_supported_post_types(), true)) {
-            return;
+    protected function enqueue_editor_screen_assets() {
+        if (self::enqueue_editor_script('omega-design-sidebar-toggle', 'js/sidebar-toggle.js')) {
+            wp_localize_script('omega-design-sidebar-toggle', 'OmegaSidebarTemplates', $this->get_template_choices());
         }
-
-        wp_enqueue_script(
-            'omega-design-sidebar-toggle',
-            OMEGA_DESIGN_JS_URI . '/sidebar-toggle.js',
-            ['wp-plugins', 'wp-edit-post', 'wp-element', 'wp-components', 'wp-data', 'wp-compose', 'wp-i18n'],
-            $this->asset_version(),
-            true
-        );
-
-        wp_localize_script('omega-design-sidebar-toggle', 'OmegaSidebarTemplates', $this->get_template_choices());
     }
 
-    private function asset_version() {
-        $path = OMEGA_DESIGN_ASSETS . '/js/sidebar-toggle.js';
-        return file_exists($path) ? filemtime($path) : OMEGA_DESIGN_ASSET_VERSION;
+    /**
+     * The post being viewed when it's a singular page, else 0 - the only
+     * case a per-page sidebar override can apply.
+     */
+    private static function singular_post_id() {
+        return is_singular() ? get_queried_object_id() : 0;
     }
 
     /**
@@ -204,15 +170,14 @@ class sidebar {
             return false;
         }
 
-        $post_id = is_singular() ? get_queried_object_id() : 0;
+        $post_id = self::singular_post_id();
 
         if ($post_id) {
-            $mode = get_post_meta($post_id, self::META_MODE, true);
-            if ('show' === $mode) {
-                return true;
-            }
-            if ('hide' === $mode) {
-                return false;
+            switch ((string) get_post_meta($post_id, self::META_MODE, true)) {
+                case 'show':
+                    return true;
+                case 'hide':
+                    return false;
             }
         }
 
@@ -240,17 +205,21 @@ class sidebar {
      * setting.
      */
     public function resolve_sidebar_slug() {
-        $post_id = is_singular() ? get_queried_object_id() : 0;
+        $post_id = self::singular_post_id();
 
         if ($post_id) {
             $template = get_post_meta($post_id, self::META_TEMPLATE, true);
-            if ($template && isset($this->get_template_choices()[$template])) {
+            if ($template && $this->is_template_choice($template)) {
                 return $template;
             }
         }
 
         $default = get_theme_mod('omega_sidebar_default_template', 'sidebar');
-        return isset($this->get_template_choices()[$default]) ? $default : 'sidebar';
+        return $this->is_template_choice($default) ? $default : 'sidebar';
+    }
+
+    private function is_template_choice($slug) {
+        return isset($this->get_template_choices()[$slug]);
     }
 
     /**
@@ -268,7 +237,7 @@ class sidebar {
     public function filter_sidebar_template_part($block_content, $parsed_block, $block) {
         $slug = $parsed_block['attrs']['slug'] ?? '';
 
-        if (!isset($this->get_template_choices()[$slug])) {
+        if (!$this->is_template_choice($slug)) {
             return $block_content;
         }
 
@@ -348,18 +317,11 @@ class sidebar {
             'sanitize_callback' => [$this, 'sanitize_position'],
         ]);
 
-        // WP_Customize_Control only exists once the Customizer's own class
-        // files have loaded, right before 'customize_register' fires - see
-        // omega_define_sidebar_position_control()'s own comment for why
-        // this is called here rather than the class being declared at this
-        // file's top level.
-        omega_define_sidebar_position_control();
-
-        $wp_customize->add_control(new omega_sidebar_position_control($wp_customize, 'omega_sidebar_position', [
+        self::add_card_control($wp_customize, 'omega_sidebar_position', 'omega_sidebar_position', [__CLASS__, 'render_position_cards'], [
             'label'       => __('Sidebar Position', 'omega-design'),
             'description' => __('Which side of the content the sidebar appears on, everywhere it shows.', 'omega-design'),
             'section'     => 'omega_sidebar_settings',
-        ]));
+        ]);
 
         // Sidebar Width
         $wp_customize->add_setting('omega_sidebar_width', [
@@ -478,13 +440,7 @@ class sidebar {
      * changed from.
      */
     public function enqueue_control_assets() {
-        $css_path = OMEGA_DESIGN_ASSETS . '/css/admin-pages.css';
-        wp_enqueue_style(
-            'omega-design-admin-pages',
-            OMEGA_DESIGN_CSS_URI . '/admin-pages.css',
-            [],
-            file_exists($css_path) ? filemtime($css_path) : OMEGA_DESIGN_ASSET_VERSION
-        );
+        self::enqueue_admin_pages_style(false);
     }
 
     /**
@@ -502,71 +458,23 @@ class sidebar {
             'left'  => __('Sidebar Left', 'omega-design'),
             'right' => __('Sidebar Right', 'omega-design'),
         ];
+
+        self::render_radio_card_grid('omega-sidebar-pos', $positions, $current, $link_callback, [__CLASS__, 'render_position_card_body']);
+    }
+
+    public static function render_position_card_body($key, $label) {
+        self::render_card_radio_dot('omega-sidebar-pos');
         ?>
-        <div class="omega-sidebar-pos-grid">
-            <?php foreach ($positions as $key => $label) : ?>
-                <label class="omega-sidebar-pos-card">
-                    <input
-                        type="radio"
-                        <?php call_user_func($link_callback, $key); ?>
-                        value="<?php echo esc_attr($key); ?>"
-                        <?php checked($current, $key); ?>
-                        class="omega-sidebar-pos-card__input"
-                    />
-                    <span class="omega-sidebar-pos-card__radio"></span>
-                    <span class="omega-sidebar-pos-card__preview omega-sidebar-pos-card__preview--<?php echo esc_attr($key); ?>">
-                        <span class="omega-sidebar-pos-card__aside"></span>
-                        <span class="omega-sidebar-pos-card__main">
-                            <span class="omega-sidebar-pos-card__line"></span>
-                            <span class="omega-sidebar-pos-card__line omega-sidebar-pos-card__line--short"></span>
-                            <span class="omega-sidebar-pos-card__line omega-sidebar-pos-card__line--short"></span>
-                        </span>
-                    </span>
-                    <span class="omega-sidebar-pos-card__title"><?php echo esc_html($label); ?></span>
-                </label>
-            <?php endforeach; ?>
-        </div>
+        <span class="omega-sidebar-pos-card__preview omega-sidebar-pos-card__preview--<?php echo esc_attr($key); ?>">
+            <span class="omega-sidebar-pos-card__aside"></span>
+            <span class="omega-sidebar-pos-card__main">
+                <span class="omega-sidebar-pos-card__line"></span>
+                <span class="omega-sidebar-pos-card__line omega-sidebar-pos-card__line--short"></span>
+                <span class="omega-sidebar-pos-card__line omega-sidebar-pos-card__line--short"></span>
+            </span>
+        </span>
+        <span class="omega-sidebar-pos-card__title"><?php echo esc_html($label); ?></span>
         <?php
-    }
-}
-
-/**
- * Declared lazily (called from register_sidebar_settings(), which only
- * ever runs on 'customize_register') rather than at this file's top level,
- * since WP_Customize_Control doesn't exist yet when this file is first
- * required during theme bootstrap - the same fatal-error trap the
- * color_scheme control hit before this pattern was established (see
- * includes/customizer/color_scheme.php's own version of this function).
- */
-function omega_define_sidebar_position_control() {
-    if (class_exists(__NAMESPACE__ . '\\omega_sidebar_position_control')) {
-        return;
-    }
-
-    class omega_sidebar_position_control extends \WP_Customize_Control {
-        public $type = 'omega_sidebar_position';
-
-        public function render_content() {
-            ?>
-            <?php if ($this->label) : ?>
-                <span class="customize-control-title"><?php echo esc_html($this->label); ?></span>
-            <?php endif; ?>
-            <?php if ($this->description) : ?>
-                <span class="description customize-control-description"><?php echo esc_html($this->description); ?></span>
-            <?php endif; ?>
-            <?php
-            $name = '_customize-radio-' . $this->id;
-            $control = $this;
-            sidebar::render_position_cards(
-                $this->value(),
-                function ($key) use ($name, $control) {
-                    printf('name="%s" ', esc_attr($name));
-                    $control->link();
-                }
-            );
-            ?>
-            <?php
-        }
     }
 }
 

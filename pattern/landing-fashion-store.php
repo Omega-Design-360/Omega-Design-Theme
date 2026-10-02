@@ -23,18 +23,18 @@
 
 defined('ABSPATH') || exit;
 
-require_once OMEGA_DESIGN_INCLUDES . '/patterns/pattern-helpers.php';
+use OmegaDesign\patterns\pattern_helpers;
 
 // Same callables as before (each $name(...) call below is unchanged) - now
-// backed by shared functions in includes/patterns/pattern-helpers.php so
+// backed by shared pattern_helpers methods (includes/patterns/pattern_helpers.php) so
 // the standalone per-section patterns (pattern/section-fashion-*.php) can
 // reuse the exact same markup builders instead of duplicating them.
-$omega_ph = omega_pattern_placeholder_url();
-$eyebrow = 'omega_pattern_eyebrow';
-$build_icon_row_left = 'omega_pattern_icon_row_left';
-$build_photo_card = 'omega_pattern_photo_card';
-$build_corner_badge = 'omega_pattern_corner_badge';
-$build_product_collection = 'omega_pattern_product_collection';
+$omega_ph = pattern_helpers::placeholder_url();
+$eyebrow = [pattern_helpers::class, 'eyebrow'];
+$build_icon_row_left = [pattern_helpers::class, 'icon_row_left'];
+$build_photo_card = [pattern_helpers::class, 'photo_card'];
+$build_corner_badge = [pattern_helpers::class, 'corner_badge'];
+$build_product_collection = [pattern_helpers::class, 'product_collection'];
 
 ?>
 <!-- wp:group {"className":"omega-landing omega-landing--fashion-store","layout":{"type":"constrained"}} -->
@@ -49,8 +49,8 @@ $hero_slides = [
 	['eyebrow' => __('This Week Only', 'omega-design'), 'heading' => __('New Arrivals Every Week', 'omega-design'), 'body' => __('Fresh drops across women\'s, men\'s and kids\' collections, updated weekly so there\'s always something new.', 'omega-design'), 'cta' => __('Shop New Arrivals', 'omega-design'), 'stats' => [['500+', __('New Styles', 'omega-design')], ['4.8★', __('Average Rating', 'omega-design')], ['100%', __('Secure Shopping', 'omega-design')]]],
 	['eyebrow' => __('Limited Time', 'omega-design'), 'heading' => __('Free Shipping On Orders $50+', 'omega-design'), 'body' => __('No code needed, free standard shipping is automatically applied at checkout on every order over $50.', 'omega-design'), 'cta' => __('Start Shopping', 'omega-design'), 'stats' => [['Free', __('Shipping $50+', 'omega-design')], ['30-Day', __('Easy Returns', 'omega-design')], ['100%', __('Secure Checkout', 'omega-design')]]],
 ];
-$hero_image = omega_pattern_fashion_asset('hero/hero-models.png');
-$hero_badge = omega_pattern_fashion_asset('hero/sale-badge.png');
+$hero_image = pattern_helpers::fashion_asset('hero/hero-models.png');
+$hero_badge = pattern_helpers::fashion_asset('hero/sale-badge.png');
 foreach ($hero_slides as $i => $slide) :
 	?>
 <!-- wp:group {"backgroundColor":"surface","style":{"spacing":{"padding":{"top":"var:preset|spacing|2xl","bottom":"var:preset|spacing|2xl","left":"var:preset|spacing|l","right":"var:preset|spacing|l"}}},"layout":{"type":"constrained"}} -->
@@ -138,7 +138,7 @@ $category_files = ['women.png', 'men.png', 'kids.png', 'dresses.png', 'tops.png'
 foreach (['Women', 'Men', 'Kids', 'Dresses', 'Tops', 'Bottoms', 'Outerwear', 'Shoes', 'Bags', 'Accessories', 'Sale'] as $cat_i => $cat) : ?>
 <!-- wp:group {"className":"omega-category-item","layout":{"type":"flex","orientation":"vertical","flexWrap":"nowrap"}} -->
 <div class="wp-block-group omega-category-item">
-<!-- wp:image {"className":"omega-round-image","sizeSlug":"thumbnail"} --><figure class="wp-block-image size-thumbnail omega-round-image"><img src="<?php echo esc_url(omega_pattern_fashion_asset('categories/' . $category_files[$cat_i])); ?>" alt="<?php echo esc_attr($cat); ?>"/></figure><!-- /wp:image -->
+<!-- wp:image {"className":"omega-round-image","sizeSlug":"thumbnail"} --><figure class="wp-block-image size-thumbnail omega-round-image"><img src="<?php echo esc_url(pattern_helpers::fashion_asset('categories/' . $category_files[$cat_i])); ?>" alt="<?php echo esc_attr($cat); ?>"/></figure><!-- /wp:image -->
 <!-- wp:paragraph {"align":"center","className":"omega-strong","fontSize":"small"} --><p class="has-text-align-center omega-strong has-small-font-size"><?php echo esc_html($cat); ?></p><!-- /wp:paragraph -->
 </div>
 <!-- /wp:group -->
@@ -195,14 +195,14 @@ foreach ($promos as $promo) :
 <!-- wp:column -->
 <div class="wp-block-column">
 <?php
-echo omega_pattern_split_promo([
+echo pattern_helpers::split_promo([
 	'bg'          => $promo['bg'],
 	'offer_color' => $promo['offer_color'],
 	'title'       => $promo['title'],
 	'offer'       => $promo['offer'],
 	'body'        => $promo['body'],
 	'cta'         => $promo['cta'],
-	'image_url'   => omega_pattern_fashion_asset($promo['image']),
+	'image_url'   => pattern_helpers::fashion_asset($promo['image']),
 	'image_alt'   => $promo['title'],
 ]);
 ?>
@@ -235,7 +235,7 @@ $brands = [
 ];
 foreach ($brands as $brand) :
 	?>
-<!-- wp:image {"className":"omega-brand-row__item","sizeSlug":"thumbnail"} --><figure class="wp-block-image size-thumbnail omega-brand-row__item"><img src="<?php echo esc_url(omega_pattern_fashion_asset('brands/' . $brand['file'])); ?>" alt="<?php echo esc_attr($brand['name']); ?>"/></figure><!-- /wp:image -->
+<!-- wp:image {"className":"omega-brand-row__item","sizeSlug":"thumbnail"} --><figure class="wp-block-image size-thumbnail omega-brand-row__item"><img src="<?php echo esc_url(pattern_helpers::fashion_asset('brands/' . $brand['file'])); ?>" alt="<?php echo esc_attr($brand['name']); ?>"/></figure><!-- /wp:image -->
 <?php endforeach; ?>
 </div>
 <!-- /wp:group -->
@@ -268,7 +268,7 @@ echo $build_icon_row_left([
 <!-- wp:gallery {"columns":6,"linkTo":"none","className":"omega-instagram-grid"} -->
 <figure class="wp-block-gallery has-nested-images columns-6 is-cropped omega-instagram-grid">
 <?php for ($i = 1; $i <= 6; $i++) : ?>
-<!-- wp:image {"sizeSlug":"large","className":"omega-rounded-image"} --><figure class="wp-block-image size-large omega-rounded-image"><img src="<?php echo esc_url(omega_pattern_fashion_asset(sprintf('instagram/instagram-%02d.png', $i))); ?>" alt="<?php esc_attr_e('Instagram photo', 'omega-design'); ?>"/></figure><!-- /wp:image -->
+<!-- wp:image {"sizeSlug":"large","className":"omega-rounded-image"} --><figure class="wp-block-image size-large omega-rounded-image"><img src="<?php echo esc_url(pattern_helpers::fashion_asset(sprintf('instagram/instagram-%02d.png', $i))); ?>" alt="<?php esc_attr_e('Instagram photo', 'omega-design'); ?>"/></figure><!-- /wp:image -->
 <?php endfor; ?>
 </figure>
 <!-- /wp:gallery -->
@@ -304,7 +304,7 @@ echo $build_icon_row_left([
 <div class="wp-block-group alignwide omega-animate" style="padding-top:var(--wp--preset--spacing--l);padding-bottom:var(--wp--preset--spacing--l)" data-omega-animate="fade-up" data-omega-animate-duration="600" data-omega-animate-delay="0">
 <!-- wp:group {"className":"omega-card","backgroundColor":"accent","textColor":"button-text","layout":{"type":"constrained"}} -->
 <div class="wp-block-group omega-card has-button-text-color has-accent-background-color has-text-color has-background">
-<!-- wp:image {"className":"omega-app-phone-image"} --><figure class="wp-block-image omega-app-phone-image"><img src="<?php echo esc_url(omega_pattern_fashion_asset('app/app-phone.png')); ?>" alt="<?php esc_attr_e('App screenshot', 'omega-design'); ?>"/></figure><!-- /wp:image -->
+<!-- wp:image {"className":"omega-app-phone-image"} --><figure class="wp-block-image omega-app-phone-image"><img src="<?php echo esc_url(pattern_helpers::fashion_asset('app/app-phone.png')); ?>" alt="<?php esc_attr_e('App screenshot', 'omega-design'); ?>"/></figure><!-- /wp:image -->
 <!-- wp:heading {"level":3,"textColor":"button-text"} --><h3 class="wp-block-heading has-button-text-color has-text-color"><?php esc_html_e('Download Our App', 'omega-design'); ?></h3><!-- /wp:heading -->
 <!-- wp:paragraph {"textColor":"button-text"} --><p class="has-button-text-color has-text-color"><?php esc_html_e('Shop anytime, anywhere - exclusive app-only deals, faster checkout and order tracking.', 'omega-design'); ?></p><!-- /wp:paragraph -->
 <!-- wp:list {"textColor":"button-text"} --><ul class="wp-block-list has-button-text-color has-text-color">

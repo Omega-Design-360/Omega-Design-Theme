@@ -24,9 +24,9 @@
 
 defined('ABSPATH') || exit;
 
-require_once OMEGA_DESIGN_DIR . '/includes/patterns/pattern-helpers.php';
+use OmegaDesign\patterns\pattern_helpers;
 
-$omega_ph = omega_pattern_placeholder_url();
+$omega_ph = pattern_helpers::placeholder_url();
 
 /** One proof/stat item with a left divider (hero proof row, numbers band). */
 $build_stat = function ($value, $label, $class = 'omega-law-stat') {
@@ -141,7 +141,7 @@ $build_testimonial = function ($initials, $quote, $name, $role) {
 
 <!-- wp:column {"verticalAlignment":"center","width":"55%"} -->
 <div class="wp-block-column is-vertically-aligned-center" style="flex-basis:55%">
-<?php echo omega_pattern_eyebrow(__('Law Today · A Brighter Tomorrow', 'omega-design')); ?>
+<?php echo pattern_helpers::eyebrow(__('Law Today · A Brighter Tomorrow', 'omega-design')); ?>
 <!-- wp:heading {"level":1} --><h1 class="wp-block-heading"><?php esc_html_e('Your Rights. Our Commitment.', 'omega-design'); ?></h1><!-- /wp:heading -->
 <!-- wp:paragraph --><p><?php esc_html_e('Strategic legal solutions for individuals, families and businesses - backed by experience, driven by results.', 'omega-design'); ?></p><!-- /wp:paragraph -->
 <!-- wp:buttons -->
@@ -190,7 +190,7 @@ foreach ([['1,500+', __('Clients Represented', 'omega-design')], ['95%', __('Suc
 <!-- wp:group {"className":"omega-law-trust-strip","align":"full","backgroundColor":"secondary","style":{"spacing":{"padding":{"top":"var:preset|spacing|m","bottom":"var:preset|spacing|m","left":"var:preset|spacing|l","right":"var:preset|spacing|l"}}},"layout":{"type":"constrained"},"omegaAnimation":"fade-up"} -->
 <div class="wp-block-group alignfull omega-law-trust-strip has-secondary-background-color has-background omega-animate" style="padding-top:var(--wp--preset--spacing--m);padding-right:var(--wp--preset--spacing--l);padding-bottom:var(--wp--preset--spacing--m);padding-left:var(--wp--preset--spacing--l)" data-omega-animate="fade-up" data-omega-animate-duration="600" data-omega-animate-delay="0">
 <?php
-echo omega_pattern_icon_row_left([
+echo pattern_helpers::icon_row_left([
 	['icon' => 'military-tech', 'title' => __('10+ Years', 'omega-design'),   'desc' => __('Legal Experience', 'omega-design')],
 	['icon' => 'groups',        'title' => __('1,500+ Clients', 'omega-design'), 'desc' => __('Successfully Represented', 'omega-design')],
 	['icon' => 'verified',      'title' => __('Confidential', 'omega-design'), 'desc' => __('Client-First Representation', 'omega-design')],
@@ -208,7 +208,7 @@ echo omega_pattern_icon_row_left([
 <div class="wp-block-columns are-vertically-aligned-bottom">
 <!-- wp:column {"verticalAlignment":"bottom"} -->
 <div class="wp-block-column is-vertically-aligned-bottom">
-<?php echo omega_pattern_eyebrow(__('Practice Areas', 'omega-design')); ?>
+<?php echo pattern_helpers::eyebrow(__('Practice Areas', 'omega-design')); ?>
 <!-- wp:heading {"level":2} --><h2 class="wp-block-heading"><?php esc_html_e('Expert Legal Guidance for Life\'s Important Moments', 'omega-design'); ?></h2><!-- /wp:heading -->
 </div>
 <!-- /wp:column -->
@@ -262,7 +262,7 @@ echo $build_practice_row([
 <div class="wp-block-column" style="flex-basis:52%">
 <!-- wp:group {"className":"omega-glass-card omega-law-about-card","layout":{"type":"constrained"}} -->
 <div class="wp-block-group omega-glass-card omega-law-about-card">
-<?php echo omega_pattern_eyebrow(__('About Us', 'omega-design')); ?>
+<?php echo pattern_helpers::eyebrow(__('About Us', 'omega-design')); ?>
 <!-- wp:heading {"level":2} --><h2 class="wp-block-heading"><?php esc_html_e('More Than Legal Advice. A Partner for What\'s Next.', 'omega-design'); ?></h2><!-- /wp:heading -->
 <!-- wp:paragraph --><p><?php esc_html_e('We combine deep legal expertise with a modern, client-first approach. We listen, we strategize, and we stand by you every step of the way.', 'omega-design'); ?></p><!-- /wp:paragraph -->
 
@@ -331,7 +331,7 @@ echo $build_why_card('04', __('Modern Approach', 'omega-design'), __('Technology
 <div class="wp-block-columns alignwide are-vertically-aligned-bottom">
 <!-- wp:column {"verticalAlignment":"bottom"} -->
 <div class="wp-block-column is-vertically-aligned-bottom">
-<?php echo omega_pattern_eyebrow(__('How It Works', 'omega-design')); ?>
+<?php echo pattern_helpers::eyebrow(__('How It Works', 'omega-design')); ?>
 <!-- wp:heading {"level":2} --><h2 class="wp-block-heading"><?php esc_html_e('Your Path to Legal Solutions', 'omega-design'); ?></h2><!-- /wp:heading -->
 </div>
 <!-- /wp:column -->
@@ -365,7 +365,7 @@ echo $build_process_step('04', 'military-tech', __('Achieve Results', 'omega-des
 <div class="wp-block-columns are-vertically-aligned-bottom">
 <!-- wp:column {"verticalAlignment":"bottom"} -->
 <div class="wp-block-column is-vertically-aligned-bottom">
-<?php echo omega_pattern_eyebrow(__('Our Attorneys', 'omega-design')); ?>
+<?php echo pattern_helpers::eyebrow(__('Our Attorneys', 'omega-design')); ?>
 <!-- wp:heading {"level":2} --><h2 class="wp-block-heading"><?php esc_html_e('Experience You Can Trust in Your Corner', 'omega-design'); ?></h2><!-- /wp:heading -->
 </div>
 <!-- /wp:column -->
@@ -408,7 +408,7 @@ foreach ([['1,500+', __('Clients Represented', 'omega-design')], ['95%', __('Cli
 <!-- wp:group {"align":"wide","style":{"spacing":{"padding":{"top":"var:preset|spacing|xl","bottom":"var:preset|spacing|xl"}}},"omegaAnimation":"fade-up"} -->
 <div class="wp-block-group alignwide omega-animate" style="padding-top:var(--wp--preset--spacing--xl);padding-bottom:var(--wp--preset--spacing--xl)" data-omega-animate="fade-up" data-omega-animate-duration="600" data-omega-animate-delay="0">
 
-<?php echo omega_pattern_eyebrow(__('Client Testimonials', 'omega-design')); ?>
+<?php echo pattern_helpers::eyebrow(__('Client Testimonials', 'omega-design')); ?>
 <!-- wp:heading {"level":2} --><h2 class="wp-block-heading"><?php esc_html_e('Trusted by People Like You', 'omega-design'); ?></h2><!-- /wp:heading -->
 
 <!-- wp:omega-design/slider {"autoplay":true,"autoplaySpeed":6000,"showArrows":true,"showDots":true,"slidesPerView":3,"slidesPerViewTablet":2,"slidesPerViewMobile":1,"gap":"24px","className":"omega-testimonial-slider","prevLabel":"Previous testimonials","nextLabel":"Next testimonials","dotsLabel":"Testimonials"} -->
@@ -432,7 +432,7 @@ echo $build_testimonial('ER', __('A team you can trust. Clear communication, tho
 <div class="wp-block-columns alignwide are-vertically-aligned-bottom">
 <!-- wp:column {"verticalAlignment":"bottom"} -->
 <div class="wp-block-column is-vertically-aligned-bottom">
-<?php echo omega_pattern_eyebrow(__('Legal Insights', 'omega-design')); ?>
+<?php echo pattern_helpers::eyebrow(__('Legal Insights', 'omega-design')); ?>
 <!-- wp:heading {"level":2} --><h2 class="wp-block-heading"><?php esc_html_e('Knowledge That Helps You Move Forward', 'omega-design'); ?></h2><!-- /wp:heading -->
 </div>
 <!-- /wp:column -->
@@ -474,7 +474,7 @@ echo $build_testimonial('ER', __('A team you can trust. Clear communication, tho
 
 <!-- wp:column {"width":"35%"} -->
 <div class="wp-block-column" style="flex-basis:35%">
-<?php echo omega_pattern_eyebrow(__('Common Questions', 'omega-design')); ?>
+<?php echo pattern_helpers::eyebrow(__('Common Questions', 'omega-design')); ?>
 <!-- wp:heading {"level":2} --><h2 class="wp-block-heading"><?php esc_html_e('Answers Before You Ask', 'omega-design'); ?></h2><!-- /wp:heading -->
 <!-- wp:paragraph --><p><?php esc_html_e('We believe legal guidance should be clear from the very first conversation.', 'omega-design'); ?></p><!-- /wp:paragraph -->
 <!-- wp:buttons --><div class="wp-block-buttons"><!-- wp:button {"backgroundColor":"primary","textColor":"button-text"} --><div class="wp-block-button"><a class="wp-block-button__link has-button-text-color has-primary-background-color has-text-color has-background wp-element-button" href="#"><?php esc_html_e('Ask a Question →', 'omega-design'); ?></a></div><!-- /wp:button --></div><!-- /wp:buttons -->
@@ -523,7 +523,7 @@ echo $build_testimonial('ER', __('A team you can trust. Clear communication, tho
 <div class="wp-block-columns alignwide are-vertically-aligned-center">
 <!-- wp:column {"verticalAlignment":"center"} -->
 <div class="wp-block-column is-vertically-aligned-center">
-<?php echo omega_pattern_eyebrow(__("Let's Talk", 'omega-design')); ?>
+<?php echo pattern_helpers::eyebrow(__("Let's Talk", 'omega-design')); ?>
 <!-- wp:heading {"level":2} --><h2 class="wp-block-heading"><?php esc_html_e('Ready to Discuss Your Case?', 'omega-design'); ?></h2><!-- /wp:heading -->
 <!-- wp:paragraph --><p><?php esc_html_e('Get the legal support you need today.', 'omega-design'); ?></p><!-- /wp:paragraph -->
 </div>

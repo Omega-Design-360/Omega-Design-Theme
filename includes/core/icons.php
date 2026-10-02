@@ -22,18 +22,15 @@
 
 namespace OmegaDesign\core;
 
+use OmegaDesign\traits\rest_response_cache;
+use OmegaDesign\traits\singleton;
+
 defined('ABSPATH') || exit;
 
 class icons {
 
-    private static $instance = null;
-
-    public static function get_instance() {
-        if (null === self::$instance) {
-            self::$instance = new self();
-        }
-        return self::$instance;
-    }
+    use singleton;
+    use rest_response_cache;
 
     const CRON_HOOK = 'omega_icons_warm_cache';
 
@@ -50,8 +47,6 @@ class icons {
         add_action('switch_theme', [$this, 'unschedule_cache_warm']);
     }
 
-    public function init() {}
-
     /**
      * The 1-day transient cache above only helps AFTER something has
      * already paid the ~4.8s cost of a cold /wp/v2/icons request once -
@@ -66,9 +61,7 @@ class icons {
      * cold path under normal operation.
      */
     public function schedule_cache_warm() {
-        if (!wp_next_scheduled(self::CRON_HOOK)) {
-            wp_schedule_event(time(), 'twicedaily', self::CRON_HOOK);
-        }
+        self::schedule_recurring(self::CRON_HOOK, 'twicedaily');
     }
 
     public function unschedule_cache_warm() {
@@ -86,38 +79,15 @@ class icons {
     }
 
     /**
-     * Dispatches GET /wp/v2/icons in-process (same mechanism WP itself uses
-     * for internal REST calls - no real HTTP round trip). The REST
-     * controller's own permission check requires edit_posts, which a cron
-     * run has no logged-in user for, so this borrows the first
-     * administrator's identity only for the duration of the one request.
-     *
-     * Deliberately calls maybe_cache_icons_response() directly rather than
-     * relying on the 'rest_post_dispatch' filter firing on its own:
-     * WP_REST_Server::dispatch() (which rest_do_request() calls) only ever
-     * applies 'rest_pre_dispatch' - 'rest_post_dispatch' is applied by
-     * serve_request(), the full HTTP-serving path a real browser request
-     * takes, which dispatch() alone never reaches. Relying on the filter
-     * here would silently pay the full ~3.5s resolution cost on every cron
-     * run and then throw the result away uncached, defeating the entire
-     * point of warming it in the background.
+     * Dispatches GET /wp/v2/icons in-process as an administrator and caches
+     * the result - see rest_response_cache::warm_route_as_admin() for why
+     * the cache callback is called directly instead of relying on the
+     * 'rest_post_dispatch' filter (which would otherwise silently pay the
+     * full ~3.5s resolution cost on every cron run and throw the result
+     * away uncached).
      */
     public function warm_cache() {
-        $previous_user = get_current_user_id();
-        $admins        = get_users(['role' => 'administrator', 'number' => 1, 'fields' => 'ID']);
-
-        if (empty($admins)) {
-            return;
-        }
-
-        wp_set_current_user($admins[0]);
-
-        $request  = new \WP_REST_Request('GET', '/wp/v2/icons');
-        $server   = rest_get_server();
-        $response = $server->dispatch($request);
-        $this->maybe_cache_icons_response($response, $server, $request);
-
-        wp_set_current_user($previous_user);
+        self::warm_route_as_admin('/wp/v2/icons', [$this, 'maybe_cache_icons_response']);
     }
 
     /**
@@ -163,7 +133,7 @@ class icons {
      */
     private function icons_cache_key($request) {
         $data_file_mtime = @filemtime(__DIR__ . '/icons-material.php');
-        $svg_dir_mtime   = @filemtime(OMEGA_DESIGN_ASSETS . '/icons/material-symbols');
+        $svg_dir_mtime   = @filemtime(self::svg_dir());
 
         $parts = $request->get_route() . '|' . wp_json_encode($request->get_query_params())
             . '|' . $data_file_mtime . '|' . $svg_dir_mtime;
@@ -210,47 +180,17 @@ class icons {
             return $result;
         }
 
-        $key  = $this->icons_cache_key($request);
-        $meta = get_transient($key . '_meta');
-        if (false === $meta || !isset($meta['chunks'])) {
-            return $result;
-        }
+        $data = self::read_chunked_transient($this->icons_cache_key($request));
 
-        $data = [];
-        for ($i = 0; $i < $meta['chunks']; $i++) {
-            $chunk = get_transient($key . '_c' . $i);
-            if (false === $chunk) {
-                // A chunk expired/evicted independently - treat the whole
-                // thing as a miss rather than serve an incomplete list.
-                return $result;
-            }
-            $data = array_merge($data, $chunk);
-        }
-
-        return rest_ensure_response($data);
+        return null === $data ? $result : rest_ensure_response($data);
     }
 
     public function maybe_cache_icons_response($response, $server, $request) {
-        if (!$this->is_icons_listing_route($request) || is_wp_error($response)) {
+        if (!$this->is_icons_listing_route($request) || !self::is_cacheable_response($response)) {
             return $response;
         }
 
-        // rest_do_request()/dispatch() convert a failed permission check into
-        // a WP_REST_Response carrying a 401/403 status rather than a raw
-        // WP_Error, so is_wp_error() alone won't catch it - caching that
-        // would serve the error to everyone until the transient expired.
-        $status = $response instanceof \WP_REST_Response ? $response->get_status() : 200;
-        if ($status < 200 || $status >= 300) {
-            return $response;
-        }
-
-        $key    = $this->icons_cache_key($request);
-        $chunks = array_chunk($response->get_data(), self::ICON_CACHE_CHUNK_SIZE);
-
-        foreach ($chunks as $i => $chunk) {
-            set_transient($key . '_c' . $i, $chunk, DAY_IN_SECONDS);
-        }
-        set_transient($key . '_meta', ['chunks' => count($chunks)], DAY_IN_SECONDS);
+        self::write_chunked_transient($this->icons_cache_key($request), $response->get_data(), self::ICON_CACHE_CHUNK_SIZE, DAY_IN_SECONDS);
 
         return $response;
     }
@@ -297,10 +237,19 @@ class icons {
             if (!$registry->is_registered('omega-icons/' . $name)) {
                 wp_register_icon('omega-icons/' . $name, [
                     'label'     => $label,
-                    'file_path' => OMEGA_DESIGN_ASSETS . '/icons/material-symbols/' . $name . '.svg',
+                    'file_path' => self::svg_path($name),
                 ]);
             }
         }
+    }
+
+    /** The folder holding one SVG file per icon. */
+    private static function svg_dir() {
+        return OMEGA_DESIGN_ASSETS . '/icons/material-symbols';
+    }
+
+    private static function svg_path($name) {
+        return self::svg_dir() . '/' . $name . '.svg';
     }
 
     /**
@@ -323,7 +272,7 @@ class icons {
             return $parsed_block;
         }
 
-        $file = OMEGA_DESIGN_ASSETS . '/icons/material-symbols/' . $name . '.svg';
+        $file = self::svg_path($name);
         if (is_file($file)) {
             wp_register_icon($icon, [
                 'label'     => ucwords(str_replace('-', ' ', $name)),
@@ -400,7 +349,7 @@ class icons {
         }
 
         sort($names);
-        $key = 'omega_icon_responses_' . md5(implode(',', $names) . '|' . @filemtime(OMEGA_DESIGN_ASSETS . '/icons/material-symbols'));
+        $key = 'omega_icon_responses_' . md5(implode(',', $names) . '|' . @filemtime(self::svg_dir()));
 
         $cached = get_transient($key);
         if (is_array($cached)) {
@@ -430,6 +379,17 @@ class icons {
      * rescanned when one of them changes.
      */
     private function used_icon_names($context) {
+        return array_values(array_unique(array_merge(
+            $this->theme_icon_names(),
+            $this->extract_icon_names(self::context_content($context))
+        )));
+    }
+
+    /**
+     * Icon names used by the registered patterns and the theme's templates
+     * and template parts.
+     */
+    private function theme_icon_names() {
         $theme_dir = get_template_directory();
         $files     = array_merge(
             (array) glob($theme_dir . '/pattern/*.php'),
@@ -443,31 +403,47 @@ class icons {
 
         $names = get_transient($key);
         if (!is_array($names)) {
-            $haystack = '';
-            foreach (\WP_Block_Patterns_Registry::get_instance()->get_all_registered() as $pattern) {
-                $haystack .= $pattern['content'] ?? '';
-            }
-            foreach ($files as $file) {
-                if ('.html' === substr($file, -5)) {
-                    $haystack .= (string) file_get_contents($file);
-                }
-            }
-            $names = $this->extract_icon_names($haystack);
+            $names = $this->extract_icon_names(self::patterns_content() . self::html_files_content($files));
             set_transient($key, $names, WEEK_IN_SECONDS);
         }
 
-        $extra = '';
-        if (!empty($context->post) && $context->post instanceof \WP_Post) {
-            $extra .= $context->post->post_content;
+        return $names;
+    }
+
+    private static function patterns_content() {
+        $content = '';
+        foreach (\WP_Block_Patterns_Registry::get_instance()->get_all_registered() as $pattern) {
+            $content .= $pattern['content'] ?? '';
         }
-        // Site Editor: templates/parts the user has customized live in the DB.
-        if ('core/edit-site' === ($context->name ?? '')) {
-            foreach (get_posts(['post_type' => ['wp_template', 'wp_template_part'], 'posts_per_page' => 50, 'post_status' => 'publish', 'no_found_rows' => true]) as $post) {
-                $extra .= $post->post_content;
+        return $content;
+    }
+
+    private static function html_files_content(array $files) {
+        $content = '';
+        foreach ($files as $file) {
+            if ('.html' === substr($file, -5)) {
+                $content .= (string) file_get_contents($file);
             }
         }
+        return $content;
+    }
 
-        return array_values(array_unique(array_merge($names, $this->extract_icon_names($extra))));
+    /**
+     * Content specific to this editor session: the post being edited and,
+     * in the Site Editor, templates/parts the user has customized (they
+     * live in the DB).
+     */
+    private static function context_content($context) {
+        $content = '';
+        if (!empty($context->post) && $context->post instanceof \WP_Post) {
+            $content .= $context->post->post_content;
+        }
+        if ('core/edit-site' === ($context->name ?? '')) {
+            foreach (get_posts(['post_type' => ['wp_template', 'wp_template_part'], 'posts_per_page' => 50, 'post_status' => 'publish', 'no_found_rows' => true]) as $post) {
+                $content .= $post->post_content;
+            }
+        }
+        return $content;
     }
 
     private function extract_icon_names($content) {
@@ -475,9 +451,8 @@ class icons {
             return [];
         }
 
-        $dir = OMEGA_DESIGN_ASSETS . '/icons/material-symbols/';
-        return array_values(array_filter(array_unique($matches[1]), function ($name) use ($dir) {
-            return is_file($dir . $name . '.svg');
+        return array_values(array_filter(array_unique($matches[1]), function ($name) {
+            return is_file(self::svg_path($name));
         }));
     }
 

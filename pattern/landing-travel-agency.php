@@ -5,7 +5,6 @@
  * Categories: omega-design-general
  * Description: A full travel-agency landing page - photo hero with a booking search bar, feature strip, destinations grid, tour categories, a special-offer band, a "why choose us" grid, testimonials, and a blog + newsletter row. Every image, heading and line of copy is editable after inserting.
  * Keywords: landing page, travel, tourism, destinations, booking, hero
- * Block Types: core/post-content
  * Viewport Width: 1400
  *
  * Every block below sticks to a small, deliberately boring vocabulary of

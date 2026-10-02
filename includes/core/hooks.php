@@ -7,11 +7,17 @@
 
 namespace OmegaDesign\core;
 
+use OmegaDesign\customizer\menus;
+use OmegaDesign\traits\assets;
+use OmegaDesign\traits\singleton;
+
 defined('ABSPATH') || exit;
 
 class hooks {
 
-    private static $instance = null;
+    use singleton;
+    use assets;
+
     private $actions = [];
     private $filters = [];
     private $registered = false;
@@ -34,13 +40,6 @@ class hooks {
             /* translators: %s: number of minutes. */
             return '>' . sprintf(__('%s min read', 'omega-design'), $m[1]) . '<';
         }, $content, 1);
-    }
-
-    public static function get_instance() {
-        if (null === self::$instance) {
-            self::$instance = new self();
-        }
-        return self::$instance;
     }
 
     public function init() {
@@ -80,19 +79,22 @@ class hooks {
     }
 
     private function register_actions() {
-        foreach ($this->actions as $action) {
-            $cb = $this->resolve_callback($action['callback']);
-            if ($cb) {
-                add_action($action['hook'], $cb, $action['priority'], $action['accepted_args']);
-            }
-        }
+        $this->register_queued($this->actions, 'add_action');
     }
 
     private function register_filters() {
-        foreach ($this->filters as $filter) {
-            $cb = $this->resolve_callback($filter['callback']);
+        $this->register_queued($this->filters, 'add_filter');
+    }
+
+    /**
+     * Hands each queued hook to $register (add_action/add_filter), skipping
+     * any whose callback can't be resolved.
+     */
+    private function register_queued(array $queue, $register) {
+        foreach ($queue as $hook) {
+            $cb = $this->resolve_callback($hook['callback']);
             if ($cb) {
-                add_filter($filter['hook'], $cb, $filter['priority'], $filter['accepted_args']);
+                $register($hook['hook'], $cb, $hook['priority'], $hook['accepted_args']);
             }
         }
     }
@@ -143,18 +145,7 @@ class hooks {
     }
 
     public function register_assets() {
-        wp_register_style('omega-design-style', OMEGA_DESIGN_CSS_URI . '/style.css', [], $this->asset_version('/css/style.css'));
-    }
-
-    /**
-     * filemtime()-based version for assets under active development, so a
-     * saved edit is picked up on the next load instead of being served from
-     * the browser's cache under the same static OMEGA_DESIGN_VERSION query
-     * string until a manual version bump.
-     */
-    private function asset_version($relative_path) {
-        $path = OMEGA_DESIGN_ASSETS . '/' . ltrim($relative_path, '/');
-        return file_exists($path) ? filemtime($path) : OMEGA_DESIGN_ASSET_VERSION;
+        wp_register_style('omega-design-style', self::asset_uri('css/style.css'), [], self::asset_version('css/style.css'));
     }
 
     public function enqueue_frontend_assets() {
@@ -190,23 +181,14 @@ class hooks {
         // Blog page + post archives (category, tag, author, date): card grid
         // with scroll reveal - assets/css/blog-cards.css, assets/js/blog-cards.js.
         if (is_home() || is_category() || is_tag() || is_author() || is_date()) {
-            $cards_css = OMEGA_DESIGN_ASSETS . '/css/blog-cards.css';
-            $cards_js  = OMEGA_DESIGN_ASSETS . '/js/blog-cards.js';
-            if (file_exists($cards_css)) {
-                wp_enqueue_style('omega-design-blog-cards', OMEGA_DESIGN_CSS_URI . '/blog-cards.css', ['omega-design-style'], filemtime($cards_css));
-            }
-            if (file_exists($cards_js)) {
-                wp_enqueue_script('omega-design-blog-cards', OMEGA_DESIGN_JS_URI . '/blog-cards.js', [], filemtime($cards_js), ['in_footer' => true, 'strategy' => 'defer']);
-            }
+            self::enqueue_style('omega-design-blog-cards', 'css/blog-cards.css', ['omega-design-style']);
+            self::enqueue_script('omega-design-blog-cards', 'js/blog-cards.js', [], ['in_footer' => true, 'strategy' => 'defer']);
         }
 
         // The "Blog Hub" page template (templates/blog-hub.html) widens its
         // content area via the Blog Hub stylesheet, pattern or not.
         if (is_singular('page') && 'blog-hub' === get_page_template_slug()) {
-            $hub_css = OMEGA_DESIGN_ASSETS . '/css/landing-blog-hub.css';
-            if (file_exists($hub_css)) {
-                wp_enqueue_style('omega-design-landing-blog-hub', OMEGA_DESIGN_CSS_URI . '/landing-blog-hub.css', [], filemtime($hub_css));
-            }
+            self::enqueue_style('omega-design-landing-blog-hub', 'css/landing-blog-hub.css');
         }
 
         if (is_singular() && (
@@ -234,13 +216,10 @@ class hooks {
         'restaurant',
         'medical-clinic',
         'law-firm',
-        'electronics-store',
         'furniture-store',
         'beauty-cosmetics',
         'beauty-salon',
-        'bookstore',
         'jewelry-store',
-        'blog-magazine',
         'blog-hub',
     ];
 
@@ -255,10 +234,7 @@ class hooks {
      * don't use these patterns.
      */
     private function enqueue_landing_page_assets() {
-        $css_path = OMEGA_DESIGN_ASSETS . '/css/landing-pages.css';
-        if (file_exists($css_path)) {
-            wp_enqueue_style('omega-design-landing-pages', OMEGA_DESIGN_CSS_URI . '/landing-pages.css', [], filemtime($css_path));
-        }
+        self::enqueue_landing_shared_style();
 
         $post = get_post();
         if (!$post) {
@@ -270,40 +246,33 @@ class hooks {
                 continue;
             }
 
-            $page_css = OMEGA_DESIGN_ASSETS . '/css/landing-' . $slug . '.css';
-            if (file_exists($page_css)) {
-                wp_enqueue_style('omega-design-landing-' . $slug, OMEGA_DESIGN_CSS_URI . '/landing-' . $slug . '.css', ['omega-design-landing-pages'], filemtime($page_css));
-            }
-
-            $page_js = OMEGA_DESIGN_ASSETS . '/js/landing-' . $slug . '.js';
-            if (file_exists($page_js)) {
-                wp_enqueue_script('omega-design-landing-' . $slug, OMEGA_DESIGN_JS_URI . '/landing-' . $slug . '.js', [], filemtime($page_js), true);
-            }
+            self::enqueue_landing_style($slug);
+            self::enqueue_script('omega-design-landing-' . $slug, 'js/landing-' . $slug . '.js', [], true);
         }
+    }
+
+    private static function enqueue_landing_shared_style() {
+        self::enqueue_style('omega-design-landing-pages', 'css/landing-pages.css');
+    }
+
+    private static function enqueue_landing_style($slug) {
+        self::enqueue_style('omega-design-landing-' . $slug, 'css/landing-' . $slug . '.css', ['omega-design-landing-pages']);
     }
 
     private function enqueue_cart_page_assets() {
-        $css_path = OMEGA_DESIGN_ASSETS . '/css/cart-page.css';
-        if (file_exists($css_path)) {
-            wp_enqueue_style('omega-design-cart-page', OMEGA_DESIGN_CSS_URI . '/cart-page.css', [], filemtime($css_path));
-        }
-
-        $js_path = OMEGA_DESIGN_ASSETS . '/js/cart-page-interactions.js';
-        if (file_exists($js_path)) {
-            wp_enqueue_script('omega-design-cart-page', OMEGA_DESIGN_JS_URI . '/cart-page-interactions.js', [], filemtime($js_path), true);
-        }
+        self::enqueue_page_assets('omega-design-cart-page', 'css/cart-page.css', 'js/cart-page-interactions.js');
     }
 
     private function enqueue_checkout_page_assets() {
-        $css_path = OMEGA_DESIGN_ASSETS . '/css/checkout-page.css';
-        if (file_exists($css_path)) {
-            wp_enqueue_style('omega-design-checkout-page', OMEGA_DESIGN_CSS_URI . '/checkout-page.css', [], filemtime($css_path));
-        }
+        self::enqueue_page_assets('omega-design-checkout-page', 'css/checkout-page.css', 'js/checkout-page-interactions.js');
+    }
 
-        $js_path = OMEGA_DESIGN_ASSETS . '/js/checkout-page-interactions.js';
-        if (file_exists($js_path)) {
-            wp_enqueue_script('omega-design-checkout-page', OMEGA_DESIGN_JS_URI . '/checkout-page-interactions.js', [], filemtime($js_path), true);
-        }
+    /**
+     * A page's own stylesheet + footer script, sharing one handle.
+     */
+    private static function enqueue_page_assets($handle, $css, $js) {
+        self::enqueue_style($handle, $css);
+        self::enqueue_script($handle, $js, [], true);
     }
 
     /**
@@ -315,32 +284,18 @@ class hooks {
     private function enqueue_checkout_auth_notice() {
         wp_enqueue_script(
             'omega-design-checkout-auth-notice',
-            OMEGA_DESIGN_JS_URI . '/checkout-auth-notice.js',
+            self::asset_uri('js/checkout-auth-notice.js'),
             [],
-            $this->asset_version('/js/checkout-auth-notice.js'),
+            self::asset_version('js/checkout-auth-notice.js'),
             true
         );
 
-        $checkout_url = wc_get_checkout_url();
-
         // The "My Login Form" plugin (if active) replaces WooCommerce's native
         // account/login/register pages with its own; wp_login_url() already
-        // resolves to its login page via that plugin's 'login_url' filter, but
-        // registration lives on a separate page it tracks in its own option,
-        // independent of WooCommerce's "enable myaccount registration" setting.
-        $login_url = wp_login_url($checkout_url);
+        // resolves to its login page via that plugin's 'login_url' filter.
+        $login_url = wp_login_url(wc_get_checkout_url());
 
-        $register_page_id = (int) get_option('my_login_form_register_page_id');
-        if ($register_page_id && 'publish' === get_post_status($register_page_id)) {
-            $show_register = true;
-            $register_url  = get_permalink($register_page_id);
-        } elseif (function_exists('my_login_form_registration_url')) {
-            $show_register = false;
-            $register_url  = my_login_form_registration_url();
-        } else {
-            $show_register = 'yes' === get_option('woocommerce_enable_myaccount_registration');
-            $register_url  = wc_get_page_permalink('myaccount');
-        }
+        list($register_url, $show_register) = self::checkout_registration_link();
 
         wp_localize_script('omega-design-checkout-auth-notice', 'omegaCheckoutAuth', [
             'loginUrl'      => $login_url,
@@ -353,8 +308,27 @@ class hooks {
         ]);
     }
 
+    /**
+     * [register URL, whether to show the register button]. Registration
+     * lives on a separate page the "My Login Form" plugin tracks in its own
+     * option, independent of WooCommerce's "enable myaccount registration"
+     * setting - falling back to WooCommerce's own account page.
+     */
+    private static function checkout_registration_link() {
+        $register_page_id = (int) get_option('my_login_form_register_page_id');
+        if ($register_page_id && 'publish' === get_post_status($register_page_id)) {
+            return [get_permalink($register_page_id), true];
+        }
+
+        if (function_exists('my_login_form_registration_url')) {
+            return [my_login_form_registration_url(), false];
+        }
+
+        return [wc_get_page_permalink('myaccount'), 'yes' === get_option('woocommerce_enable_myaccount_registration')];
+    }
+
     public function enqueue_admin_assets($hook) {
-        wp_enqueue_style('omega-design-admin', OMEGA_DESIGN_CSS_URI . '/admin.css', [], OMEGA_DESIGN_VERSION);
+        wp_enqueue_style('omega-design-admin', self::asset_uri('css/admin.css'), [], OMEGA_DESIGN_VERSION);
         wp_add_inline_style('omega-design-admin', $this->get_admin_bar_logo_css());
     }
 
@@ -363,7 +337,7 @@ class hooks {
      * for the theme icon at assets/images/theme-icon.svg.
      */
     private function get_admin_bar_logo_css() {
-        $icon_url = esc_url(omega_design_versioned_asset_url('/images/theme-icon.svg'));
+        $icon_url = esc_url(\OmegaDesign\core\asset_urls::versioned('/images/theme-icon.svg'));
 
         // Core forces "background-image: none !important" directly on
         // .ab-icon (admin-bar.css's blanket dashicon reset), which no
@@ -440,18 +414,12 @@ class hooks {
      * applied as that block's own inline style, layered on top of this.
      */
     private function get_design_defaults_css() {
-        $radius_choices = [
-            'sharp'   => '2px',
-            'soft'    => '6px',
-            'rounded' => '14px',
-            'pill'    => '999px',
-        ];
         $radius = get_theme_mod('omega_button_radius', 'soft');
-        if (!array_key_exists($radius, $radius_choices)) {
+        if (!array_key_exists($radius, menus::BUTTON_RADIUS_CHOICES)) {
             $radius = 'soft';
         }
 
-        return ':root { --omega-btn-radius: ' . $radius_choices[$radius] . '; }';
+        return ':root { --omega-btn-radius: ' . menus::BUTTON_RADIUS_CHOICES[$radius] . '; }';
     }
 
     /**
@@ -462,7 +430,7 @@ class hooks {
      */
     public function add_design_body_classes($classes) {
         $look = get_theme_mod('omega_button_look', 'fill');
-        if ('fill' !== $look && in_array($look, ['ghost', 'soft', 'pill', '3d'], true)) {
+        if ('fill' !== $look && array_key_exists($look, menus::BUTTON_LOOK_CHOICES)) {
             $classes[] = 'omega-default-btn-' . $look;
         }
         return $classes;
@@ -492,25 +460,19 @@ class hooks {
      * (.omega-landing--{slug} ...), so they can't affect each other.
      */
     private function enqueue_editor_canvas_landing_styles() {
-        $shared = OMEGA_DESIGN_ASSETS . '/css/landing-pages.css';
-        if (file_exists($shared)) {
-            wp_enqueue_style('omega-design-landing-pages', OMEGA_DESIGN_CSS_URI . '/landing-pages.css', [], filemtime($shared));
-        }
+        self::enqueue_landing_shared_style();
 
         foreach (self::LANDING_PAGES as $slug) {
-            $page_css = OMEGA_DESIGN_ASSETS . '/css/landing-' . $slug . '.css';
-            if (file_exists($page_css)) {
-                wp_enqueue_style('omega-design-landing-' . $slug, OMEGA_DESIGN_CSS_URI . '/landing-' . $slug . '.css', ['omega-design-landing-pages'], filemtime($page_css));
-            }
+            self::enqueue_landing_style($slug);
         }
     }
 
     public function enqueue_editor_assets() {
         wp_enqueue_script(
             'omega-design-editor',
-            OMEGA_DESIGN_JS_URI . '/editor.js',
+            self::asset_uri('js/editor.js'),
             ['wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-compose', 'wp-hooks', 'wp-i18n', 'wp-dom-ready', 'wp-data', 'wp-core-data'],
-            $this->asset_version('/js/editor.js'),
+            self::asset_version('js/editor.js'),
             true
         );
 
@@ -534,28 +496,26 @@ class hooks {
         return $categories;
     }
 
-    const LINK_BLOCKS = ['core/group', 'core/columns', 'core/column'];
-
     public function modify_block_render($block_content, $block) {
-        $name = $block['blockName'] ?? '';
+        switch ((string) ($block['blockName'] ?? '')) {
+            // Blocks that can carry an omegaLink (editor.js "Link" panel).
+            case 'core/group':
+            case 'core/columns':
+            case 'core/column':
+                return $this->add_block_link_overlay($block_content, $block);
 
-        if (in_array($name, self::LINK_BLOCKS, true)) {
-            $block_content = $this->add_block_link_overlay($block_content, $block);
+            case 'core/site-logo':
+                return $this->inject_dark_mode_logo($block_content, $block);
+
+            case 'core/icon':
+                return $this->add_icon_hover_style($block_content, $block);
+
+            case 'core/html':
+                return $this->render_product_badges($block_content);
+
+            default:
+                return $block_content;
         }
-
-        if ($name === 'core/site-logo') {
-            $block_content = $this->inject_dark_mode_logo($block_content, $block);
-        }
-
-        if ($name === 'core/icon') {
-            $block_content = $this->add_icon_hover_style($block_content, $block);
-        }
-
-        if ($name === 'core/html') {
-            $block_content = $this->render_product_badges($block_content);
-        }
-
-        return $block_content;
     }
 
     const PRODUCT_BADGE_ICONS = [
@@ -584,30 +544,41 @@ class hooks {
             return $block_content;
         }
 
-        $is_digital = $product->is_virtual() || $product->is_downloadable();
-
-        $badges = $is_digital
-            ? [
-                ['bolt', __('Instant delivery', 'omega-design')],
-                ['shield', __('Secure checkout', 'omega-design')],
-                ['refresh', __('Free lifetime updates', 'omega-design')],
-            ]
-            : [
-                ['truck', __('Fast dispatch', 'omega-design')],
-                ['shield', __('Secure checkout', 'omega-design')],
-                ['refresh', __('Easy 30-day returns', 'omega-design')],
-            ];
-
         $items = '';
-        foreach ($badges as [$icon, $label]) {
-            $path   = self::PRODUCT_BADGE_ICONS[$icon] ?? '';
-            $items .= '<li class="omega-pdp__badge">'
-                . '<svg class="omega-pdp__badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' . $path . '</svg>'
-                . '<span>' . esc_html($label) . '</span>'
-                . '</li>';
+        foreach (self::product_badges($product->is_virtual() || $product->is_downloadable()) as list($icon, $label)) {
+            $items .= self::product_badge_html($icon, $label);
         }
 
         return '<ul class="omega-pdp__badges">' . $items . '</ul>';
+    }
+
+    /**
+     * [icon, label] pairs - delivery/returns copy differs for digital
+     * (virtual/downloadable) products.
+     */
+    private static function product_badges($is_digital) {
+        if ($is_digital) {
+            return [
+                ['bolt', __('Instant delivery', 'omega-design')],
+                ['shield', __('Secure checkout', 'omega-design')],
+                ['refresh', __('Free lifetime updates', 'omega-design')],
+            ];
+        }
+
+        return [
+            ['truck', __('Fast dispatch', 'omega-design')],
+            ['shield', __('Secure checkout', 'omega-design')],
+            ['refresh', __('Easy 30-day returns', 'omega-design')],
+        ];
+    }
+
+    private static function product_badge_html($icon, $label) {
+        $path = self::PRODUCT_BADGE_ICONS[$icon] ?? '';
+
+        return '<li class="omega-pdp__badge">'
+            . '<svg class="omega-pdp__badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' . $path . '</svg>'
+            . '<span>' . esc_html($label) . '</span>'
+            . '</li>';
     }
 
     /**
@@ -625,6 +596,29 @@ class hooks {
             return $block_content;
         }
 
+        $style = self::hover_css_vars($hover);
+        if ('' === $style) {
+            return $block_content;
+        }
+
+        $parts = block_html::split_first_tag($block_content);
+        if (null === $parts) {
+            return $block_content;
+        }
+
+        list($tag_open, $tag_attrs, $tag_close, $rest) = $parts;
+
+        $tag_attrs = block_html::merge_class_attr($tag_attrs, 'has-omega-hover-color');
+        $tag_attrs = block_html::merge_style_attr($tag_attrs, esc_attr($style));
+
+        return $tag_open . $tag_attrs . $tag_close . $rest;
+    }
+
+    /**
+     * The --omega-hover-* custom properties for a block's omegaHover
+     * settings ('' when none are set).
+     */
+    private static function hover_css_vars(array $hover) {
         $vars = [
             'text'       => '--omega-hover-text-color',
             'background' => '--omega-hover-bg-color',
@@ -645,31 +639,7 @@ class hooks {
             $style       .= '--omega-hover-shadow:' . $offset_x . 'px ' . $offset_y . 'px ' . $hover['shadowSize'] . 'px ' . $shadow_color . ';';
         }
 
-        if ('' === $style) {
-            return $block_content;
-        }
-
-        if (!preg_match('/^(\s*<[a-z0-9]+)([^>]*)(>)/i', $block_content, $matches)) {
-            return $block_content;
-        }
-
-        $tag_open  = $matches[1];
-        $tag_attrs = $matches[2];
-        $tag_close = $matches[3];
-
-        if (preg_match('/\sclass="/i', $tag_attrs)) {
-            $tag_attrs = preg_replace('/\sclass="/i', ' class="has-omega-hover-color ', $tag_attrs, 1);
-        } else {
-            $tag_attrs .= ' class="has-omega-hover-color"';
-        }
-
-        if (preg_match('/\sstyle="/i', $tag_attrs)) {
-            $tag_attrs = preg_replace('/\sstyle="/i', ' style="' . esc_attr($style) . ' ', $tag_attrs, 1);
-        } else {
-            $tag_attrs .= ' style="' . esc_attr($style) . '"';
-        }
-
-        return $tag_open . $tag_attrs . $tag_close . substr($block_content, strlen($matches[0]));
+        return $style;
     }
 
     /**
@@ -696,72 +666,57 @@ class hooks {
             return $block_content;
         }
 
-        if (!preg_match('/^(\s*<[a-z0-9]+)([^>]*)(>)/i', $block_content, $matches)) {
+        $parts = block_html::split_first_tag($block_content);
+        if (null === $parts) {
             return $block_content;
         }
 
+        list($tag_open, $tag_attrs, $tag_close, $rest) = $parts;
+
+        $label   = self::block_link_label($link, $block_content);
+        $overlay = '<a' . self::block_link_attrs($href, $link, $label) . '></a>';
+
+        return $tag_open . block_html::merge_class_attr($tag_attrs, 'omega-has-block-link') . $tag_close . $overlay . $rest;
+    }
+
+    /**
+     * The overlay link's accessible name: the admin-set label, else the
+     * block's own text (trimmed to 100 characters).
+     */
+    private static function block_link_label(array $link, $block_content) {
         $label = trim((string) ($link['label'] ?? ''));
-        if ('' === $label) {
-            $label = trim(wp_strip_all_tags($block_content));
-            if (strlen($label) > 100) {
-                $label = rtrim(substr($label, 0, 100)) . '…';
-            }
+        if ('' !== $label) {
+            return $label;
         }
 
-        $link_attrs = ' href="' . $href . '" class="omega-block-link"';
+        $label = trim(wp_strip_all_tags($block_content));
+        if (strlen($label) > 100) {
+            $label = rtrim(substr($label, 0, 100)) . '…';
+        }
+        return $label;
+    }
+
+    private static function block_link_attrs($href, array $link, $label) {
+        $attrs = ' href="' . $href . '" class="omega-block-link"';
         if ('_blank' === ($link['target'] ?? '')) {
-            $link_attrs .= ' target="_blank" rel="noopener noreferrer"';
+            $attrs .= ' target="_blank" rel="noopener noreferrer"';
         }
         if ('' !== $label) {
-            $link_attrs .= ' aria-label="' . esc_attr($label) . '"';
+            $attrs .= ' aria-label="' . esc_attr($label) . '"';
         }
-
-        $tag_open  = $matches[1];
-        $tag_attrs = $matches[2];
-        $tag_close = $matches[3];
-
-        if (preg_match('/\sclass="/i', $tag_attrs)) {
-            $tag_attrs = preg_replace('/\sclass="/i', ' class="omega-has-block-link ', $tag_attrs, 1);
-        } else {
-            $tag_attrs .= ' class="omega-has-block-link"';
-        }
-
-        $overlay = '<a' . $link_attrs . '></a>';
-
-        return $tag_open . $tag_attrs . $tag_close . $overlay . substr($block_content, strlen($matches[0]));
+        return $attrs;
     }
 
     /**
      * core/site-logo only ever renders the single image behind the
-     * `custom_logo` theme mod. When a dark mode logo has been set from the
-     * Omega Design dashboard, this duplicates the rendered <img> into an
-     * .omega-logo-light/.omega-logo-dark pair so color-mode.css can toggle
-     * between them using the same .omega-color-mode-* / prefers-color-scheme
-     * rules already used for the rest of the palette.
+     * `custom_logo` theme mod - adds the dark mode variant (dark_logo),
+     * sized to the block's own width setting.
      */
     private function inject_dark_mode_logo($block_content, $block) {
-        $dark_logo_id = (int) get_theme_mod('omega_custom_logo_dark');
-
-        if (!$dark_logo_id || strpos($block_content, 'custom-logo') === false) {
-            return $block_content;
-        }
-
         $width = isset($block['attrs']['width']) ? (int) $block['attrs']['width'] : 0;
-        $dark_image = wp_get_attachment_image($dark_logo_id, 'full', false, [
-            'class' => 'custom-logo omega-logo-dark',
+
+        return dark_logo::add_variant($block_content, [
             'style' => $width ? sprintf('width:%dpx;height:auto;', $width) : '',
         ]);
-
-        $with_dark_logo = preg_replace_callback(
-            '/<img\b[^>]*\bclass="[^"]*\bcustom-logo\b[^"]*"[^>]*\/?>/i',
-            function ($matches) use ($dark_image) {
-                $light_image = preg_replace('/class="([^"]*)"/', 'class="$1 omega-logo-light"', $matches[0], 1);
-                return $light_image . $dark_image;
-            },
-            $block_content,
-            1
-        );
-
-        return null !== $with_dark_logo ? $with_dark_logo : $block_content;
     }
 }

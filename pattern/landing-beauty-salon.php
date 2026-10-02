@@ -19,7 +19,7 @@
 
 defined('ABSPATH') || exit;
 
-require_once OMEGA_DESIGN_DIR . '/includes/patterns/pattern-helpers.php';
+use OmegaDesign\patterns\pattern_helpers;
 
 /** URL of one of this template's own photos in assets/images/beauty-salon-template/. */
 $salon_img = function ($file) {
@@ -178,7 +178,7 @@ $build_row = function ($items, $builder, $class = '') {
 
 <!-- wp:column {"verticalAlignment":"center","width":"48%"} -->
 <div class="wp-block-column is-vertically-aligned-center" style="flex-basis:48%">
-<?php echo omega_pattern_eyebrow(__('Luxury Beauty & Wellness', 'omega-design')); ?>
+<?php echo pattern_helpers::eyebrow(__('Luxury Beauty & Wellness', 'omega-design')); ?>
 <!-- wp:heading {"level":1} --><h1 class="wp-block-heading"><?php esc_html_e('Your Beauty,', 'omega-design'); ?><br><mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-primary-color"><?php esc_html_e('Refined.', 'omega-design'); ?></mark></h1><!-- /wp:heading -->
 <!-- wp:paragraph --><p><?php esc_html_e('Professional care, modern techniques and a relaxing environment to bring out your natural beauty.', 'omega-design'); ?></p><!-- /wp:paragraph -->
 <!-- wp:buttons -->
@@ -265,7 +265,7 @@ echo $build_row([
 
 <!-- wp:column {"verticalAlignment":"center","width":"50%","className":"omega-salon-about__content"} -->
 <div class="wp-block-column is-vertically-aligned-center omega-salon-about__content" style="flex-basis:50%">
-<?php echo omega_pattern_eyebrow(__('About Luméa', 'omega-design')); ?>
+<?php echo pattern_helpers::eyebrow(__('About Luméa', 'omega-design')); ?>
 <!-- wp:heading {"level":2} --><h2 class="wp-block-heading"><?php esc_html_e('Beauty designed', 'omega-design'); ?><br><?php esc_html_e('around you.', 'omega-design'); ?></h2><!-- /wp:heading -->
 <!-- wp:paragraph {"fontSize":"small"} --><p class="has-small-font-size"><?php esc_html_e('At Luméa, we believe beauty is more than just a look — it\'s a feeling. Our expert stylists and therapists are dedicated to providing personalized treatments in a luxurious and relaxing environment.', 'omega-design'); ?></p><!-- /wp:paragraph -->
 <!-- wp:group {"className":"omega-salon-about__features","layout":{"type":"flex","flexWrap":"wrap"}} -->
