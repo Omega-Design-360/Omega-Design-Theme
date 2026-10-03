@@ -94,9 +94,15 @@
        and where the panel visually starts that breaks :hover the moment
        the mouse crosses it. */
     position: relative;
-    max-width: 1200px;
+    /* Aligns with the theme's "Wide" width (theme.json wideSize) on every
+       page, including Full-width ones - those only widen the content size,
+       never the wide size. The side padding is the same root padding page
+       content uses, so on narrower screens the header's edges still line
+       up with wide blocks below it. */
+    box-sizing: border-box;
+    max-width: calc(var(--wp--style--global--wide-size, 1400px) + var(--wp--style--root--padding-left, 1.5rem) + var(--wp--style--root--padding-right, 1.5rem));
     margin: 0 auto;
-    padding: 0.9rem 1.5rem;
+    padding: 0.9rem var(--wp--style--root--padding-right, 1.5rem) 0.9rem var(--wp--style--root--padding-left, 1.5rem);
     display: flex;
     align-items: center;
     justify-content: space-between;

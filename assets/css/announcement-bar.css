@@ -16,7 +16,7 @@
 }
 
 .omega-announcement-bar__inner {
-    max-width: 1200px;
+    max-width: var(--wp--style--global--content-size, 1200px);
     margin: 0 auto;
     padding: 0.55rem 2.75rem;
     display: flex;

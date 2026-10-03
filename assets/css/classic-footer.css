@@ -20,7 +20,7 @@
 }
 
 .omega-classic-footer__inner {
-    max-width: 1200px;
+    max-width: var(--wp--style--global--content-size, 1200px);
     margin: 0 auto;
 }
 
@@ -169,7 +169,7 @@
 .omega-classic-footer--2 .omega-classic-footer__bottom {
     border-top: 1px solid rgba(255, 255, 255, 0.12);
     padding-top: 1.25rem;
-    max-width: 1200px;
+    max-width: var(--wp--style--global--content-size, 1200px);
     margin: 0 auto;
 }
 
@@ -200,7 +200,7 @@
     padding: 2.25rem 1.5rem;
 }
 .omega-classic-footer--4 .omega-classic-footer__cta-inner {
-    max-width: 1200px;
+    max-width: var(--wp--style--global--content-size, 1200px);
     margin: 0 auto;
     display: flex;
     flex-wrap: wrap;
@@ -267,7 +267,7 @@
 .omega-classic-footer--5 .omega-classic-footer__bottom {
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     padding-top: 1.25rem;
-    max-width: 1200px;
+    max-width: var(--wp--style--global--content-size, 1200px);
     margin: 0 auto;
 }
 
