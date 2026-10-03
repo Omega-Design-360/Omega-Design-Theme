@@ -204,7 +204,7 @@ foreach ([['500+', __('Happy Clients', 'omega-design')], ['5+', __('Years Experi
 <div class="wp-block-column" style="flex-basis:52%">
 <!-- wp:group {"className":"omega-salon-hero-art","layout":{"type":"constrained"}} -->
 <div class="wp-block-group omega-salon-hero-art">
-<!-- wp:image {"className":"omega-salon-hero-portrait","sizeSlug":"large"} --><figure class="wp-block-image size-large omega-salon-hero-portrait"><img src="<?php echo $salon_img('hero.png'); ?>" alt="<?php esc_attr_e('Beauty salon model portrait', 'omega-design'); ?>"/></figure><!-- /wp:image -->
+<!-- wp:image {"className":"omega-salon-hero-portrait","sizeSlug":"large"} --><figure class="wp-block-image size-large omega-salon-hero-portrait"><img src="<?php echo $salon_img('hero.webp'); ?>" alt="<?php esc_attr_e('Beauty salon model portrait', 'omega-design'); ?>"/></figure><!-- /wp:image -->
 <!-- wp:paragraph {"className":"omega-salon-script omega-salon-hero-tagline","textColor":"primary"} --><p class="omega-salon-script omega-salon-hero-tagline has-primary-color has-text-color"><?php esc_html_e('Beauty', 'omega-design'); ?><br><?php esc_html_e('Looks Good', 'omega-design'); ?><br><?php esc_html_e('On You', 'omega-design'); ?></p><!-- /wp:paragraph -->
 <!-- wp:group {"className":"omega-salon-rating-card","backgroundColor":"surface","layout":{"type":"constrained"}} -->
 <div class="wp-block-group omega-salon-rating-card has-surface-background-color has-background">
@@ -213,7 +213,7 @@ foreach ([['500+', __('Happy Clients', 'omega-design')], ['5+', __('Years Experi
 <!-- wp:group {"className":"omega-salon-avatars","layout":{"type":"flex","flexWrap":"nowrap"}} -->
 <div class="wp-block-group omega-salon-avatars">
 <?php for ($i = 1; $i <= 4; $i++) : ?>
-<!-- wp:image {"className":"omega-round-image omega-avatar-md","sizeSlug":"thumbnail"} --><figure class="wp-block-image size-thumbnail omega-round-image omega-avatar-md"><img src="<?php echo $salon_img('avatar-' . $i . '.jpg'); ?>" alt="<?php esc_attr_e('Happy client', 'omega-design'); ?>"/></figure><!-- /wp:image -->
+<!-- wp:image {"className":"omega-round-image omega-avatar-md","sizeSlug":"thumbnail"} --><figure class="wp-block-image size-thumbnail omega-round-image omega-avatar-md"><img src="<?php echo $salon_img('avatar-' . $i . '.webp'); ?>" alt="<?php esc_attr_e('Happy client', 'omega-design'); ?>"/></figure><!-- /wp:image -->
 <?php endfor; ?>
 <!-- wp:paragraph {"className":"omega-salon-avatars__more"} --><p class="omega-salon-avatars__more">+</p><!-- /wp:paragraph -->
 </div>
@@ -243,10 +243,10 @@ foreach ([['500+', __('Happy Clients', 'omega-design')], ['5+', __('Years Experi
 <!-- /wp:group -->
 <?php
 echo $build_row([
-	['content-cut',       __('Hair Styling', 'omega-design'),  __('Trendy cuts, styling, coloring and more for your perfect look.', 'omega-design'), 'service-hair-styling.jpg'],
-	['spa',               __('Skin & Facial', 'omega-design'), __('Rejuvenating facials and advanced skin treatments.', 'omega-design'), 'service-skin-facial.jpg'],
-	['brush',             __('Nails & Beauty', 'omega-design'), __('Manicure, pedicure and nail art for every style.', 'omega-design'), 'service-nails-beauty.jpg'],
-	['self-improvement',  __('Spa & Wellness', 'omega-design'), __('Relaxing treatments to refresh your mind and body.', 'omega-design'), 'service-spa-wellness.jpg'],
+	['content-cut',       __('Hair Styling', 'omega-design'),  __('Trendy cuts, styling, coloring and more for your perfect look.', 'omega-design'), 'service-hair-styling.webp'],
+	['spa',               __('Skin & Facial', 'omega-design'), __('Rejuvenating facials and advanced skin treatments.', 'omega-design'), 'service-skin-facial.webp'],
+	['brush',             __('Nails & Beauty', 'omega-design'), __('Manicure, pedicure and nail art for every style.', 'omega-design'), 'service-nails-beauty.webp'],
+	['self-improvement',  __('Spa & Wellness', 'omega-design'), __('Relaxing treatments to refresh your mind and body.', 'omega-design'), 'service-spa-wellness.webp'],
 ], $build_service_card);
 ?>
 <?php echo $section_close; ?>
@@ -259,7 +259,7 @@ echo $build_row([
 
 <!-- wp:column {"verticalAlignment":"center","width":"50%"} -->
 <div class="wp-block-column is-vertically-aligned-center" style="flex-basis:50%">
-<!-- wp:image {"className":"omega-salon-about__image","sizeSlug":"large"} --><figure class="wp-block-image size-large omega-salon-about__image"><img src="<?php echo $salon_img('about.jpg'); ?>" alt="<?php esc_attr_e('Stylist working in the salon', 'omega-design'); ?>"/></figure><!-- /wp:image -->
+<!-- wp:image {"className":"omega-salon-about__image","sizeSlug":"large"} --><figure class="wp-block-image size-large omega-salon-about__image"><img src="<?php echo $salon_img('about.webp'); ?>" alt="<?php esc_attr_e('Stylist working in the salon', 'omega-design'); ?>"/></figure><!-- /wp:image -->
 </div>
 <!-- /wp:column -->
 
@@ -296,10 +296,10 @@ echo $build_row([
 <?php echo $section_heading(__('Signature Treatments', 'omega-design'), __('Experience our most loved beauty treatments, curated by experts.', 'omega-design')); ?>
 <?php
 echo $build_row([
-	[__('Premium Hair Makeover', 'omega-design'), __('Cut, color & styling', 'omega-design'), '$120', __('90 mins', 'omega-design'), 'treatment-hair-makeover.jpg'],
-	[__('Hydrating Facial', 'omega-design'),      __('Deep cleansing & glow', 'omega-design'), '$80', __('60 mins', 'omega-design'), 'treatment-hydrating-facial.jpg'],
-	[__('Luxury Manicure', 'omega-design'),       __('Premium nail care', 'omega-design'), '$50', __('45 mins', 'omega-design'), 'treatment-luxury-manicure.jpg'],
-	[__('Relaxing Body Massage', 'omega-design'), __('Full body relaxation', 'omega-design'), '$90', __('60 mins', 'omega-design'), 'treatment-body-massage.jpg'],
+	[__('Premium Hair Makeover', 'omega-design'), __('Cut, color & styling', 'omega-design'), '$120', __('90 mins', 'omega-design'), 'treatment-hair-makeover.webp'],
+	[__('Hydrating Facial', 'omega-design'),      __('Deep cleansing & glow', 'omega-design'), '$80', __('60 mins', 'omega-design'), 'treatment-hydrating-facial.webp'],
+	[__('Luxury Manicure', 'omega-design'),       __('Premium nail care', 'omega-design'), '$50', __('45 mins', 'omega-design'), 'treatment-luxury-manicure.webp'],
+	[__('Relaxing Body Massage', 'omega-design'), __('Full body relaxation', 'omega-design'), '$90', __('60 mins', 'omega-design'), 'treatment-body-massage.webp'],
 ], $build_treatment_card);
 ?>
 <?php echo $section_close; ?>
@@ -323,9 +323,9 @@ echo $build_row([
 <div class="wp-block-column" style="flex-basis:76%">
 <?php
 echo $build_row([
-	[__('Skin transformation', 'omega-design'), 'face-before.jpg', 'face-after.jpg'],
-	[__('Hair transformation', 'omega-design'), 'hair-before.jpg', 'hair-after.jpg'],
-	[__('Hand & nail care transformation', 'omega-design'), 'hand-before.jpg', 'hand-after.jpg'],
+	[__('Skin transformation', 'omega-design'), 'face-before.webp', 'face-after.webp'],
+	[__('Hair transformation', 'omega-design'), 'hair-before.webp', 'hair-after.webp'],
+	[__('Hand & nail care transformation', 'omega-design'), 'hand-before.webp', 'hand-after.webp'],
 ], $build_before_after);
 ?>
 </div>
@@ -368,7 +368,7 @@ echo $build_row([
 <div class="wp-block-column" style="flex-basis:50%">
 <!-- wp:group {"className":"omega-salon-offer__art","layout":{"type":"constrained"}} -->
 <div class="wp-block-group omega-salon-offer__art">
-<!-- wp:image {"className":"omega-salon-offer__image","sizeSlug":"large"} --><figure class="wp-block-image size-large omega-salon-offer__image"><img src="<?php echo $salon_img('offer.png'); ?>" alt="<?php esc_attr_e('Relaxed client after a treatment', 'omega-design'); ?>"/></figure><!-- /wp:image -->
+<!-- wp:image {"className":"omega-salon-offer__image","sizeSlug":"large"} --><figure class="wp-block-image size-large omega-salon-offer__image"><img src="<?php echo $salon_img('offer.webp'); ?>" alt="<?php esc_attr_e('Relaxed client after a treatment', 'omega-design'); ?>"/></figure><!-- /wp:image -->
 <!-- wp:group {"className":"omega-salon-offer__badge","layout":{"type":"flex","orientation":"vertical","justifyContent":"center"}} -->
 <div class="wp-block-group omega-salon-offer__badge">
 <!-- wp:paragraph {"align":"center","className":"omega-salon-offer__badge-value","textColor":"heading"} --><p class="has-text-align-center omega-salon-offer__badge-value has-heading-color has-text-color"><?php esc_html_e('20%', 'omega-design'); ?></p><!-- /wp:paragraph -->
@@ -390,10 +390,10 @@ echo $build_row([
 <!-- wp:omega-design/slider {"autoplay":true,"autoplaySpeed":6000,"showArrows":true,"showDots":false,"slidesPerView":3,"slidesPerViewTablet":2,"slidesPerViewMobile":1,"gap":"24px","className":"omega-testimonial-slider omega-salon-slider","prevLabel":"Previous testimonials","nextLabel":"Next testimonials","dotsLabel":"Testimonials"} -->
 <div class="wp-block-omega-design-slider omega-testimonial-slider omega-salon-slider omega-slider" data-autoplay="1" data-autoplay-speed="6000" data-loop="1" data-arrows="1" data-dots="0" data-spv="3" data-spv-tablet="2" data-spv-mobile="1" data-gap="24px" data-prev-label="Previous testimonials" data-next-label="Next testimonials" data-dots-label="Testimonials" data-effect="slide" data-thumbnails="0" data-progress-bar="0" data-peek="0">
 <?php
-echo $build_testimonial(__('Sarah Ahmed', 'omega-design'), __('Absolutely love the service! The staff are so professional and the results are amazing. Best salon experience ever.', 'omega-design'), 'avatar-3.jpg');
-echo $build_testimonial(__('Emily Carter', 'omega-design'), __('The facial treatment was incredible. My skin has never looked better! Highly recommended.', 'omega-design'), 'avatar-2.jpg');
-echo $build_testimonial(__('Priya Sharma', 'omega-design'), __('Such a relaxing and luxurious experience. The team really makes you feel special. I\'ll definitely be back!', 'omega-design'), 'avatar-4.jpg');
-echo $build_testimonial(__('Layla Hassan', 'omega-design'), __('From booking to the final look, everything was flawless. My hair has never felt so healthy.', 'omega-design'), 'avatar-1.jpg');
+echo $build_testimonial(__('Sarah Ahmed', 'omega-design'), __('Absolutely love the service! The staff are so professional and the results are amazing. Best salon experience ever.', 'omega-design'), 'avatar-3.webp');
+echo $build_testimonial(__('Emily Carter', 'omega-design'), __('The facial treatment was incredible. My skin has never looked better! Highly recommended.', 'omega-design'), 'avatar-2.webp');
+echo $build_testimonial(__('Priya Sharma', 'omega-design'), __('Such a relaxing and luxurious experience. The team really makes you feel special. I\'ll definitely be back!', 'omega-design'), 'avatar-4.webp');
+echo $build_testimonial(__('Layla Hassan', 'omega-design'), __('From booking to the final look, everything was flawless. My hair has never felt so healthy.', 'omega-design'), 'avatar-1.webp');
 ?>
 </div>
 <!-- /wp:omega-design/slider -->
@@ -421,7 +421,7 @@ echo $build_testimonial(__('Layla Hassan', 'omega-design'), __('From booking to 
 <!-- wp:group {"className":"omega-salon-instagram__grid","layout":{"type":"grid","columnCount":6}} -->
 <div class="wp-block-group omega-salon-instagram__grid">
 <?php for ($i = 1; $i <= 6; $i++) : ?>
-<!-- wp:image {"className":"omega-rounded-image","sizeSlug":"medium"} --><figure class="wp-block-image size-medium omega-rounded-image"><img src="<?php echo $salon_img('instagram-' . $i . '.jpg'); ?>" alt="<?php esc_attr_e('Instagram post', 'omega-design'); ?>"/></figure><!-- /wp:image -->
+<!-- wp:image {"className":"omega-rounded-image","sizeSlug":"medium"} --><figure class="wp-block-image size-medium omega-rounded-image"><img src="<?php echo $salon_img('instagram-' . $i . '.webp'); ?>" alt="<?php esc_attr_e('Instagram post', 'omega-design'); ?>"/></figure><!-- /wp:image -->
 <?php endfor; ?>
 </div>
 <!-- /wp:group -->
@@ -434,7 +434,7 @@ echo $build_testimonial(__('Layla Hassan', 'omega-design'), __('From booking to 
 
 <?php // CTA ?>
 <?php echo $section_open('omega-salon-cta', 'secondary'); ?>
-<!-- wp:image {"className":"omega-salon-cta__bg","sizeSlug":"full"} --><figure class="wp-block-image size-full omega-salon-cta__bg"><img src="<?php echo $salon_img('cta.jpg'); ?>" alt=""/></figure><!-- /wp:image -->
+<!-- wp:image {"className":"omega-salon-cta__bg","sizeSlug":"full"} --><figure class="wp-block-image size-full omega-salon-cta__bg"><img src="<?php echo $salon_img('cta.webp'); ?>" alt=""/></figure><!-- /wp:image -->
 <!-- wp:columns {"align":"wide","verticalAlignment":"center","className":"omega-salon-cta__content"} -->
 <div class="wp-block-columns alignwide are-vertically-aligned-center omega-salon-cta__content">
 <!-- wp:column {"verticalAlignment":"center","width":"55%"} -->

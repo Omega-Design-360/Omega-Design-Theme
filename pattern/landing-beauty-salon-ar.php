@@ -209,7 +209,7 @@ foreach ([['500+', __('عميلة سعيدة', 'omega-design')], ['5+', __('سن
 <div class="wp-block-column" style="flex-basis:52%">
 <!-- wp:group {"className":"omega-salon-hero-art","layout":{"type":"constrained"}} -->
 <div class="wp-block-group omega-salon-hero-art">
-<!-- wp:image {"className":"omega-salon-hero-portrait","sizeSlug":"large"} --><figure class="wp-block-image size-large omega-salon-hero-portrait"><img src="<?php echo $salon_img('hero.png'); ?>" alt="<?php esc_attr_e('صورة عارضة صالون التجميل', 'omega-design'); ?>"/></figure><!-- /wp:image -->
+<!-- wp:image {"className":"omega-salon-hero-portrait","sizeSlug":"large"} --><figure class="wp-block-image size-large omega-salon-hero-portrait"><img src="<?php echo $salon_img('hero.webp'); ?>" alt="<?php esc_attr_e('صورة عارضة صالون التجميل', 'omega-design'); ?>"/></figure><!-- /wp:image -->
 <!-- wp:paragraph {"className":"omega-salon-script omega-salon-hero-tagline","textColor":"primary"} --><p class="omega-salon-script omega-salon-hero-tagline has-primary-color has-text-color"><?php esc_html_e('الجمال', 'omega-design'); ?><br><?php esc_html_e('يليق', 'omega-design'); ?><br><?php esc_html_e('بكِ', 'omega-design'); ?></p><!-- /wp:paragraph -->
 <!-- wp:group {"className":"omega-salon-rating-card","backgroundColor":"surface","layout":{"type":"constrained"}} -->
 <div class="wp-block-group omega-salon-rating-card has-surface-background-color has-background">
@@ -218,7 +218,7 @@ foreach ([['500+', __('عميلة سعيدة', 'omega-design')], ['5+', __('سن
 <!-- wp:group {"className":"omega-salon-avatars","layout":{"type":"flex","flexWrap":"nowrap"}} -->
 <div class="wp-block-group omega-salon-avatars">
 <?php for ($i = 1; $i <= 4; $i++) : ?>
-<!-- wp:image {"className":"omega-round-image omega-avatar-md","sizeSlug":"thumbnail"} --><figure class="wp-block-image size-thumbnail omega-round-image omega-avatar-md"><img src="<?php echo $salon_img('avatar-' . $i . '.jpg'); ?>" alt="<?php esc_attr_e('عميلة سعيدة', 'omega-design'); ?>"/></figure><!-- /wp:image -->
+<!-- wp:image {"className":"omega-round-image omega-avatar-md","sizeSlug":"thumbnail"} --><figure class="wp-block-image size-thumbnail omega-round-image omega-avatar-md"><img src="<?php echo $salon_img('avatar-' . $i . '.webp'); ?>" alt="<?php esc_attr_e('عميلة سعيدة', 'omega-design'); ?>"/></figure><!-- /wp:image -->
 <?php endfor; ?>
 <!-- wp:paragraph {"className":"omega-salon-avatars__more"} --><p class="omega-salon-avatars__more">+</p><!-- /wp:paragraph -->
 </div>
@@ -248,10 +248,10 @@ foreach ([['500+', __('عميلة سعيدة', 'omega-design')], ['5+', __('سن
 <!-- /wp:group -->
 <?php
 echo $build_row([
-	['content-cut',       __('تصفيف الشعر', 'omega-design'),  __('قصّات عصرية وتصفيف وصبغات وأكثر لإطلالة مثالية.', 'omega-design'), 'service-hair-styling.jpg'],
-	['spa',               __('العناية بالبشرة', 'omega-design'), __('جلسات لنضارة الوجه وعلاجات متقدمة للبشرة.', 'omega-design'), 'service-skin-facial.jpg'],
-	['brush',             __('الأظافر والتجميل', 'omega-design'), __('مانيكير وباديكير وفن الأظافر لكل الأذواق.', 'omega-design'), 'service-nails-beauty.jpg'],
-	['self-improvement',  __('السبا والاسترخاء', 'omega-design'), __('علاجات مريحة تجدد نشاط الجسم والذهن.', 'omega-design'), 'service-spa-wellness.jpg'],
+	['content-cut',       __('تصفيف الشعر', 'omega-design'),  __('قصّات عصرية وتصفيف وصبغات وأكثر لإطلالة مثالية.', 'omega-design'), 'service-hair-styling.webp'],
+	['spa',               __('العناية بالبشرة', 'omega-design'), __('جلسات لنضارة الوجه وعلاجات متقدمة للبشرة.', 'omega-design'), 'service-skin-facial.webp'],
+	['brush',             __('الأظافر والتجميل', 'omega-design'), __('مانيكير وباديكير وفن الأظافر لكل الأذواق.', 'omega-design'), 'service-nails-beauty.webp'],
+	['self-improvement',  __('السبا والاسترخاء', 'omega-design'), __('علاجات مريحة تجدد نشاط الجسم والذهن.', 'omega-design'), 'service-spa-wellness.webp'],
 ], $build_service_card);
 ?>
 <?php echo $section_close; ?>
@@ -264,7 +264,7 @@ echo $build_row([
 
 <!-- wp:column {"verticalAlignment":"center","width":"50%"} -->
 <div class="wp-block-column is-vertically-aligned-center" style="flex-basis:50%">
-<!-- wp:image {"className":"omega-salon-about__image","sizeSlug":"large"} --><figure class="wp-block-image size-large omega-salon-about__image"><img src="<?php echo $salon_img('about.jpg'); ?>" alt="<?php esc_attr_e('خبيرة تصفيف تعمل في الصالون', 'omega-design'); ?>"/></figure><!-- /wp:image -->
+<!-- wp:image {"className":"omega-salon-about__image","sizeSlug":"large"} --><figure class="wp-block-image size-large omega-salon-about__image"><img src="<?php echo $salon_img('about.webp'); ?>" alt="<?php esc_attr_e('خبيرة تصفيف تعمل في الصالون', 'omega-design'); ?>"/></figure><!-- /wp:image -->
 </div>
 <!-- /wp:column -->
 
@@ -301,10 +301,10 @@ echo $build_row([
 <?php echo $section_heading(__('علاجاتنا المميزة', 'omega-design'), __('استمتعي بأكثر علاجات التجميل طلباً، بإشراف خبيراتنا.', 'omega-design')); ?>
 <?php
 echo $build_row([
-	[__('تحوّل كامل للشعر', 'omega-design'), __('قص وصبغ وتصفيف', 'omega-design'), '120 ر.س', __('90 دقيقة', 'omega-design'), 'treatment-hair-makeover.jpg'],
-	[__('جلسة ترطيب للوجه', 'omega-design'),      __('تنظيف عميق ونضارة', 'omega-design'), '80 ر.س', __('60 دقيقة', 'omega-design'), 'treatment-hydrating-facial.jpg'],
-	[__('مانيكير فاخر', 'omega-design'),       __('عناية فائقة بالأظافر', 'omega-design'), '50 ر.س', __('45 دقيقة', 'omega-design'), 'treatment-luxury-manicure.jpg'],
-	[__('مساج استرخاء للجسم', 'omega-design'), __('استرخاء كامل للجسم', 'omega-design'), '90 ر.س', __('60 دقيقة', 'omega-design'), 'treatment-body-massage.jpg'],
+	[__('تحوّل كامل للشعر', 'omega-design'), __('قص وصبغ وتصفيف', 'omega-design'), '120 ر.س', __('90 دقيقة', 'omega-design'), 'treatment-hair-makeover.webp'],
+	[__('جلسة ترطيب للوجه', 'omega-design'),      __('تنظيف عميق ونضارة', 'omega-design'), '80 ر.س', __('60 دقيقة', 'omega-design'), 'treatment-hydrating-facial.webp'],
+	[__('مانيكير فاخر', 'omega-design'),       __('عناية فائقة بالأظافر', 'omega-design'), '50 ر.س', __('45 دقيقة', 'omega-design'), 'treatment-luxury-manicure.webp'],
+	[__('مساج استرخاء للجسم', 'omega-design'), __('استرخاء كامل للجسم', 'omega-design'), '90 ر.س', __('60 دقيقة', 'omega-design'), 'treatment-body-massage.webp'],
 ], $build_treatment_card);
 ?>
 <?php echo $section_close; ?>
@@ -328,9 +328,9 @@ echo $build_row([
 <div class="wp-block-column" style="flex-basis:76%">
 <?php
 echo $build_row([
-	[__('تحوّل البشرة', 'omega-design'), 'face-before.jpg', 'face-after.jpg'],
-	[__('تحوّل الشعر', 'omega-design'), 'hair-before.jpg', 'hair-after.jpg'],
-	[__('تحوّل العناية باليدين والأظافر', 'omega-design'), 'hand-before.jpg', 'hand-after.jpg'],
+	[__('تحوّل البشرة', 'omega-design'), 'face-before.webp', 'face-after.webp'],
+	[__('تحوّل الشعر', 'omega-design'), 'hair-before.webp', 'hair-after.webp'],
+	[__('تحوّل العناية باليدين والأظافر', 'omega-design'), 'hand-before.webp', 'hand-after.webp'],
 ], $build_before_after);
 ?>
 </div>
@@ -373,7 +373,7 @@ echo $build_row([
 <div class="wp-block-column" style="flex-basis:50%">
 <!-- wp:group {"className":"omega-salon-offer__art","layout":{"type":"constrained"}} -->
 <div class="wp-block-group omega-salon-offer__art">
-<!-- wp:image {"className":"omega-salon-offer__image","sizeSlug":"large"} --><figure class="wp-block-image size-large omega-salon-offer__image"><img src="<?php echo $salon_img('offer.png'); ?>" alt="<?php esc_attr_e('عميلة مسترخية بعد الجلسة', 'omega-design'); ?>"/></figure><!-- /wp:image -->
+<!-- wp:image {"className":"omega-salon-offer__image","sizeSlug":"large"} --><figure class="wp-block-image size-large omega-salon-offer__image"><img src="<?php echo $salon_img('offer.webp'); ?>" alt="<?php esc_attr_e('عميلة مسترخية بعد الجلسة', 'omega-design'); ?>"/></figure><!-- /wp:image -->
 <!-- wp:group {"className":"omega-salon-offer__badge","layout":{"type":"flex","orientation":"vertical","justifyContent":"center"}} -->
 <div class="wp-block-group omega-salon-offer__badge">
 <!-- wp:paragraph {"align":"center","className":"omega-salon-offer__badge-value","textColor":"heading"} --><p class="has-text-align-center omega-salon-offer__badge-value has-heading-color has-text-color"><?php esc_html_e('20%', 'omega-design'); ?></p><!-- /wp:paragraph -->
@@ -395,10 +395,10 @@ echo $build_row([
 <!-- wp:omega-design/slider {"autoplay":true,"autoplaySpeed":6000,"showArrows":true,"showDots":false,"slidesPerView":3,"slidesPerViewTablet":2,"slidesPerViewMobile":1,"gap":"24px","className":"omega-testimonial-slider omega-salon-slider","prevLabel":"الآراء السابقة","nextLabel":"الآراء التالية","dotsLabel":"آراء العميلات"} -->
 <div class="wp-block-omega-design-slider omega-testimonial-slider omega-salon-slider omega-slider" data-autoplay="1" data-autoplay-speed="6000" data-loop="1" data-arrows="1" data-dots="0" data-spv="3" data-spv-tablet="2" data-spv-mobile="1" data-gap="24px" data-prev-label="الآراء السابقة" data-next-label="الآراء التالية" data-dots-label="آراء العميلات" data-effect="slide" data-thumbnails="0" data-progress-bar="0" data-peek="0">
 <?php
-echo $build_testimonial(__('سارة أحمد', 'omega-design'), __('أحببت الخدمة كثيراً! الطاقم محترف جداً والنتائج مذهلة. أفضل تجربة صالون على الإطلاق.', 'omega-design'), 'avatar-3.jpg');
-echo $build_testimonial(__('نورة القحطاني', 'omega-design'), __('جلسة العناية بالوجه كانت رائعة. لم تبدُ بشرتي أجمل من ذلك! أنصح بها بشدة.', 'omega-design'), 'avatar-2.jpg');
-echo $build_testimonial(__('ريم العتيبي', 'omega-design'), __('تجربة مريحة وفاخرة للغاية. الفريق يُشعركِ بأنكِ مميزة. سأعود بالتأكيد!', 'omega-design'), 'avatar-4.jpg');
-echo $build_testimonial(__('ليلى حسن', 'omega-design'), __('من الحجز حتى الإطلالة النهائية، كان كل شيء مثالياً. لم يكن شعري بهذه الصحة من قبل.', 'omega-design'), 'avatar-1.jpg');
+echo $build_testimonial(__('سارة أحمد', 'omega-design'), __('أحببت الخدمة كثيراً! الطاقم محترف جداً والنتائج مذهلة. أفضل تجربة صالون على الإطلاق.', 'omega-design'), 'avatar-3.webp');
+echo $build_testimonial(__('نورة القحطاني', 'omega-design'), __('جلسة العناية بالوجه كانت رائعة. لم تبدُ بشرتي أجمل من ذلك! أنصح بها بشدة.', 'omega-design'), 'avatar-2.webp');
+echo $build_testimonial(__('ريم العتيبي', 'omega-design'), __('تجربة مريحة وفاخرة للغاية. الفريق يُشعركِ بأنكِ مميزة. سأعود بالتأكيد!', 'omega-design'), 'avatar-4.webp');
+echo $build_testimonial(__('ليلى حسن', 'omega-design'), __('من الحجز حتى الإطلالة النهائية، كان كل شيء مثالياً. لم يكن شعري بهذه الصحة من قبل.', 'omega-design'), 'avatar-1.webp');
 ?>
 </div>
 <!-- /wp:omega-design/slider -->
@@ -426,7 +426,7 @@ echo $build_testimonial(__('ليلى حسن', 'omega-design'), __('من الحج
 <!-- wp:group {"className":"omega-salon-instagram__grid","layout":{"type":"grid","columnCount":6}} -->
 <div class="wp-block-group omega-salon-instagram__grid">
 <?php for ($i = 1; $i <= 6; $i++) : ?>
-<!-- wp:image {"className":"omega-rounded-image","sizeSlug":"medium"} --><figure class="wp-block-image size-medium omega-rounded-image"><img src="<?php echo $salon_img('instagram-' . $i . '.jpg'); ?>" alt="<?php esc_attr_e('منشور إنستغرام', 'omega-design'); ?>"/></figure><!-- /wp:image -->
+<!-- wp:image {"className":"omega-rounded-image","sizeSlug":"medium"} --><figure class="wp-block-image size-medium omega-rounded-image"><img src="<?php echo $salon_img('instagram-' . $i . '.webp'); ?>" alt="<?php esc_attr_e('منشور إنستغرام', 'omega-design'); ?>"/></figure><!-- /wp:image -->
 <?php endfor; ?>
 </div>
 <!-- /wp:group -->
@@ -439,7 +439,7 @@ echo $build_testimonial(__('ليلى حسن', 'omega-design'), __('من الحج
 
 <?php // CTA ?>
 <?php echo $section_open('omega-salon-cta', 'secondary'); ?>
-<!-- wp:image {"className":"omega-salon-cta__bg","sizeSlug":"full"} --><figure class="wp-block-image size-full omega-salon-cta__bg"><img src="<?php echo $salon_img('cta.jpg'); ?>" alt=""/></figure><!-- /wp:image -->
+<!-- wp:image {"className":"omega-salon-cta__bg","sizeSlug":"full"} --><figure class="wp-block-image size-full omega-salon-cta__bg"><img src="<?php echo $salon_img('cta.webp'); ?>" alt=""/></figure><!-- /wp:image -->
 <!-- wp:columns {"align":"wide","verticalAlignment":"center","className":"omega-salon-cta__content"} -->
 <div class="wp-block-columns alignwide are-vertically-aligned-center omega-salon-cta__content">
 <!-- wp:column {"verticalAlignment":"center","width":"55%"} -->
