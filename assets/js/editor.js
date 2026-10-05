@@ -1027,7 +1027,7 @@
 					setResponsiveBackground(props, change);
 				}
 			}),
-			!image && createElement('p', { style: { margin: '0 0 12px', color: '#757575', fontSize: '12px' } },
+			!image && createElement('p', { style: { margin: '0 0 12px', color: '#757575', fontSize: '0.75rem' } },
 				device === 'mobile'
 					? __('No mobile image - uses the tablet image, or the desktop one.', 'omega-design')
 					: __('No tablet image - uses the desktop image.', 'omega-design')),
@@ -1125,6 +1125,35 @@
 		return layout.type || (props.name === 'core/group' ? 'flow' : '');
 	}
 
+	function isGridLayoutGroup(name, layout) {
+		return name === 'core/group' && !!layout && layout.type === 'grid';
+	}
+
+	var GRID_GAP_PROPERTIES = { rowGap: 'row-gap', columnGap: 'column-gap' };
+
+	// Allowed whole-grid position values (justify-content/align-content) -
+	// same list as responsive_styles.php GRID_CONTENT_VALUES.
+	var GRID_CONTENT_VALUES = ['start', 'center', 'end', 'space-between', 'space-around', 'space-evenly'];
+
+	/**
+	 * A Grid Group's separate row/column gaps for one device - same as
+	 * responsive_styles.php grid_gap_declarations(). Printed after any
+	 * single "gap" so either axis can override it.
+	 */
+	function gridGapDeclarations(settings) {
+		return Object.keys(GRID_GAP_PROPERTIES).reduce(function (css, key) {
+			return settings[key] ? css + GRID_GAP_PROPERTIES[key] + ':' + settings[key] + ' !important;' : css;
+		}, '');
+	}
+
+	/** Row gap + Column gap fields for a Grid Group, on any device tab. */
+	function gridGapFields(props, device, settings) {
+		return [
+			unitField(props, device, settings, 'rowGap', __('Row gap', 'omega-design')),
+			unitField(props, device, settings, 'columnGap', __('Column gap', 'omega-design'))
+		];
+	}
+
 	function getResponsiveSettings(attributes, device) {
 		return getStyleGroup(attributes, 'omegaResponsive')[device] || {};
 	}
@@ -1175,6 +1204,12 @@
 			}
 			if (gridMap[settings.valign]) {
 				self += 'align-items:' + gridMap[settings.valign] + ' !important;';
+			}
+			if (GRID_CONTENT_VALUES.indexOf(settings.gridJustifyContent) !== -1) {
+				self += 'justify-content:' + settings.gridJustifyContent + ' !important;';
+			}
+			if (GRID_CONTENT_VALUES.indexOf(settings.gridAlignContent) !== -1) {
+				self += 'align-content:' + settings.gridAlignContent + ' !important;';
 			}
 		}
 
@@ -1231,6 +1266,10 @@
 			self += 'gap:' + settings.gap + ' !important;';
 		}
 
+		if (isGridLayoutGroup(name, layout)) {
+			self += gridGapDeclarations(settings);
+		}
+
 		if (settings.padding) {
 			['top', 'right', 'bottom', 'left'].forEach(function (side) {
 				if (settings.padding[side]) {
@@ -1281,15 +1320,24 @@
 	 * layout/dimensions controls.
 	 */
 	function renderResponsiveLayoutDesktop(props) {
+		if (isGridLayoutGroup(props.name, props.attributes.layout)) {
+			return createElement('div', { key: 'desktop', style: { display: 'grid', gap: '16px', paddingTop: '12px' } },
+				gridGapFields(props, 'desktop', getResponsiveSettings(props.attributes, 'desktop')).concat([
+					createElement('p', { key: 'help', style: { margin: 0, color: '#757575', fontSize: '0.75rem' } },
+						__('Leave empty to use the block spacing. Tablet and Mobile use these unless set on their own tabs.', 'omega-design'))
+				])
+			);
+		}
+
 		if (props.name === 'core/group' && !isFlexOrGridLayout(props.attributes)) {
 			return createElement('div', { key: 'desktop', style: { display: 'grid', gap: '8px', paddingTop: '12px' } },
 				renderContentPosition(props, getCustomSize(props.attributes)),
-				createElement('p', { style: { margin: 0, color: '#757575', fontSize: '12px' } },
+				createElement('p', { style: { margin: 0, color: '#757575', fontSize: '0.75rem' } },
 					__('Moves the content up or down within the block\'s height. Tablet and Mobile use this unless their Content alignment is set.', 'omega-design'))
 			);
 		}
 
-		return createElement('p', { key: 'desktop', style: { margin: '12px 0 0', color: '#757575', fontSize: '12px' } },
+		return createElement('p', { key: 'desktop', style: { margin: '12px 0 0', color: '#757575', fontSize: '0.75rem' } },
 			__('Desktop uses this block\'s normal layout settings. Use the Tablet and Mobile tabs to change them on smaller screens.', 'omega-design'));
 	}
 
@@ -1331,6 +1379,8 @@
 				[1, 2, 3, 4, 5, 6].map(function (n) { return opt(String(n), String(n)); })));
 			fields.push(selectField(props, device, settings, 'justify', justifyLabel, justifyOptions.concat([stretchOption])));
 			fields.push(selectField(props, device, settings, 'valign', valignLabel, valignOptions));
+			fields.push(selectField(props, device, settings, 'gridJustifyContent', __('Whole grid: horizontal position', 'omega-design'), GRID_CONTENT_JUSTIFY_OPTIONS));
+			fields.push(selectField(props, device, settings, 'gridAlignContent', __('Whole grid: vertical position', 'omega-design'), GRID_CONTENT_ALIGN_OPTIONS));
 		}
 
 		if (name === 'core/columns') {
@@ -1346,7 +1396,14 @@
 			fields.push(selectField(props, device, settings, 'valign', valignLabel, noStretch));
 		}
 
-		if ((name === 'core/group' && type !== 'flow') || name === 'core/columns') {
+		if (isGridLayoutGroup(name, props.attributes.layout)) {
+			fields = fields.concat(gridGapFields(props, device, settings));
+			// Older grids may still carry the single Gap - shown only then,
+			// so it can be cleared.
+			if (settings.gap) {
+				fields.push(unitField(props, device, settings, 'gap', __('Gap (both directions)', 'omega-design')));
+			}
+		} else if ((name === 'core/group' && type !== 'flow') || name === 'core/columns') {
 			fields.push(unitField(props, device, settings, 'gap', __('Gap', 'omega-design')));
 		}
 
@@ -1397,14 +1454,18 @@
 
 			var device = getCurrentDeviceType();
 			var all = (props.attributes.style && props.attributes.style.omegaResponsive) || {};
-			if (device === 'desktop' || (!all.tablet && !all.mobile)) {
-				return createElement(BlockListBlock, props);
-			}
-
 			var sel = '#block-' + props.clientId;
-			var css = deviceCascadeCss(all, device, function (settings) {
-				return buildLayoutRules(settings, props.name, props.attributes.layout, sel);
-			});
+
+			// A Grid's desktop row/column gaps apply on every device; the
+			// tablet/mobile cascade is layered on top.
+			var desktopGaps = isGridLayoutGroup(props.name, props.attributes.layout) ? gridGapDeclarations(all.desktop || {}) : '';
+			var css = desktopGaps ? sel + '{' + desktopGaps + '}' : '';
+
+			if (device !== 'desktop' && (all.tablet || all.mobile)) {
+				css += deviceCascadeCss(all, device, function (settings) {
+					return buildLayoutRules(settings, props.name, props.attributes.layout, sel);
+				});
+			}
 
 			if (!css) {
 				return createElement(BlockListBlock, props);
@@ -1707,7 +1768,7 @@
 		var settings = ((props.attributes.omegaImage || {})[device]) || {};
 		var inheritNote = device === 'desktop'
 			? null
-			: createElement('p', { key: 'note', style: { margin: 0, fontSize: '12px', color: '#757575' } },
+			: createElement('p', { key: 'note', style: { margin: 0, fontSize: '0.75rem', color: '#757575' } },
 				device === 'tablet'
 					? __('Leave a field empty to use the Desktop value.', 'omega-design')
 					: __('Leave a field empty to use the Tablet (or Desktop) value.', 'omega-design'));
@@ -2417,7 +2478,7 @@
 	 * attribute registration.
 	 */
 	function isGridGroup(props) {
-		return props.name === 'core/group' && !!props.attributes.layout && props.attributes.layout.type === 'grid';
+		return isGridLayoutGroup(props.name, props.attributes.layout);
 	}
 
 	var GRID_ALIGN_UNSET = '';
@@ -2436,6 +2497,30 @@
 		{ label: __('Stretch', 'omega-design'), value: 'stretch' }
 	];
 
+	// Whole-grid position inside the block (justify-content/align-content) -
+	// visible when the columns don't fill the width, or the block is taller
+	// than its rows (e.g. a Minimum height).
+	var GRID_CONTENT_JUSTIFY_OPTIONS = [
+		{ label: __('Left', 'omega-design'), value: 'start' },
+		{ label: __('Center', 'omega-design'), value: 'center' },
+		{ label: __('Right', 'omega-design'), value: 'end' },
+		{ label: __('Space between', 'omega-design'), value: 'space-between' },
+		{ label: __('Space around', 'omega-design'), value: 'space-around' },
+		{ label: __('Space evenly', 'omega-design'), value: 'space-evenly' }
+	];
+
+	var GRID_CONTENT_ALIGN_OPTIONS = [
+		{ label: __('Top', 'omega-design'), value: 'start' },
+		{ label: __('Middle', 'omega-design'), value: 'center' },
+		{ label: __('Bottom', 'omega-design'), value: 'end' },
+		{ label: __('Space between', 'omega-design'), value: 'space-between' },
+		{ label: __('Space around', 'omega-design'), value: 'space-around' },
+		{ label: __('Space evenly', 'omega-design'), value: 'space-evenly' }
+	];
+
+	// omegaGridAlign key -> CSS property (camelCase, for React styles).
+	var GRID_ALIGN_PROPERTIES = ['justifyItems', 'alignItems', 'justifyContent', 'alignContent'];
+
 	function getGridAlign(attributes) {
 		return getStyleGroup(attributes, 'omegaGridAlign');
 	}
@@ -2448,8 +2533,11 @@
 	function getGridAlignCSS(gridAlign) {
 		var style = {};
 
-		if (gridAlign.justifyItems) { style.justifyItems = gridAlign.justifyItems; }
-		if (gridAlign.alignItems) { style.alignItems = gridAlign.alignItems; }
+		GRID_ALIGN_PROPERTIES.forEach(function (key) {
+			if (gridAlign[key]) {
+				style[key] = gridAlign[key];
+			}
+		});
 
 		return style;
 	}
@@ -2498,13 +2586,29 @@
 									{ className: 'omega-toolbar-popover' },
 									createElement(
 										BaseControl,
-										{ label: __('Horizontal Align', 'omega-design') },
+										{ label: __('Items: Horizontal Align', 'omega-design') },
 										renderOptionGroup(GRID_JUSTIFY_OPTIONS, 'justifyItems', gridAlign.justifyItems)
 									),
 									createElement(
 										BaseControl,
-										{ label: __('Vertical Align', 'omega-design') },
+										{ label: __('Items: Vertical Align', 'omega-design') },
 										renderOptionGroup(GRID_ALIGN_OPTIONS, 'alignItems', gridAlign.alignItems)
+									),
+									createElement(
+										BaseControl,
+										{
+											label: __('Whole grid: Horizontal Position', 'omega-design'),
+											help: __('Shows when the columns are narrower than the block.', 'omega-design')
+										},
+										renderOptionGroup(GRID_CONTENT_JUSTIFY_OPTIONS, 'justifyContent', gridAlign.justifyContent)
+									),
+									createElement(
+										BaseControl,
+										{
+											label: __('Whole grid: Vertical Position', 'omega-design'),
+											help: __('Shows when the block is taller than its rows (e.g. a Minimum height).', 'omega-design')
+										},
+										renderOptionGroup(GRID_CONTENT_ALIGN_OPTIONS, 'alignContent', gridAlign.alignContent)
 									)
 								);
 							}
@@ -2548,7 +2652,7 @@
 	 * needed.
 	 */
 	addFilter('blocks.getSaveContent.extraProps', 'omega-design/grid-align-save', function (extraProps, blockType, attributes) {
-		if (blockType.name !== 'core/group' || !attributes.layout || attributes.layout.type !== 'grid') {
+		if (!isGridLayoutGroup(blockType.name, attributes.layout)) {
 			return extraProps;
 		}
 

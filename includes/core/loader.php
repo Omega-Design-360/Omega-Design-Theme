@@ -110,6 +110,7 @@ class loader {
             'github_updater'            => self::module($core . 'github_updater'),
             'license'                   => self::module($core . 'license', 5, []),
             'theme_setup'               => self::module($core . 'theme_setup', 10, []),
+            'elementor'                 => self::module('OmegaDesign\\compat\\elementor'),
         ];
     }
 

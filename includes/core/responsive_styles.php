@@ -49,6 +49,9 @@ class responsive_styles {
         'space-between' => 'space-between',
     ];
 
+    /** Allowed whole-grid position values (editor.js GRID_CONTENT_VALUES). */
+    const GRID_CONTENT_VALUES = ['start', 'center', 'end', 'space-between', 'space-around', 'space-evenly'];
+
     /** Layout keyword => grid item alignment value. */
     const GRID_MAP = [
         'left'    => 'start',
@@ -269,7 +272,11 @@ class responsive_styles {
             return $block_content;
         }
 
-        $css = '';
+        // A Grid's desktop row/column gaps apply everywhere; the tablet/
+        // mobile media queries below override them.
+        $css = self::is_grid_group($name, $block['attrs']['layout'] ?? [])
+            ? self::rule('STRONG', self::grid_gap_declarations($responsive['desktop'] ?? []))
+            : '';
         foreach (self::BREAKPOINTS as $device => $max_width) {
             $base_decl = $this->build_size_declarations($dimensions, $device)
                 . $this->build_align_declarations($align, $device)
@@ -392,6 +399,10 @@ class responsive_styles {
 
         $self .= self::shared_layout_declarations($settings, $name);
 
+        if (self::is_grid_group($name, $layout)) {
+            $self .= self::grid_gap_declarations($settings);
+        }
+
         // A Column's own rule has to outweigh its parent Columns' child rule
         // (STRONG>.wp-block-column, e.g. "Side by side"); matching that
         // specificity lets the Column's rule, printed later, win.
@@ -492,7 +503,35 @@ class responsive_styles {
             $self .= 'align-items:' . self::GRID_MAP[$valign] . ' !important;';
         }
 
+        // Whole-grid position inside the block - values are CSS as-is.
+        foreach (['gridJustifyContent' => 'justify-content', 'gridAlignContent' => 'align-content'] as $key => $property) {
+            $value = $pick($key, self::GRID_CONTENT_VALUES);
+            if ($value !== '') {
+                $self .= $property . ':' . $value . ' !important;';
+            }
+        }
+
         return $self;
+    }
+
+    /**
+     * A Grid Group's separate row/column gaps for one device (editor.js
+     * gridGapDeclarations()) - printed after any single "gap" so either
+     * axis can override it.
+     */
+    private static function grid_gap_declarations($settings) {
+        $self = '';
+        foreach (['rowGap' => 'row-gap', 'columnGap' => 'column-gap'] as $key => $property) {
+            $value = self::sanitize_css_value($settings[$key] ?? '');
+            if ($value !== '') {
+                $self .= $property . ':' . $value . ' !important;';
+            }
+        }
+        return $self;
+    }
+
+    private static function is_grid_group($name, $layout) {
+        return 'core/group' === $name && 'grid' === ($layout['type'] ?? '');
     }
 
     /**

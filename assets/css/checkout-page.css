@@ -427,7 +427,7 @@ select {
 	.wc-block-components-select-input select,
 	.wc-blocks-components-select__select,
 	.wc-block-components-textarea {
-		font-size: 16px !important;
+		font-size: 1rem !important;
 	}
 
 	.wc-block-checkout__shipping-method-option,

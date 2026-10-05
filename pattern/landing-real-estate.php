@@ -1,0 +1,167 @@
+<?php
+/**
+ * Title: Landing Page - Real Estate
+ * Slug: omega-design/landing-real-estate
+ * Categories: omega-design-general
+ * Description: A dark green, gold and cream real estate landing page ("Arab Real Estates") - its own header, a hero with stats and a property search bar, popular property cards, a "Why choose us" section, categories, an investment banner, services, agents, testimonials, a closing call-to-action and its own footer. Every image, heading and line of copy is editable after inserting.
+ * Keywords: landing page, real estate, property, properties, villa, apartment, agents, realtor
+ * Viewport Width: 1400
+ *
+ * English copy for the shared layout in
+ * includes/patterns/landing-real-estate-builder.php - the Arabic version
+ * (landing-real-estate-ar.php) uses the same keys.
+ */
+
+defined('ABSPATH') || exit;
+
+$re_lang = 'en';
+$re_text = [
+	'arrow'                  => '→',
+	'quote_open'             => '“',
+	'quote_close'            => '”',
+	'logo_name'              => __('ARAB', 'omega-design'),
+	'logo_tag'               => __('REAL ESTATES', 'omega-design'),
+	'nav_home'               => __('Home', 'omega-design'),
+	'nav_properties'         => __('Properties', 'omega-design'),
+	'nav_about'              => __('About', 'omega-design'),
+	'nav_services'           => __('Services', 'omega-design'),
+	'nav_agents'             => __('Agents', 'omega-design'),
+	'nav_contact'            => __('Contact', 'omega-design'),
+	'list_property'          => __('Explore Your Next Home', 'omega-design'),
+
+	'hero_eyebrow'           => __('Find Your Perfect Home', 'omega-design'),
+	'hero_title'             => __('Modern Living Starts Here', 'omega-design'),
+	'hero_lead'              => __('Discover premium properties in Saudi Arabia. Buy, rent or invest with confidence.', 'omega-design'),
+	'hero_alt'               => __('Modern luxury villa with a pool', 'omega-design'),
+	'explore'                => __('Explore Properties', 'omega-design'),
+	'watch_video'            => __('Watch Video', 'omega-design'),
+	'stat_properties'        => __('Properties', 'omega-design'),
+	'stat_clients'           => __('Happy Clients', 'omega-design'),
+	'stat_years'             => __('Years Experience', 'omega-design'),
+
+	'tab_buy'                => __('Buy', 'omega-design'),
+	'tab_rent'               => __('Rent', 'omega-design'),
+	'tab_commercial'         => __('Commercial', 'omega-design'),
+	'field_location'         => __('Location', 'omega-design'),
+	'field_location_value'   => __('Riyadh, Saudi Arabia', 'omega-design'),
+	'field_type'             => __('Property Type', 'omega-design'),
+	'field_type_value'       => __('Any Type', 'omega-design'),
+	'field_price'            => __('Price Range', 'omega-design'),
+	'field_price_value'      => __('Any Price', 'omega-design'),
+	'field_bedrooms'         => __('Bedrooms', 'omega-design'),
+	'field_bedrooms_value'   => __('Any', 'omega-design'),
+	'search'                 => __('Search', 'omega-design'),
+
+	'featured_eyebrow'       => __('Featured Properties', 'omega-design'),
+	'featured_title'         => __('Popular Properties', 'omega-design'),
+	'featured_subtitle'      => __('Discover our handpicked selection of premium properties.', 'omega-design'),
+	'featured_button'        => __('View All Properties', 'omega-design'),
+	'for_sale'               => __('For Sale', 'omega-design'),
+	'for_rent'               => __('For Rent', 'omega-design'),
+	'p1_title'               => __('Luxury Villa in Riyadh', 'omega-design'),
+	'p1_location'            => __('Riyadh, Saudi Arabia', 'omega-design'),
+	'p1_beds'                => __('5 Beds', 'omega-design'),
+	'p1_baths'               => __('6 Baths', 'omega-design'),
+	'p1_area'                => '450 m²',
+	'p1_price'               => __('SAR 3,500,000', 'omega-design'),
+	'p2_title'               => __('Modern Apartment', 'omega-design'),
+	'p2_location'            => __('Jeddah, Saudi Arabia', 'omega-design'),
+	'p2_beds'                => __('3 Beds', 'omega-design'),
+	'p2_baths'               => __('3 Baths', 'omega-design'),
+	'p2_area'                => '180 m²',
+	'p2_price'               => __('SAR 120,000 / year', 'omega-design'),
+	'p3_title'               => __('Family Home', 'omega-design'),
+	'p3_location'            => __('Dammam, Saudi Arabia', 'omega-design'),
+	'p3_beds'                => __('4 Beds', 'omega-design'),
+	'p3_baths'               => __('4 Baths', 'omega-design'),
+	'p3_area'                => '320 m²',
+	'p3_price'               => __('SAR 2,800,000', 'omega-design'),
+	'p4_title'               => __('Luxury Apartment', 'omega-design'),
+	'p4_location'            => __('Riyadh, Saudi Arabia', 'omega-design'),
+	'p4_beds'                => __('2 Beds', 'omega-design'),
+	'p4_baths'               => __('2 Baths', 'omega-design'),
+	'p4_area'                => '150 m²',
+	'p4_price'               => __('SAR 95,000 / year', 'omega-design'),
+
+	'why_eyebrow'            => __('Why Choose Arab Real Estates', 'omega-design'),
+	'why_title'              => __('Your Trusted Real Estate Partner', 'omega-design'),
+	'why_text'               => __('We make buying, renting and investing in property simple, transparent and rewarding. Our local expertise and personalized service ensure you find the perfect property.', 'omega-design'),
+	'why_alt'                => __('Luxury villa with a pool at dusk', 'omega-design'),
+	'f1_title'               => __('Verified Properties', 'omega-design'),
+	'f1_text'                => __('100% verified listings', 'omega-design'),
+	'f2_title'               => __('Expert Guidance', 'omega-design'),
+	'f2_text'                => __('Local market experts', 'omega-design'),
+	'f3_title'               => __('Secure Transactions', 'omega-design'),
+	'f3_text'                => __('Safe and transparent', 'omega-design'),
+	'f4_title'               => __('Personalized Service', 'omega-design'),
+	'f4_text'                => __('Tailored to your needs', 'omega-design'),
+
+	'categories_eyebrow'     => __('Property Categories', 'omega-design'),
+	'categories_title'       => __('Explore by Category', 'omega-design'),
+	'categories_button'      => __('View All Categories', 'omega-design'),
+	'c1_title'               => __('Villas', 'omega-design'),
+	'c1_text'                => __('Luxury villas for family living', 'omega-design'),
+	'c2_title'               => __('Apartments', 'omega-design'),
+	'c2_text'                => __('Modern apartments in prime locations', 'omega-design'),
+	'c3_title'               => __('Commercial', 'omega-design'),
+	'c3_text'                => __('Offices and business spaces', 'omega-design'),
+	'c4_title'               => __('Land', 'omega-design'),
+	'c4_text'                => __('Investment opportunities', 'omega-design'),
+
+	'invest_eyebrow'         => __('Invest in Your Future', 'omega-design'),
+	'invest_title_1'         => __('Prime Locations.', 'omega-design'),
+	'invest_title_2'         => __('Higher Returns.', 'omega-design'),
+	'invest_lead'            => __('Explore investment opportunities in Saudi Arabia’s fastest-growing areas.', 'omega-design'),
+	'invest_button'          => __('View Investment Properties', 'omega-design'),
+	'invest_alt'             => __('Riyadh skyline at dusk', 'omega-design'),
+
+	'services_eyebrow'       => __('Our Services', 'omega-design'),
+	'services_title'         => __('Complete Real Estate Solutions', 'omega-design'),
+	's1_title'               => __('Buy Property', 'omega-design'),
+	's1_text'                => __('Find your dream home', 'omega-design'),
+	's2_title'               => __('Rent Property', 'omega-design'),
+	's2_text'                => __('Flexible rental options', 'omega-design'),
+	's3_title'               => __('Sell Property', 'omega-design'),
+	's3_text'                => __('Get the best value', 'omega-design'),
+	's4_title'               => __('Property Management', 'omega-design'),
+	's4_text'                => __('Hassle-free management', 'omega-design'),
+
+	'agents_eyebrow'         => __('Our Agents', 'omega-design'),
+	'agents_title'           => __('Meet Our Experts', 'omega-design'),
+	'agents_button'          => __('View All Agents', 'omega-design'),
+	'a1_name'                => __('Ahmed Al-Fahad', 'omega-design'),
+	'a1_role'                => __('Senior Property Consultant', 'omega-design'),
+	'a2_name'                => __('Sara Al-Mansouri', 'omega-design'),
+	'a2_role'                => __('Luxury Property Specialist', 'omega-design'),
+	'a3_name'                => __('Khalid Al-Saud', 'omega-design'),
+	'a3_role'                => __('Investment Advisor', 'omega-design'),
+	'a4_name'                => __('Noor Al-Harbi', 'omega-design'),
+	'a4_role'                => __('Client Relations', 'omega-design'),
+
+	'testimonials_eyebrow'   => __('What Our Clients Say', 'omega-design'),
+	'testimonials_title'     => __('Trusted by Hundreds of Clients', 'omega-design'),
+	't1_quote'               => __('Excellent service and professional team. They helped us find the perfect villa for our family.', 'omega-design'),
+	't1_name'                => __('Fahad Al-Qahtani', 'omega-design'),
+	't1_city'                => __('Riyadh', 'omega-design'),
+	't2_quote'               => __('Smooth process from start to finish. Highly recommended!', 'omega-design'),
+	't2_name'                => __('Aisha Al-Zahrani', 'omega-design'),
+	't2_city'                => __('Jeddah', 'omega-design'),
+	't3_quote'               => __('Very professional and knowledgeable team. Great investment opportunities.', 'omega-design'),
+	't3_name'                => __('Mohammed Al-Harbi', 'omega-design'),
+	't3_city'                => __('Dammam', 'omega-design'),
+
+	'cta_title_1'            => __('Ready to Find Your', 'omega-design'),
+	'cta_title_2'            => __('Dream Property?', 'omega-design'),
+	'cta_lead'               => __('Get in touch with our experts today and take the first step towards owning your perfect home.', 'omega-design'),
+	'cta_alt'                => __('Villa terrace and pool at sunset', 'omega-design'),
+	'contact_us'             => __('Contact Us', 'omega-design'),
+
+	'newsletter_label'       => __('Subscribe to Our Newsletter', 'omega-design'),
+	'newsletter_placeholder' => __('Your email address', 'omega-design'),
+	'newsletter_success'     => __("Thanks — you're on the list!", 'omega-design'),
+	'copyright'              => __('Arab Real Estates. All rights reserved.', 'omega-design'),
+	'privacy'                => __('Privacy Policy', 'omega-design'),
+	'terms'                  => __('Terms & Conditions', 'omega-design'),
+];
+
+include OMEGA_DESIGN_INCLUDES . '/patterns/landing-real-estate-builder.php';

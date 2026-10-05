@@ -56,6 +56,26 @@ class hooks {
         add_filter('block_categories_all', [$this, 'register_block_categories'], 10, 2);
         add_filter('render_block', [$this, 'modify_block_render'], 10, 2);
         add_filter('body_class', [$this, 'add_design_body_classes']);
+        add_filter('page_template_hierarchy', [$this, 'maybe_use_landing_template']);
+        add_filter('frontpage_template_hierarchy', [$this, 'maybe_use_landing_template']);
+    }
+
+    /**
+     * A landing pattern that brings its own header and footer (wrapper class
+     * omega-landing--standalone, e.g. Real Estate) needs the "Landing Page
+     * (No Header/Footer)" template, or the theme's header and footer show
+     * around it too. A page started from the pattern in the New Page
+     * starter picker keeps the default template, so it's switched here -
+     * only while no template was chosen for the page explicitly.
+     */
+    public function maybe_use_landing_template($templates) {
+        $post = get_queried_object();
+        if (!$post instanceof \WP_Post || get_page_template_slug($post) || false === strpos($post->post_content, 'omega-landing--standalone')) {
+            return $templates;
+        }
+
+        array_unshift($templates, 'landing-page.php');
+        return $templates;
     }
 
     private function register_hooks() {
@@ -221,6 +241,7 @@ class hooks {
         'beauty-salon',
         'jewelry-store',
         'blog-hub',
+        'real-estate',
     ];
 
     /**

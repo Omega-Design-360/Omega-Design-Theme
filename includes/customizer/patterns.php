@@ -197,10 +197,19 @@ class patterns {
     /**
      * Changes whenever a pattern file - or a templates/shop-*.html file the
      * Shop section patterns are built from (see pattern_helpers::
-     * shop_section()) - is added, removed or edited.
+     * shop_section()), or a shared builder in includes/patterns/ that
+     * several pattern files include - is added, removed or edited.
      */
     private static function patterns_cache_key(array $files) {
-        $source_files = array_merge($files, (array) glob(get_template_directory() . '/templates/shop-*.html'));
+        // The image folders too: patterns check which of their photos exist
+        // (falling back to a placeholder), so adding, removing or replacing
+        // an image there has to rebuild them just like editing a pattern.
+        $source_files = array_merge(
+            $files,
+            (array) glob(get_template_directory() . '/templates/shop-*.html'),
+            (array) glob(get_template_directory() . '/includes/patterns/*.php'),
+            (array) glob(get_template_directory() . '/assets/images/*', GLOB_ONLYDIR)
+        );
 
         return 'omega_patterns_' . md5(implode('|', array_map(function ($file) {
             return $file . ':' . filemtime($file);

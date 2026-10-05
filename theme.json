@@ -324,52 +324,53 @@
           {
             "name": "X-Small",
             "slug": "x-small",
-            "size": "0.75rem",
-            "fluid": { "min": "0.6875rem", "max": "0.75rem" }
+            "size": "0.7rem",
+            "fluid": false
           },
           {
             "name": "Small",
             "slug": "small",
-            "size": "0.875rem",
-            "fluid": { "min": "0.8125rem", "max": "0.9375rem" }
+            "size": "0.8rem",
+            "fluid": false
           },
           {
             "name": "Medium",
             "slug": "medium",
-            "size": "1rem",
-            "fluid": { "min": "0.9375rem", "max": "1.125rem" }
+            "size": "1.2rem",
+            "fluid": false
           },
           {
             "name": "Large",
             "slug": "large",
-            "size": "1.25rem",
-            "fluid": { "min": "1.125rem", "max": "1.5rem" }
+            "size": "1.4rem",
+            "fluid": false
           },
           {
             "name": "X-Large",
             "slug": "x-large",
-            "size": "1.75rem",
-            "fluid": { "min": "1.375rem", "max": "2.25rem" }
+            "size": "1.8rem",
+            "fluid": false
           },
           {
             "name": "XX-Large",
             "slug": "xx-large",
-            "size": "2.5rem",
-            "fluid": { "min": "1.875rem", "max": "3.25rem" }
+            "size": "2.4rem",
+            "fluid": false
           },
           {
             "name": "XXX-Large",
             "slug": "xxx-large",
-            "size": "3.5rem",
-            "fluid": { "min": "2.25rem", "max": "4.5rem" }
+            "size": "2.8rem",
+            "fluid": false
           }
         ],
+        "defaultFontSizes": false,
         "customFontSize": true,
         "letterSpacing": true,
         "textTransform": true,
         "dropCap": true,
         "fluid": {
-          "minFontSize": "14px",
+          "minFontSize": "0.875rem",
           "minViewportWidth": "375px",
           "maxViewportWidth": "1600px"
         }
@@ -589,6 +590,11 @@
     }
   ],
   "customTemplates": [
+    {
+      "name": "landing-page",
+      "title": "Landing Page (No Header/Footer)",
+      "postTypes": ["page"]
+    },
     {
       "name": "blog-hub",
       "title": "Blog Hub",

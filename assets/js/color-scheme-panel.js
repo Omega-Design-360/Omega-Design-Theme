@@ -166,7 +166,7 @@
 				},
 				swatch(shown),
 				el('span', { style: { flex: 1, textAlign: 'left' } }, props.label),
-				el('code', { style: { fontSize: '11px', opacity: own ? 1 : 0.55 } }, own || toHex(props.effective) || '-'));
+				el('code', { style: { fontSize: '0.6875rem', opacity: own ? 1 : 0.55 } }, own || toHex(props.effective) || '-'));
 			},
 			renderContent: function () {
 				return el('div', { style: { padding: '8px' } },

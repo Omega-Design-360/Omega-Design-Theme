@@ -90,12 +90,21 @@ class patterns_cache {
         return 'omega_patterns_rest_' . substr(md5(wp_json_encode($request->get_query_params()) . '|' . self::files_version()), 0, 30);
     }
 
-    /** Changes whenever a theme pattern file is added, removed or edited. */
+    /**
+     * Changes whenever a theme pattern file is added, removed or edited -
+     * or an image folder changes, since patterns swap in a placeholder for
+     * any photo that isn't there yet (same as patterns::patterns_cache_key()).
+     */
     private static function files_version() {
         static $version = null;
         if (null === $version) {
             $dir   = get_template_directory();
-            $files = array_merge((array) glob($dir . '/pattern/*.php'), (array) glob($dir . '/templates/shop-*.html'));
+            $files = array_merge(
+                (array) glob($dir . '/pattern/*.php'),
+                (array) glob($dir . '/templates/shop-*.html'),
+                (array) glob($dir . '/includes/patterns/*.php'),
+                (array) glob($dir . '/assets/images/*', GLOB_ONLYDIR)
+            );
             $stamp = '';
             foreach ($files as $file) {
                 $stamp .= $file . ':' . @filemtime($file) . '|';

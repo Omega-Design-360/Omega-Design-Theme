@@ -178,7 +178,7 @@
 		return createElement(
 			'div',
 			{ style: { marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' } },
-			createElement('label', { style: { fontSize: '12px' } }, label),
+			createElement('label', { style: { fontSize: '0.75rem' } }, label),
 			createElement('input', {
 				type: 'color',
 				value: /^#[0-9a-fA-F]{6}$/.test(value) ? value : '#000000',
@@ -305,7 +305,7 @@
 					: createElement('div', {
 						style: Object.assign({
 							display: 'flex', alignItems: 'center', justifyContent: 'center',
-							background: '#e0e0e0', color: '#757575', fontSize: '13px'
+							background: '#e0e0e0', color: '#757575', fontSize: '0.8125rem'
 						}, imageStyle(currentSlide))
 					}, __('Click to add an image', 'omega-design'))
 			);
@@ -540,7 +540,7 @@
 						createElement('p', { style: { marginTop: 0 } }, __('Editing slide:', 'omega-design')),
 						slideSwitcher,
 						slideActions,
-						createElement('p', { style: { fontSize: '12px', color: '#757575' } }, __('Tip: click directly on the slide background, its image, or its text in the preview to jump straight to that panel below.', 'omega-design'))
+						createElement('p', { style: { fontSize: '0.75rem', color: '#757575' } }, __('Tip: click directly on the slide background, its image, or its text in the preview to jump straight to that panel below.', 'omega-design'))
 					),
 					backgroundPanel,
 					imagePanel,
@@ -554,7 +554,7 @@
 						'div',
 						{ style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' } },
 						createElement(Button, { variant: 'secondary', size: 'small', disabled: currentIndex === 0, onClick: function () { setCurrentIndex(currentIndex - 1); } }, __('← Prev', 'omega-design')),
-						createElement('span', { style: { fontSize: '12px', color: '#757575' } }, __('Editing slide', 'omega-design') + ' ' + (currentIndex + 1) + ' / ' + slides.length),
+						createElement('span', { style: { fontSize: '0.75rem', color: '#757575' } }, __('Editing slide', 'omega-design') + ' ' + (currentIndex + 1) + ' / ' + slides.length),
 						createElement(Button, { variant: 'secondary', size: 'small', disabled: currentIndex === slides.length - 1, onClick: function () { setCurrentIndex(currentIndex + 1); } }, __('Next →', 'omega-design'))
 					),
 					previewSlide

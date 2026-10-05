@@ -1,0 +1,23 @@
+Real Estate template demo photos - from Unsplash (https://unsplash.com),
+free to use under the Unsplash License (https://unsplash.com/license).
+Replace them with your own photos any time (same file names).
+
+Hero-Image.webp            - provided by the site owner
+property-1.webp            - Avi Werde                 https://unsplash.com/photos/hHz4yrvxwlA
+property-2.webp            - Huy Nguyen                https://unsplash.com/photos/AB-q9lwCVv8
+property-3.webp            - Salman Saqib              https://unsplash.com/photos/URD4NdWyd60
+property-4.webp            - Eddie Zhang               https://unsplash.com/photos/W3WOkKd_7zI
+why-choose.webp            - John Fornander            https://unsplash.com/photos/Id7u0EkTjBE
+category-villas.webp       - Ярослав Алексеенко        https://unsplash.com/photos/_TPTXZd9mOo
+category-apartments.webp   - Danilo Rios               https://unsplash.com/photos/AgK_XAqSbfk
+category-commercial.webp   - Christian Ladewig         https://unsplash.com/photos/T0iFfJw-rB0
+category-land.webp         - Wolfgang Hasselmann       https://unsplash.com/photos/pVr6wvUneMk
+invest-skyline.webp        - سيف الظاهر (Saif Aldhaher) https://unsplash.com/photos/vAkHAP27QMk
+cta-villa.webp             - Salman Saqib              https://unsplash.com/photos/WaC-JFfF21M
+agent-1.webp               - LinkedIn Sales Solutions  https://unsplash.com/photos/pAtA8xe_iVM
+agent-2.webp               - Good Faces                https://unsplash.com/photos/QDRCvXpP18U
+agent-3.webp               - Abdulrhman Alkhnaifer     https://unsplash.com/photos/I4B-IZ7cd-g
+agent-4.webp               - Fahri ramdani             https://unsplash.com/photos/IRPBoFtGLFM
+client-1.webp              - Christian Buehner         https://unsplash.com/photos/JQFHdpOKz2k
+client-2.webp              - Damon Zaidmus             https://unsplash.com/photos/7ncPcGL60-s
+client-3.webp              - abdullah ali              https://unsplash.com/photos/jyBYPwb_Soo

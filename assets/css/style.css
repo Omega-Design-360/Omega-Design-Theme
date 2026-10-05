@@ -1104,7 +1104,7 @@ body.omega-page-scheme-global .omega-landing {
 	padding: 6px 12px;
 	background: #1e1e1e;
 	color: #fff;
-	font: 600 12px/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, sans-serif;
+	font: 600 0.75rem/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, sans-serif;
 	text-align: center;
 	direction: ltr;
 	letter-spacing: 0;
@@ -1147,7 +1147,7 @@ body.omega-page-scheme-global .omega-landing {
 	padding: 0 14px;
 	border-radius: 999px;
 	color: #fff;
-	font: 600 13px/1 -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, sans-serif;
+	font: 600 0.8125rem/1 -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, sans-serif;
 	letter-spacing: 0;
 	text-decoration: none;
 	transition: background-color 0.2s ease, color 0.2s ease;
@@ -1155,7 +1155,7 @@ body.omega-page-scheme-global .omega-landing {
 
 .omega-lang-switch__link[lang="ar"] {
 	font-family: 'Tajawal', 'Segoe UI', Tahoma, sans-serif;
-	font-size: 14px;
+	font-size: 0.875rem;
 }
 
 .omega-lang-switch__link:hover,
