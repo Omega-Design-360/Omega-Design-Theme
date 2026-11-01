@@ -136,40 +136,13 @@ if (!defined('OMEGA_DESIGN_SCRIPT_DEBUG')) {
 }
 
 /**
- * Asset loading - minified or not
+ * Asset cache version used when an individual asset has no file timestamp.
  */
 if (OMEGA_DESIGN_DEV_MODE || OMEGA_DESIGN_SCRIPT_DEBUG) {
-    define('OMEGA_DESIGN_ASSET_SUFFIX', '');
     define('OMEGA_DESIGN_ASSET_VERSION', time());
 } else {
-    define('OMEGA_DESIGN_ASSET_SUFFIX', '.min');
     define('OMEGA_DESIGN_ASSET_VERSION', OMEGA_DESIGN_VERSION);
 }
-
-/**
- * Cache Busting Mode
- */
-define('OMEGA_DESIGN_CACHE_BUSTING', OMEGA_DESIGN_DEV_MODE ? time() : OMEGA_DESIGN_VERSION);
-
-/**
- * Memory Limits
- */
-define('OMEGA_DESIGN_MEMORY_LIMIT', wp_convert_hr_to_bytes(ini_get('memory_limit')));
-define('OMEGA_DESIGN_MAX_EXECUTION_TIME', ini_get('max_execution_time'));
-
-/**
- * Image Limits
- */
-define('OMEGA_DESIGN_MAX_IMAGE_WIDTH', 1920);
-define('OMEGA_DESIGN_MAX_IMAGE_HEIGHT', 1080);
-define('OMEGA_DESIGN_THUMBNAIL_WIDTH', 150);
-define('OMEGA_DESIGN_THUMBNAIL_HEIGHT', 150);
-
-/**
- * Query Limits
- */
-define('OMEGA_DESIGN_POSTS_PER_PAGE', get_option('posts_per_page', 10));
-define('OMEGA_DESIGN_MAX_POSTS_PER_REQUEST', 100);
 
 // Verify required constants exist before loading
 foreach (['OMEGA_DESIGN_INCLUDES', 'OMEGA_DESIGN_VERSION', 'OMEGA_DESIGN_DEV_MODE'] as $omega_design_constant) {

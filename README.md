@@ -28,7 +28,7 @@ Omega Design emphasizes simplicity and adaptability. It offers flexible design o
 
 | Requirement       | Minimum |
 |--------------------|---------|
-| WordPress          | 5.8 (6.7+ recommended, tested up to 6.9) |
+| WordPress          | 6.7 (tested up to 6.9) |
 | PHP                | 7.4 |
 | WooCommerce        | Optional — required only for shop features (built and tested against 11.0) |
 
@@ -122,15 +122,9 @@ git clone git@github.com:Omega-Design-360/OMEGA-DESIGN-THEME.git omega-design
 
 Then activate it from **Appearance → Themes** as above.
 
-### Optional: build tooling
+### Assets
 
-The theme ships with `@wordpress/scripts` as a dev dependency for any future editor/JS build steps. If you plan to modify the JS in `assets/js/`, install dependencies with:
-
-```bash
-npm install
-```
-
-(No build step is currently required to use the theme as-is — the assets in `assets/js/` and `assets/css/` are served directly, each versioned by its own file-modified time so an edit is picked up immediately without a manual cache-bust.)
+The theme serves its JavaScript and CSS directly from `assets/`; no npm install or build step is required.
 
 ---
 
@@ -159,57 +153,17 @@ npm install
 
 ```
 omega-design/
-├── admin/                    Admin-facing assets/screens
-├── assets/
-│   ├── css/                  Frontend & admin stylesheets:
-│   │   ├── style.css                  Site-wide base styles
-│   │   ├── admin.css / admin-pages.css  wp-admin toolbar logo + the Dashboard/Settings screens
-│   │   ├── classic-header.css / classic-footer.css / announcement-bar.css / megamenu.css
-│   │   ├── color-mode.css             Light/dark variable overrides
-│   │   ├── omega-icon-choreography.css  Omega Icon block hover animation
-│   │   ├── product-page-layouts.css / cart-page.css / checkout-page.css  WooCommerce storefront
-│   │   └── background-color-editor.css
-│   └── js/                   Frontend & editor scripts:
-│       ├── editor.js                  Block-editor extensions (Hover Colors, Link, etc.)
-│       ├── megamenu.js / classic-header.js / announcement-bar.js
-│       ├── color-mode-editor.js / background-color.js / content-width.js / title-toggle.js
-│       ├── hide-header-toggle.js / hide-footer-toggle.js / featured-image-toggle.js
-│       ├── checkout-auth-notice.js
-│       ├── product-page-interactions.js / cart-page-interactions.js / checkout-page-interactions.js
-│       └── admin-logo.js / admin-layout-picker.js / admin-settings-tabs.js
-├── blocks/
-│   └── omega-icon/           The Omega Icon block (block.json + index.js)
-├── includes/
-│   ├── core/                 Theme bootstrap:
-│   │   ├── core.php                   Autoloader & init
-│   │   ├── loader.php                 Module registry (priority/dependency ordered)
-│   │   ├── hooks.php                  Enqueueing, theme_setup(), block-render filters
-│   │   ├── blocks.php                 Registers the Omega Icon block
-│   │   ├── icons.php / icons-material.php   Material Symbols → core/icon library
-│   │   └── responsive_styles.php
-│   ├── customizer/           Theme settings modules (each independently registered in loader.php):
-│   │   ├── menus.php                  Omega Design admin pages (Dashboard/Settings) & the save handler
-│   │   ├── classic_header.php / classic_footer.php / woocommerce_header.php
-│   │   ├── header_visibility.php / footer_visibility.php / featured_image_visibility.php / title.php
-│   │   ├── megamenu.php / announcement_bar.php
-│   │   ├── color_mode.php / background_color.php / content_width.php / sidebar.php
-│   │   ├── product_page.php           The 5 Product Page layouts
-│   │   └── patterns.php
-│   ├── admin/ / metabox/ / helpers/    Admin screens, post-meta registrations, shared helpers
-├── parts/                    HTML template parts (header, footer, sidebar, megamenu, hero-sections, featured, testimonials, woocommerce)
-├── template-parts/
-│   ├── classic-header/        The 5 Classic Header layouts (PHP, included by classic_header.php)
-│   └── classic-footer/        The 5 Classic Footer layouts (PHP, included by classic_footer.php)
-├── pattern/                   Mega menu block patterns (Simple/Columns/Icon Grid/Featured/Posts)
-├── templates/                 Block templates: front-page, home, index, single, page, archive, category,
-│                               search, 404, privacy-policy, and the WooCommerce templates (single-product,
-│                               archive-product, page-cart, page-checkout, myaccount, order-confirmation, …)
-├── widgets/                   Custom widget definitions
-├── woocommerce/                Classic WooCommerce template overrides (legacy fallback path)
-├── functions.php               Constants, uploads directory setup, compatibility checks, nav menu registration
-├── theme.json                  Global styles & settings (FSE)
-├── style.css                   Theme header / stylesheet metadata — canonical Version: source
-└── package.json                 @wordpress/scripts dev dependency
+├── assets/           Frontend/editor CSS, JavaScript, fonts, icons, and images
+├── blocks/           Custom block definitions and render templates
+├── includes/         Core modules, Customizer modules, traits, and compatibility helpers
+├── parts/            Site Editor template parts
+├── pattern/          Block patterns
+├── templates/        Site Editor block templates
+├── template-parts/   Classic header and footer layouts
+├── woocommerce/      WooCommerce templates and classic overrides
+├── functions.php     Theme bootstrap
+├── theme.json        Global styles and settings
+└── style.css         Theme metadata and canonical version
 ```
 
 ---

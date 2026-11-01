@@ -2132,7 +2132,8 @@
 	var TEXT_STYLE_BLOCKS = [
 		'core/paragraph', 'core/heading', 'core/list', 'core/list-item',
 		'core/quote', 'core/pullquote', 'core/verse', 'core/preformatted',
-		'core/code', 'core/button'
+		'core/code', 'core/button', 'core/details',
+		'core/accordion-heading', 'woocommerce/accordion-header'
 	];
 
 	var BlockControls = wp.blockEditor.BlockControls;
