@@ -198,6 +198,10 @@ class hooks {
             $this->enqueue_checkout_page_assets();
         }
 
+        if (function_exists('is_account_page') && is_account_page()) {
+            self::enqueue_style('omega-design-account-page', 'css/account-page.css');
+        }
+
         // Blog page + post archives (category, tag, author, date): card grid
         // with scroll reveal - assets/css/blog-cards.css, assets/js/blog-cards.js.
         if (is_home() || is_category() || is_tag() || is_author() || is_date()) {

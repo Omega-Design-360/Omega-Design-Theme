@@ -22,9 +22,19 @@ defined( 'ABSPATH' ) || exit;
  *
  * @since 2.6.0
  */
-do_action( 'woocommerce_account_navigation' ); ?>
+?>
+<div class="omega-account-shell">
+	<header class="omega-account-heading">
+		<div>
+			<p class="omega-account-eyebrow"><?php esc_html_e( 'Your space', 'omega-design' ); ?></p>
+			<h1><?php esc_html_e( 'My account', 'woocommerce' ); ?></h1>
+			<p><?php esc_html_e( 'Manage your orders, addresses, and account details.', 'omega-design' ); ?></p>
+		</div>
+	</header>
+	<div class="omega-account-layout">
+		<?php do_action( 'woocommerce_account_navigation' ); ?>
 
-<div class="woocommerce-MyAccount-content">
+		<div class="woocommerce-MyAccount-content">
 	<?php
 		/**
 		 * My Account content.
@@ -33,4 +43,6 @@ do_action( 'woocommerce_account_navigation' ); ?>
 		 */
 		do_action( 'woocommerce_account_content' );
 	?>
+		</div>
+	</div>
 </div>
