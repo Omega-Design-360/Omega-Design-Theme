@@ -87,8 +87,12 @@ class featured_image_visibility {
         }
 
         $post_id = self::block_post_id($block);
+        $page_id = self::current_page_id();
 
-        if (!$post_id || !get_post_meta($post_id, self::META_KEY, true)) {
+        // Only hide the featured image belonging to the page being viewed.
+        // Query Loop cards must keep their thumbnails regardless of the
+        // individual post's hide setting.
+        if (!$post_id || !$page_id || $post_id !== $page_id || !get_post_meta($post_id, self::META_KEY, true)) {
             return $block_content;
         }
 

@@ -43,8 +43,12 @@ class title {
      */
     public function maybe_hide_title($block_content, $parsed_block, $block) {
         $post_id = self::block_post_id($block);
+        $page_id = self::current_page_id();
 
-        if (!$post_id || !get_post_meta($post_id, self::META_KEY, true)) {
+        // Only hide the title belonging to the page being viewed. Query Loop
+        // cards (including on the Posts page) belong to other posts and must
+        // retain their titles even if those posts hide their own page titles.
+        if (!$post_id || !$page_id || $post_id !== $page_id || !get_post_meta($post_id, self::META_KEY, true)) {
             return $block_content;
         }
 
