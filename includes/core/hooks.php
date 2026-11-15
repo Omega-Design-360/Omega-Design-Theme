@@ -49,6 +49,7 @@ class hooks {
     private function init_core_hooks() {
         add_filter('render_block_core/post-time-to-read', [$this, 'short_read_time'], 10, 2);
         add_action('wp_enqueue_scripts', [$this, 'enqueue_frontend_assets']);
+        add_action('wp_footer', [$this, 'render_scroll_to_top'], 20);
         add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_assets']);
         add_action('enqueue_block_assets', [$this, 'enqueue_block_assets']);
         add_action('enqueue_block_editor_assets', [$this, 'enqueue_editor_assets']);
@@ -172,6 +173,24 @@ class hooks {
         $this->register_assets();
         wp_enqueue_style('omega-design-style');
 
+        if (get_theme_mod('omega_scroll_top_enabled', true)) {
+            self::enqueue_style('omega-design-scroll-top', 'css/scroll-top.css', ['omega-design-style']);
+            self::enqueue_script('omega-design-scroll-top', 'js/scroll-top.js', [], ['in_footer' => true, 'strategy' => 'defer']);
+
+            $size = max(40, min(88, (int) get_theme_mod('omega_scroll_top_size', 56)));
+            $vertical_offset = max(0, min(800, (int) get_theme_mod('omega_scroll_top_vertical_offset', 260)));
+            $horizontal_offset = max(0, min(300, (int) get_theme_mod('omega_scroll_top_horizontal_offset', 0)));
+            $scroll_top_css = ':root{--omega-scroll-top-size:' . $size . 'px;--omega-scroll-top-vertical-offset:' . $vertical_offset . 'px;--omega-scroll-top-horizontal-offset:' . $horizontal_offset . 'px;';
+            if ('custom' === get_theme_mod('omega_scroll_top_color_mode', 'theme')) {
+                $background = sanitize_hex_color(get_theme_mod('omega_scroll_top_background', '#7c3aed')) ?: '#7c3aed';
+                $icon       = sanitize_hex_color(get_theme_mod('omega_scroll_top_icon', '#ffffff')) ?: '#ffffff';
+                $progress   = sanitize_hex_color(get_theme_mod('omega_scroll_top_progress', '#22d3ee')) ?: '#22d3ee';
+                $scroll_top_css .= '--omega-scroll-top-background:' . $background . ';--omega-scroll-top-icon:' . $icon . ';--omega-scroll-top-progress-color:' . $progress . ';';
+            }
+            $scroll_top_css .= '}';
+            wp_add_inline_style('omega-design-scroll-top', $scroll_top_css);
+        }
+
         if (is_admin_bar_showing()) {
             wp_add_inline_style('omega-design-style', $this->get_admin_bar_logo_css());
         }
@@ -209,6 +228,17 @@ class hooks {
             self::enqueue_script('omega-design-blog-cards', 'js/blog-cards.js', [self::core_script()], ['in_footer' => true, 'strategy' => 'defer']);
         }
 
+        if (is_singular('post')) {
+            $toc_script = OMEGA_DESIGN_BLOCKS . '/omega-post-toc/view.js';
+            wp_enqueue_script(
+                'omega-design-post-toc-view',
+                OMEGA_DESIGN_URI . '/blocks/omega-post-toc/view.js',
+                [],
+                file_exists($toc_script) ? filemtime($toc_script) : OMEGA_DESIGN_VERSION,
+                ['in_footer' => true, 'strategy' => 'defer']
+            );
+        }
+
         // The "Blog Hub" page template (templates/blog-hub.html) widens its
         // content area via the Blog Hub stylesheet, pattern or not.
         if (is_singular('page') && 'blog-hub' === get_page_template_slug()) {
@@ -222,6 +252,18 @@ class hooks {
         )) {
             $this->enqueue_landing_page_assets();
         }
+    }
+
+    /** Floating back-to-top control with page-scroll progress ring. */
+    public function render_scroll_to_top() {
+        if (is_admin() || !get_theme_mod('omega_scroll_top_enabled', true)) {
+            return;
+        }
+
+        echo '<button class="omega-scroll-top" type="button" aria-label="' . esc_attr__('Back to top', 'omega-design') . '" title="' . esc_attr__('Back to top', 'omega-design') . '" aria-hidden="true" tabindex="-1">';
+        echo '<svg class="omega-scroll-top__progress" viewBox="0 0 52 52" aria-hidden="true"><circle class="omega-scroll-top__track" cx="26" cy="26" r="23"></circle><circle class="omega-scroll-top__value" cx="26" cy="26" r="23"></circle></svg>';
+        echo '<svg class="omega-scroll-top__arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5m-7 7 7-7 7 7"></path></svg>';
+        echo '</button>';
     }
 
     /**
@@ -452,6 +494,11 @@ class hooks {
         if ('fill' !== $look && array_key_exists($look, menus::BUTTON_LOOK_CHOICES)) {
             $classes[] = 'omega-default-btn-' . $look;
         }
+
+        $scroll_top_position = get_theme_mod('omega_scroll_top_position', 'bottom-right');
+        if (in_array($scroll_top_position, ['bottom-right', 'bottom-left', 'top-right', 'top-left'], true)) {
+            $classes[] = 'omega-scroll-top-pos-' . $scroll_top_position;
+        }
         return $classes;
     }
 
@@ -516,6 +563,10 @@ class hooks {
     }
 
     public function modify_block_render($block_content, $block) {
+        if ('core/heading' === (string) ($block['blockName'] ?? '') && !empty($block['attrs']['omegaTocExclude'])) {
+            return block_html::add_class_to_first_tag($block_content, 'omega-toc-exclude');
+        }
+
         switch ((string) ($block['blockName'] ?? '')) {
             // Blocks that can carry an omegaLink (editor.js "Link" panel).
             case 'core/group':

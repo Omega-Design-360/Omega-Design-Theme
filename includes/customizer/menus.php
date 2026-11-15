@@ -30,6 +30,7 @@ class menus {
         'sidebar'       => 'save_sidebar_section',
         'typography'    => 'save_typography_section',
         'design'        => 'save_design_section',
+        'scroll_top'    => 'save_scroll_top_section',
         'logo'          => 'save_logo_section',
         'header_nav'    => 'save_header_nav_section',
         'announcement'  => 'save_announcement_section',
@@ -43,7 +44,7 @@ class menus {
      * omega_nonce_mode.
      */
     const NONCE_SECTIONS = [
-        'color_scheme', 'sidebar', 'typography', 'design', 'logo',
+        'color_scheme', 'sidebar', 'typography', 'design', 'scroll_top', 'logo',
         'header_nav', 'announcement', 'footer', 'product_page',
     ];
 
@@ -397,6 +398,7 @@ class menus {
         $sidebar = sidebar::get_instance();
 
         set_theme_mod('omega_enable_sidebar', self::posted_flag('omega_enable_sidebar'));
+        set_theme_mod('omega_post_toc_enabled', self::posted_flag('omega_post_toc_enabled'));
         set_theme_mod('omega_sidebar_position', $sidebar->sanitize_position(self::posted('omega_sidebar_position', 'right')));
         set_theme_mod('omega_sidebar_width', max(20, min(50, self::posted_absint('omega_sidebar_width', 30))));
         set_theme_mod('omega_sidebar_default_template', $sidebar->sanitize_template(self::posted('omega_sidebar_default_template', 'sidebar')));
@@ -415,6 +417,35 @@ class menus {
         self::save_choice_mod('omega_button_radius', 'omega_button_radius', self::BUTTON_RADIUS_CHOICES, 'soft');
         self::save_choice_mod('omega_button_look', 'omega_button_look', self::BUTTON_LOOK_CHOICES, 'fill');
         self::save_flag_mods(['omega_svg_uploads_enabled']);
+    }
+
+    private function save_scroll_top_section() {
+        $positions = ['bottom-right', 'bottom-left', 'top-right', 'top-left'];
+        $position  = self::posted('omega_scroll_top_position', 'bottom-right');
+        if (!in_array($position, $positions, true)) {
+            $position = 'bottom-right';
+        }
+
+        $color_mode = self::posted('omega_scroll_top_color_mode', 'theme');
+        if (!in_array($color_mode, ['theme', 'custom'], true)) {
+            $color_mode = 'theme';
+        }
+
+        set_theme_mod('omega_scroll_top_enabled', self::posted_flag('omega_scroll_top_enabled'));
+        set_theme_mod('omega_scroll_top_position', $position);
+        set_theme_mod('omega_scroll_top_size', max(40, min(88, self::posted_absint('omega_scroll_top_size', 56))));
+        set_theme_mod('omega_scroll_top_vertical_offset', max(0, min(800, self::posted_absint('omega_scroll_top_vertical_offset', 260))));
+        set_theme_mod('omega_scroll_top_horizontal_offset', max(0, min(300, self::posted_absint('omega_scroll_top_horizontal_offset', 0))));
+        set_theme_mod('omega_scroll_top_color_mode', $color_mode);
+
+        foreach (['background' => '#7c3aed', 'icon' => '#ffffff', 'progress' => '#22d3ee'] as $key => $default) {
+            $color = sanitize_hex_color(self::posted('omega_scroll_top_' . $key, $default));
+            set_theme_mod('omega_scroll_top_' . $key, $color ?: $default);
+        }
+
+        if (class_exists(\OmegaDesign\core\page_cache::class)) {
+            \OmegaDesign\core\page_cache::get_instance()->flush();
+        }
     }
 
     private function save_logo_section() {
@@ -1301,6 +1332,92 @@ class menus {
         <?php
     }
 
+    private function render_scroll_top_form($redirect_to) {
+        $enabled  = (bool) get_theme_mod('omega_scroll_top_enabled', true);
+        $position = get_theme_mod('omega_scroll_top_position', 'bottom-right');
+        $size     = max(40, min(88, (int) get_theme_mod('omega_scroll_top_size', 56)));
+        $vertical_offset = max(0, min(800, (int) get_theme_mod('omega_scroll_top_vertical_offset', 260)));
+        $horizontal_offset = max(0, min(300, (int) get_theme_mod('omega_scroll_top_horizontal_offset', 0)));
+        $color_mode = get_theme_mod('omega_scroll_top_color_mode', 'theme');
+        $background = sanitize_hex_color(get_theme_mod('omega_scroll_top_background', '#7c3aed')) ?: '#7c3aed';
+        $icon       = sanitize_hex_color(get_theme_mod('omega_scroll_top_icon', '#ffffff')) ?: '#ffffff';
+        $progress   = sanitize_hex_color(get_theme_mod('omega_scroll_top_progress', '#22d3ee')) ?: '#22d3ee';
+        ?>
+        <?php self::render_settings_form_open('scroll_top', 'omega_nonce_scroll_top', $redirect_to, 'omega-card'); ?>
+
+            <div class="omega-card__head">
+                <span class="dashicons dashicons-arrow-up-alt"></span>
+                <div>
+                    <h2><?php esc_html_e('Scroll to Top Button', 'omega-design'); ?></h2>
+                    <p><?php esc_html_e('Choose where the floating button appears and customize its size and colors.', 'omega-design'); ?></p>
+                </div>
+            </div>
+
+            <?php self::render_toggle('omega_scroll_top_enabled', $enabled, __('Enable scroll to top button', 'omega-design')); ?>
+
+            <div class="omega-field">
+                <label for="omega_scroll_top_position"><?php esc_html_e('Position', 'omega-design'); ?></label>
+                <select name="omega_scroll_top_position" id="omega_scroll_top_position">
+                    <?php
+                    $position_choices = [
+                        'bottom-right' => __('Bottom right', 'omega-design'),
+                        'bottom-left'  => __('Bottom left', 'omega-design'),
+                        'top-right'    => __('Top right', 'omega-design'),
+                        'top-left'     => __('Top left', 'omega-design'),
+                    ];
+                    foreach ($position_choices as $value => $label) :
+                    ?>
+                        <option value="<?php echo esc_attr($value); ?>" <?php selected($position, $value); ?>><?php echo esc_html($label); ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <p class="description"><?php esc_html_e('Bottom positions keep the current 260px clearance above the bottom edge.', 'omega-design'); ?></p>
+            </div>
+
+            <div class="omega-field">
+                <label for="omega_scroll_top_size"><?php esc_html_e('Button size', 'omega-design'); ?> (<span id="omega_scroll_top_size_value"><?php echo esc_html($size); ?></span>px)</label>
+                <input type="range" min="40" max="88" step="2" name="omega_scroll_top_size" id="omega_scroll_top_size" value="<?php echo esc_attr($size); ?>" oninput="document.getElementById('omega_scroll_top_size_value').textContent = this.value;" />
+            </div>
+
+            <div class="omega-field">
+                <label for="omega_scroll_top_vertical_offset"><?php esc_html_e('Up/down position', 'omega-design'); ?> (<span id="omega_scroll_top_vertical_offset_value"><?php echo esc_html($vertical_offset); ?></span>px)</label>
+                <input type="range" min="0" max="800" step="10" name="omega_scroll_top_vertical_offset" id="omega_scroll_top_vertical_offset" value="<?php echo esc_attr($vertical_offset); ?>" oninput="document.getElementById('omega_scroll_top_vertical_offset_value').textContent = this.value;" />
+                <p class="description"><?php esc_html_e('Distance inward from the selected top or bottom edge.', 'omega-design'); ?></p>
+            </div>
+
+            <div class="omega-field">
+                <label for="omega_scroll_top_horizontal_offset"><?php esc_html_e('Left/right position', 'omega-design'); ?> (<span id="omega_scroll_top_horizontal_offset_value"><?php echo esc_html($horizontal_offset); ?></span>px)</label>
+                <input type="range" min="0" max="300" step="5" name="omega_scroll_top_horizontal_offset" id="omega_scroll_top_horizontal_offset" value="<?php echo esc_attr($horizontal_offset); ?>" oninput="document.getElementById('omega_scroll_top_horizontal_offset_value').textContent = this.value;" />
+                <p class="description"><?php esc_html_e('Distance inward from the selected left or right edge.', 'omega-design'); ?></p>
+            </div>
+
+            <div class="omega-field">
+                <label for="omega_scroll_top_color_mode"><?php esc_html_e('Button colors', 'omega-design'); ?></label>
+                <select name="omega_scroll_top_color_mode" id="omega_scroll_top_color_mode">
+                    <option value="theme" <?php selected($color_mode, 'theme'); ?>><?php esc_html_e('Use active theme palette', 'omega-design'); ?></option>
+                    <option value="custom" <?php selected($color_mode, 'custom'); ?>><?php esc_html_e('Use custom colors', 'omega-design'); ?></option>
+                </select>
+            </div>
+
+            <div class="omega-field">
+                <label for="omega_scroll_top_background"><?php esc_html_e('Button background', 'omega-design'); ?></label>
+                <input type="color" name="omega_scroll_top_background" id="omega_scroll_top_background" value="<?php echo esc_attr($background); ?>" />
+            </div>
+
+            <div class="omega-field">
+                <label for="omega_scroll_top_icon"><?php esc_html_e('Arrow icon', 'omega-design'); ?></label>
+                <input type="color" name="omega_scroll_top_icon" id="omega_scroll_top_icon" value="<?php echo esc_attr($icon); ?>" />
+            </div>
+
+            <div class="omega-field">
+                <label for="omega_scroll_top_progress"><?php esc_html_e('Progress ring', 'omega-design'); ?></label>
+                <input type="color" name="omega_scroll_top_progress" id="omega_scroll_top_progress" value="<?php echo esc_attr($progress); ?>" />
+            </div>
+
+            <?php submit_button(__('Save Scroll Button Settings', 'omega-design'), 'omega-btn omega-btn--primary', 'omega_submit_scroll_top', false); ?>
+        </form>
+        <?php
+    }
+
     /**
      * Section map for the tabbed Settings screen: id => [label, icon]. One
      * panel per tab, switched client-side (assets/js/admin-settings-tabs.js)
@@ -1363,7 +1480,10 @@ class menus {
                     <section class="omega-settings-panel" data-panel="design">
                         <div class="omega-grid omega-grid--2">
                             <?php $this->render_color_scheme_form($tab_url('design')); ?>
-                            <?php $this->render_typography_form($tab_url('design')); ?>
+                            <div class="omega-stack">
+                                <?php $this->render_typography_form($tab_url('design')); ?>
+                                <?php $this->render_scroll_top_form($tab_url('design')); ?>
+                            </div>
                             <?php $this->render_design_form($tab_url('design')); ?>
                         </div>
                     </section>
@@ -1414,6 +1534,7 @@ class menus {
         $sidebar_position         = $sidebar->get_sidebar_position();
         $sidebar_width            = (int) get_theme_mod('omega_sidebar_width', 30);
         $sidebar_default_template = get_theme_mod('omega_sidebar_default_template', 'sidebar');
+        $post_toc_enabled         = (bool) get_theme_mod('omega_post_toc_enabled', true);
         ?>
         <?php self::render_settings_form_open('sidebar', 'omega_nonce_sidebar', $redirect_to, 'omega-card'); ?>
 
@@ -1426,6 +1547,9 @@ class menus {
 
             <?php self::render_toggle('omega_enable_sidebar', $sidebar_enabled, __('Enable sidebar', 'omega-design')); ?>
             <p class="description"><?php esc_html_e('Master switch for every page type below. A single post or page can still override this from its own Page Settings panel in the editor.', 'omega-design'); ?></p>
+
+            <?php self::render_toggle('omega_post_toc_enabled', $post_toc_enabled, __('Show Quick Overview on blog posts', 'omega-design')); ?>
+            <p class="description"><?php esc_html_e('Master switch for the Post Table of Contents block. The block itself can be moved, customized, or removed in the Site Editor sidebar.', 'omega-design'); ?></p>
 
             <div class="omega-field">
                 <label><?php esc_html_e('Position', 'omega-design'); ?></label>

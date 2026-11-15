@@ -2664,4 +2664,44 @@
 
 		return addSaveStyle(extraProps, style);
 	});
+
+	/** Per-heading toolbar toggle for including a heading in the post overview. */
+	addFilter('blocks.registerBlockType', 'omega-design/post-toc-heading-attribute', function (settings, name) {
+		if (name !== 'core/heading') return settings;
+		return addBlockAttributes(settings, { omegaTocExclude: { type: 'boolean', default: false } });
+	});
+
+	var TocBlockControls = wp.blockEditor.BlockControls;
+	var TocToolbarGroup = wp.components.ToolbarGroup;
+	var TocToolbarButton = wp.components.ToolbarButton;
+	function tocHeadingIcon(checked) {
+		return createElement('svg', { viewBox: '0 -960 960 960', width: 24, height: 24, fill: 'currentColor', 'aria-hidden': true },
+			createElement('path', { d: checked ? 'm424-312 282-282-56-56-226 226-114-114-56 56 170 170ZM200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560H200v560Z' : 'M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560H200v560Z' })
+		);
+	}
+	if (TocBlockControls && TocToolbarGroup && TocToolbarButton) {
+		var withTocHeadingControl = createHigherOrderComponent(function (BlockEdit) {
+			return function (props) {
+				if (props.name !== 'core/heading' || !props.isSelected) {
+					return createElement(BlockEdit, props);
+				}
+
+				var excluded = !!props.attributes.omegaTocExclude;
+				return createElement(Fragment, null,
+					createElement(TocBlockControls, null,
+						createElement(TocToolbarGroup, null,
+							createElement(TocToolbarButton, {
+								icon: tocHeadingIcon(!excluded),
+								label: excluded ? __('Include in overview', 'omega-design') : __('Exclude from overview', 'omega-design'),
+								isPressed: !excluded,
+								onClick: function () { props.setAttributes({ omegaTocExclude: !excluded }); }
+							})
+						)
+					),
+					createElement(BlockEdit, props)
+				);
+			};
+		}, 'withTocHeadingControl');
+		addFilter('editor.BlockEdit', 'omega-design/post-toc-heading-control', withTocHeadingControl);
+	}
 })(window.wp);

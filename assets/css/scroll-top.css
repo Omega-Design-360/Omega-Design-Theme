@@ -1,0 +1,127 @@
+.omega-scroll-top {
+	--omega-scroll-progress: 0;
+	position: fixed;
+	right: calc(max(20px, env(safe-area-inset-right)) + var(--omega-scroll-top-horizontal-offset, 0px));
+	bottom: calc(max(20px, env(safe-area-inset-bottom)) + var(--omega-scroll-top-vertical-offset, 260px));
+	top: auto;
+	left: auto;
+	z-index: 2147483647;
+	width: var(--omega-scroll-top-size, 56px);
+	height: var(--omega-scroll-top-size, 56px);
+	padding: 0;
+	border: 0;
+	border-radius: 50%;
+	display: grid;
+	place-items: center;
+	color: var(--omega-scroll-top-icon, var(--wp--preset--color--button-text, #fff));
+	background: var(--omega-scroll-top-background, linear-gradient(135deg, var(--wp--preset--color--primary, #7c3aed), var(--wp--preset--color--secondary, #4f46e5)));
+	box-shadow: 0 6px 22px rgba(49, 46, 129, .28);
+	cursor: pointer;
+	pointer-events: auto;
+	opacity: 0;
+	visibility: hidden;
+	transform: translateY(10px);
+	transition: opacity .2s ease, transform .2s ease, visibility .2s ease, box-shadow .2s ease;
+}
+
+.omega-scroll-top.is-visible {
+	opacity: 1;
+	visibility: visible;
+	transform: translateY(0);
+}
+
+.omega-scroll-top:hover {
+	box-shadow: 0 9px 28px rgba(49, 46, 129, .38);
+}
+
+.omega-scroll-top:focus-visible {
+	outline: 3px solid #a5f3fc;
+	outline-offset: 3px;
+}
+
+.omega-scroll-top__progress {
+	position: absolute;
+	inset: -4px;
+	width: calc(100% + 8px);
+	height: calc(100% + 8px);
+	overflow: visible;
+	transform: rotate(-90deg);
+}
+
+.omega-scroll-top__progress circle {
+	fill: none;
+	stroke-width: 2.5;
+}
+
+.omega-scroll-top__track {
+	stroke: var(--wp--preset--color--border, rgba(124, 58, 237, .2));
+}
+
+.omega-scroll-top__value {
+	stroke: var(--omega-scroll-top-progress-color, var(--wp--preset--color--accent, #22d3ee));
+	stroke-linecap: round;
+	stroke-dasharray: 144.51;
+	stroke-dashoffset: calc(144.51 * (1 - var(--omega-scroll-progress)));
+	transition: stroke-dashoffset .08s linear;
+}
+
+.omega-scroll-top__arrow {
+	width: 23px;
+	height: 23px;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 2;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+
+@media (max-width: 600px) {
+	.omega-scroll-top {
+		right: calc(max(14px, env(safe-area-inset-right)) + var(--omega-scroll-top-horizontal-offset, 0px));
+		bottom: calc(max(14px, env(safe-area-inset-bottom)) + var(--omega-scroll-top-vertical-offset, 260px));
+		width: var(--omega-scroll-top-size, 50px);
+		height: var(--omega-scroll-top-size, 50px);
+	}
+}
+
+body.omega-scroll-top-pos-bottom-left .omega-scroll-top {
+	right: auto;
+	left: calc(max(20px, env(safe-area-inset-left)) + var(--omega-scroll-top-horizontal-offset, 0px));
+}
+
+body.omega-scroll-top-pos-top-right .omega-scroll-top {
+	top: calc(max(20px, env(safe-area-inset-top)) + var(--omega-scroll-top-vertical-offset, 260px));
+	bottom: auto;
+}
+
+body.omega-scroll-top-pos-top-left .omega-scroll-top {
+	top: calc(max(20px, env(safe-area-inset-top)) + var(--omega-scroll-top-vertical-offset, 260px));
+	bottom: auto;
+	right: auto;
+	left: calc(max(20px, env(safe-area-inset-left)) + var(--omega-scroll-top-horizontal-offset, 0px));
+}
+
+@media (max-width: 600px) {
+	body.omega-scroll-top-pos-bottom-left .omega-scroll-top,
+	body.omega-scroll-top-pos-top-left .omega-scroll-top {
+		left: calc(max(14px, env(safe-area-inset-left)) + var(--omega-scroll-top-horizontal-offset, 0px));
+	}
+
+	body.omega-scroll-top-pos-top-right .omega-scroll-top,
+	body.omega-scroll-top-pos-top-left .omega-scroll-top {
+		top: calc(max(14px, env(safe-area-inset-top)) + var(--omega-scroll-top-vertical-offset, 260px));
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.omega-scroll-top,
+	.omega-scroll-top__value {
+		transition: none;
+	}
+}
+
+@media print {
+	.omega-scroll-top {
+		display: none;
+	}
+}

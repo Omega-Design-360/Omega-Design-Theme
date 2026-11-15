@@ -1,0 +1,18 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "omega-design/post-toc",
+	"title": "Post Table of Contents",
+	"category": "omega-design",
+	"icon": "excerpt-view",
+	"description": "A customizable overview linking to headings in the current blog post.",
+	"keywords": ["table of contents", "overview", "post", "headings"],
+	"textdomain": "omega-design",
+	"attributes": {
+		"title": { "type": "string", "default": "Quick Overview" },
+		"levels": { "type": "array", "default": [2, 3] }
+	},
+	"supports": { "html": false },
+	"editorScript": "file:./index.js",
+	"style": "file:./style.css"
+}

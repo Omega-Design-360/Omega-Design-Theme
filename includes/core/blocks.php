@@ -28,6 +28,7 @@ class blocks {
         add_filter('register_block_type_args', [$this, 'add_background_support'], 10, 2);
         add_filter('register_block_type_args', [$this, 'add_responsive_attribute'], 10, 2);
         add_filter('register_block_type_args', [$this, 'add_image_size_attribute'], 10, 2);
+        add_filter('register_block_type_args', [$this, 'add_toc_heading_attribute'], 10, 2);
     }
 
     /**
@@ -50,6 +51,15 @@ class blocks {
         }
 
         return self::with_attributes($args, ['omegaImage' => ['type' => 'object']]);
+    }
+
+    /** Stores each heading's include/exclude preference for the post TOC. */
+    public function add_toc_heading_attribute($args, $block_type) {
+        if ('core/heading' !== $block_type) {
+            return $args;
+        }
+
+        return self::with_attributes($args, ['omegaTocExclude' => ['type' => 'boolean', 'default' => false]]);
     }
 
     /**
@@ -100,12 +110,47 @@ class blocks {
 
     public function register() {
         $this->register_omega_icon();
+        $this->register_post_toc();
         $this->register_omega_slider();
         $this->register_omega_content_slider();
         $this->register_omega_tabs();
         $this->register_omega_newsletter();
         $this->register_server_rendered_block('omega-view-toggle', ['wp-server-side-render']);
         $this->register_server_rendered_block('omega-product-layout');
+    }
+
+    /** Editable sidebar block that builds a TOC from the current post headings. */
+    private function register_post_toc() {
+        $dir = OMEGA_DESIGN_BLOCKS . '/omega-post-toc';
+        if (!file_exists($dir . '/block.json')) {
+            return;
+        }
+
+        register_block_type($dir, [
+            'render_callback' => [$this, 'render_post_toc'],
+        ]);
+    }
+
+    /** Server-rendered TOC shell; the view script links it to actual headings. */
+    public function render_post_toc($attributes) {
+        if (!is_singular('post') || !get_theme_mod('omega_post_toc_enabled', true)) {
+            return '';
+        }
+
+        $title  = isset($attributes['title']) ? sanitize_text_field($attributes['title']) : __('Quick Overview', 'omega-design');
+        if ($title === 'Table of Contents') {
+            $title = __('Quick Overview', 'omega-design');
+        }
+        $levels = isset($attributes['levels']) && is_array($attributes['levels']) ? $attributes['levels'] : [2, 3];
+        $levels = array_values(array_intersect([2, 3, 4, 5, 6], array_map('absint', $levels)));
+        if (!$levels) {
+            return '';
+        }
+
+        $heading_tags = implode(',', array_map(function ($level) { return 'h' . $level; }, $levels));
+        return '<nav class="omega-post-toc" data-omega-post-toc data-heading-tags="' . esc_attr($heading_tags) . '" aria-label="' . esc_attr($title) . '">' .
+            '<h2 class="omega-post-toc__title"><svg viewBox="0 -960 960 960" aria-hidden="true"><path d="M80-200v-80h400v80H80Zm0-200v-80h200v80H80Zm0-200v-80h200v80H80Zm744 400L670-354q-24 17-52.5 25.5T560-320q-83 0-141.5-58.5T360-520q0-83 58.5-141.5T560-720q83 0 141.5 58.5T760-520q0 29-8.5 57.5T726-410l154 154-56 56ZM560-400q50 0 85-35t35-85q0-50-35-85t-85-35q-50 0-85 35t-35 85q0 50 35 85t85 35Z"></path></svg><span>' . esc_html($title) . '</span></h2>' .
+            '<ol class="omega-post-toc__list"></ol></nav>';
     }
 
     private function register_omega_icon() {

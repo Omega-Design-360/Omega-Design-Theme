@@ -311,6 +311,18 @@ class sidebar {
             'type'        => 'checkbox',
         ]);
 
+        $wp_customize->add_setting('omega_post_toc_enabled', [
+            'default'           => true,
+            'sanitize_callback' => 'wp_validate_boolean',
+        ]);
+
+        $wp_customize->add_control('omega_post_toc_enabled', [
+            'label'       => __('Show Quick Overview on blog posts', 'omega-design'),
+            'description' => __('Master switch for Post Table of Contents blocks in the sidebar. You can still move, edit, or remove the block in the Site Editor.', 'omega-design'),
+            'section'     => 'omega_sidebar_settings',
+            'type'        => 'checkbox',
+        ]);
+
         // Sidebar Position
         $wp_customize->add_setting('omega_sidebar_position', [
             'default'           => 'right',
